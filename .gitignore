@@ -28,6 +28,7 @@ build/
 
 # Claude Code
 .claude/
+CLAUDE.md
 
 # Environment
 .env
