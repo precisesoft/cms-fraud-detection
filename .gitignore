@@ -1,0 +1,33 @@
+# Data (large CMS datasets)
+data/raw/
+data/processed/
+data/features/
+*.csv
+*.parquet
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+
+# Models
+*.pkl
+*.joblib
+*.pt
+*.onnx
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Claude Code
+.claude/
+
+# Environment
+.env

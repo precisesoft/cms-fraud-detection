@@ -1,0 +1,234 @@
+Welcome to the AI-Hackathon!
+Orientation
+AI Working Group
+March 11, 2026
+
+Welcome!
+
+Welcome!
+Today’s agenda
+● Welcome
+● Who’s in the room
+● AI Working Group Leadership Team
+● Hackathon Rules
+● Office Hours
+● Get to know your team!
+
+Who is in the room?
+● Expected Attendance: 150-200 industry and government professionals
+● 80 + hackathon participants
+● 3-5 Government Judges
+● 20 Teams
+
+Our Leadership Team
+AI Working Group Chairs
+
+Paul Tibbits, M.D.
+VA
+Government Chair
+
+Dr. Gabrielle Bedewi
+Government Chair
+Defense Threat
+Reduction Agency
+(DTRA)
+
+Omar E. Bouaichi
+
+Gopa Nair
+
+Ravi Gourineni
+
+Bethlehem Belaineh
+
+Government Chair
+HUD | Ginnie Mae Office
+of Enterprise Data &
+Technology Solutions
+
+Government Chair
+
+Industry Chair
+
+Industry Vice Chair
+
+Department of Labor (DOL)
+
+Lithe Solutions
+
+Theory AI
+
+OASAM/OCIO
+
+Co-Founder/CSO
+
+Founder & CEO
+
+Hackathon Rules (part 1)
+Eligibility & Team Formation
+●
+●
+●
+●
+
+Team size limits (e.g., 2–5 members per team)
+Participants must register by the deadline
+Each person can only be on one team
+Teams must have at least one designated team lead
+
+Intellectual Property & Originality
+●
+●
+●
+●
+
+All work must be original and built during the Hackathon period
+No pre-built projects or significant prior work submitted as new
+Teams retain ownership of their work
+Any open-source tools/libraries must be disclosed
+
+Code of Conduct
+●
+●
+●
+●
+
+Respectful communication among all participants
+No plagiarism or cheating
+No harassment or discrimination of any kind
+Violations result in disqualification
+
+Hackathon Rules (part 2)
+Submission Requirements
+●
+●
+●
+●
+
+Projects must be submitted by the deadline (no exceptions)
+Must include a demo, README, or presentation
+Code must be pushed to a shared repository (e.g., GitHub)
+Teams must present/demo their project to judges
+
+Judging Criteria
+●
+●
+●
+●
+
+Innovation & creativity
+Technical complexity
+Practicality / real-world impact
+Quality of presentation/demo
+
+Use of AI Tools
+●
+●
+
+Disclose any AI tools used (e.g., GitHub Copilot, ChatGPT)
+AI-generated code must be reviewed and understood by the team
+
+General
+●
+●
+●
+
+Judges' decisions are final
+Organizers reserve the right to disqualify teams for rule violations
+Participants must be available during judging windows
+
+Hackathon Key Dates and TimeLines
+Time Frame
+
+Phase
+
+Description
+
+Milestone
+
+Feb 2, 2026
+
+Hackathon Announcement
+
+Public announcement; registration opens; structure and rules published (use
+cases excluded)
+
+Registration opens
+
+Feb 2 – Feb 20, 2026
+
+Use Case Development & Intake
+
+Use cases developed by Steering Committee; industry use cases solicited
+and reviewed
+
+Use cases finalized
+
+Feb 20, 2026
+
+Use Case Publication
+
+Four (4) approved use cases published publicly with leads and sponsors
+identified
+
+Use cases released
+
+Feb 2 – Mar 6, 2026
+
+Registration
+
+Participants register and indicate use case and environment preferences
+
+Registration closes
+
+Mar 6 – Mar 11, 2026
+
+Team Formation, Use Case &
+Environment Lock
+
+Teams finalized based on registration option and interest, Use Case finalized
+and environment access checked
+
+Teams confirmed
+
+Mar 12 – Mar 25, 2026
+
+Solutioning Sprint
+
+14-day sprint to design and build MVP solutions
+
+Working MVPs complete
+
+Mar 25, 2026 (EOD, 5 PM)
+
+Submission Lock
+
+Final solutions and artifacts submitted
+
+Submissions closed
+
+Mar 27, 2026
+
+Demo Day & Judging
+
+Live demos, panels, judging, and awards
+
+Winners announced
+
+What’s Next ?
+Office Hours: Hosted Daily March 13-25
+
+● Confirm Your Teams
+○ Confirm your Use-Cases
+○ Confirm your preferred environment
+○ Attend Office Hours
+○ Form a Project Plan
+○ Submit your Hackathon Project by 02/25/2026
+
+Thank you! Q & A Time
+Questions? Concerns?
+Contact
+● Bethlehem (Be): be@theoryai.co
+● Ravi: rgourineni@lithesolutions.com
+
+
