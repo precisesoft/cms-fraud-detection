@@ -49,6 +49,8 @@ Each case answers one question:
 
 ## Proposed Solution
 
+![System Architecture](diagrams/01-system-architecture.png)
+
 We will build an explainable provider evidence graph that combines:
 
 - Medicare Part B utilization and payment behavior
@@ -64,6 +66,8 @@ For every scored case, the system will output:
 - the top signals contributing to suspicion
 - the top signals contributing to legitimacy
 - the source provenance behind each conclusion
+
+![Scoring Engine](diagrams/04-scoring-engine.png)
 
 ## Why This Matters
 

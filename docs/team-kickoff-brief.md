@@ -109,6 +109,8 @@ The strongest position is:
 
 ## Demo Storyline
 
+![Demo User Journey](diagrams/07-demo-user-journey.png)
+
 ### Opening
 
 Start with the operational pain:
@@ -144,32 +146,19 @@ End with the differentiator:
 - this is not just anomaly detection
 - this is explainable provider evidence intelligence
 
-## Proposed Architecture
+## Architecture
 
-```mermaid
-flowchart LR
-  A[Public CMS and HHS files] --> B[DuckDB ingestion and profiling]
-  B --> C[Canonical Parquet and CSV outputs]
-  C --> D[Feature engineering]
-  D --> E[Case scoring]
-  C --> F[Graph projection]
-  E --> G[Explainable case API and UI]
-  F --> G
-```
+> Full specification: [Architecture v3](architecture-v3.md) | All diagrams: [docs/diagrams/](diagrams/)
 
-### Graph model
+![System Architecture](diagrams/01-system-architecture.png)
 
-```mermaid
-graph LR
-  Provider --> ProviderServiceCase
-  Provider --> Enrollment
-  Provider --> Revocation
-  Provider --> Exclusion
-  Provider --> OpenPaymentEvent
-  ProviderServiceCase --> Signal
-  Signal --> SourceRecord
-  OpenPaymentEvent --> Manufacturer
-```
+### Data Pipeline
+
+![Data Pipeline](diagrams/03-data-pipeline.png)
+
+### Evidence Graph
+
+![Evidence Graph](diagrams/05-evidence-graph.png)
 
 ## Example Signal Families
 

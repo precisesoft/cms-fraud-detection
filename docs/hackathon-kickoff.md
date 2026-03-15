@@ -81,25 +81,25 @@ Integrity decision-support tool.
 
 ### Judging emphasis
 
-| Criterion | Weight |
-| --- | --- |
-| Mission Relevance | High |
-| Technical Soundness | High |
-| Explainability and Responsible AI | High |
-| Feasibility for CMS Adoption | High |
-| Innovation | Medium |
-| Demo Clarity | Medium |
+| Criterion                         | Weight |
+| --------------------------------- | ------ |
+| Mission Relevance                 | High   |
+| Technical Soundness               | High   |
+| Explainability and Responsible AI | High   |
+| Feasibility for CMS Adoption      | High   |
+| Innovation                        | Medium |
+| Demo Clarity                      | Medium |
 
 ## Event-Day Agenda That Matters for the Team
 
-| Time (ET) | Session | Planning relevance |
-| --- | --- | --- |
-| 9:45-10:15 AM | Hackathon & Use Case Overview | Likely final framing from organizers; capture any late rubric changes |
-| 10:30-11:30 AM | Working Session: From MVP to Agency Adoption | Strong signal for how to pitch the pilot path |
-| 11:35 AM-12:05 PM | Lunch and Judges Introduction | Useful for tailoring demo language to the panel |
-| 12:05-2:00 PM | Team Demos & Q&A | Main delivery window |
-| 2:00-2:45 PM | Judges Deliberation & Networking | Opportunity to clarify adoption path and architecture choices |
-| 2:45-3:15 PM | Awards and Recognition | Outcome |
+| Time (ET)         | Session                                      | Planning relevance                                                    |
+| ----------------- | -------------------------------------------- | --------------------------------------------------------------------- |
+| 9:45-10:15 AM     | Hackathon & Use Case Overview                | Likely final framing from organizers; capture any late rubric changes |
+| 10:30-11:30 AM    | Working Session: From MVP to Agency Adoption | Strong signal for how to pitch the pilot path                         |
+| 11:35 AM-12:05 PM | Lunch and Judges Introduction                | Useful for tailoring demo language to the panel                       |
+| 12:05-2:00 PM     | Team Demos & Q&A                             | Main delivery window                                                  |
+| 2:00-2:45 PM      | Judges Deliberation & Networking             | Opportunity to clarify adoption path and architecture choices         |
+| 2:45-3:15 PM      | Awards and Recognition                       | Outcome                                                               |
 
 ## Judges Listed on the Event Site
 
@@ -142,3 +142,17 @@ Integrity decision-support tool.
 - [Orientation meeting notes](orientation-meeting-notes.md)
 - [Official source register](source-register.md)
 - [Open questions](open-questions.md)
+- [Architecture v3 (current)](architecture-v3.md)
+
+## Architecture Diagrams
+
+All rendered diagrams are in [`docs/diagrams/`](diagrams/). Key references for the hackathon deliverables:
+
+| Diagram                                                    | Deliverable it supports                      |
+| ---------------------------------------------------------- | -------------------------------------------- |
+| [System Architecture](diagrams/01-system-architecture.png) | Architecture diagram (required)              |
+| [Scoring Engine](diagrams/04-scoring-engine.png)           | Risk-scoring explanation (required)          |
+| [Signal Taxonomy](diagrams/08-signal-taxonomy.png)         | Risk-scoring explanation (required)          |
+| [Fairness Evaluation](diagrams/09-fairness-evaluation.png) | Responsible AI considerations (required)     |
+| [Path to CMS Pilot](diagrams/10-path-to-pilot.png)         | 5-minute "Path to Pilot" briefing (required) |
+| [Demo User Journey](diagrams/07-demo-user-journey.png)     | Live demo script (5-7 min)                   |

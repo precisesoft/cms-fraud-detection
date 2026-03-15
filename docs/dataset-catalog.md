@@ -8,19 +8,21 @@
 
 ---
 
+See also: [Data Pipeline Diagram](diagrams/03-data-pipeline.png) for how these datasets flow through the ETL pipeline.
+
 ## Challenge Starter Stack
 
 The official CMS use-case brief explicitly points teams at a small public-data starter set. For the
 two-week MVP, treat the following as the default build order:
 
-| Priority | Dataset | Why it matters | Join key |
-| --- | --- | --- | --- |
-| 1 | Medicare Physician & Other Practitioners - by Provider and Service | Core provider-behavior dataset for peer baselines, code mix, volume, and charge anomalies | `rndrng_npi` |
-| 2 | NPPES / NPI Registry | Provider identity, type, location, and taxonomy enrichment | `npi` |
-| 3 | Medicare Geographic Variation Public Use File | Regional normalization and state or HRR peer benchmarks | geography fields |
-| 4 | Open Payments | Financial-relationship enrichment that can strengthen referral or influence narratives | provider identifiers plus name matching |
-| 5 | Medicare Part D Prescribers - by Provider and Drug | Prescription-behavior enrichment, especially for specialty mismatch or controlled-substance patterns | `prscrbr_npi` |
-| 6 | OIG LEIE | Retrospective validation or screening enrichment for excluded entities | NPI, name, organization |
+| Priority | Dataset                                                            | Why it matters                                                                                       | Join key                                |
+| -------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| 1        | Medicare Physician & Other Practitioners - by Provider and Service | Core provider-behavior dataset for peer baselines, code mix, volume, and charge anomalies            | `rndrng_npi`                            |
+| 2        | NPPES / NPI Registry                                               | Provider identity, type, location, and taxonomy enrichment                                           | `npi`                                   |
+| 3        | Medicare Geographic Variation Public Use File                      | Regional normalization and state or HRR peer benchmarks                                              | geography fields                        |
+| 4        | Open Payments                                                      | Financial-relationship enrichment that can strengthen referral or influence narratives               | provider identifiers plus name matching |
+| 5        | Medicare Part D Prescribers - by Provider and Drug                 | Prescription-behavior enrichment, especially for specialty mismatch or controlled-substance patterns | `prscrbr_npi`                           |
+| 6        | OIG LEIE                                                           | Retrospective validation or screening enrichment for excluded entities                               | NPI, name, organization                 |
 
 Recommended MVP stance:
 

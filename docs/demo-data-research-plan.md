@@ -23,7 +23,7 @@ The public-data path is viable, but only if the demo is honest about what the da
   payment line.
 - The most defensible scoring unit for the demo is a `ProviderCase` built from an aggregate payment
   slice such as `NPI + HCPCS + place_of_service + year`, `NPI + drug + year`, or `NPI + DME
-  category + year`.
+category + year`.
 - The best technical shape is not graph-only. Use `DuckDB + Parquet` for ingestion and feature
   engineering, then project high-value entities and edges into `Neo4j` for explainability and
   investigator workflow.
@@ -40,29 +40,29 @@ The public-data path is viable, but only if the demo is honest about what the da
 
 These are the official pages or APIs used for discovery and download.
 
-| Source family | Official source | Notes |
-| --- | --- | --- |
-| CMS provider utilization and payment data | https://data.cms.gov/provider-summary-by-type-of-service | Primary source for Part A, Part B, Part D, DME, and geographic public use files |
-| CMS data API | https://data.cms.gov/data-api | Bulk data is downloadable through the site and API-backed resources |
-| CMS NPPES downloads | https://download.cms.gov/nppes/NPI_Files.html | Monthly, weekly, and deactivated NPI files |
-| CMS Open Payments program page | https://www.cms.gov/priorities/key-initiatives/open-payments/data | Program overview and publication cadence |
-| Open Payments dataset catalog API | https://openpaymentsdata.cms.gov/api/1/metastore/schemas/dataset/items?show-reference-ids=false | Machine-readable catalog with direct download URLs |
-| OIG LEIE | https://oig.hhs.gov/exclusions/downloadables/UPDATED.csv | Direct CSV download for the exclusion list |
-| CMS fraud portal | https://www.cms.gov/fraud | Public view of CMS fraud and program-integrity infrastructure |
-| Fraud Prevention Operations Center fact sheet | https://www.cms.gov/files/document/fact-sheet-fraud-prevention-operations-center-fpoc.pdf | Public description of the operational fraud review environment |
-| Fraud Prevention System 2 PIA | https://www.cms.gov/files/document/fps2-pia.pdf | Public description of the data-sharing and analytics environment |
-| UPIC overview | https://www.cms.gov/medicare/medicaid-coordination/center-program-integrity/unified-program-integrity-contractors | Public description of contractor-led investigation and review workflow |
+| Source family                                 | Official source                                                                                                   | Notes                                                                           |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| CMS provider utilization and payment data     | https://data.cms.gov/provider-summary-by-type-of-service                                                          | Primary source for Part A, Part B, Part D, DME, and geographic public use files |
+| CMS data API                                  | https://data.cms.gov/data-api                                                                                     | Bulk data is downloadable through the site and API-backed resources             |
+| CMS NPPES downloads                           | https://download.cms.gov/nppes/NPI_Files.html                                                                     | Monthly, weekly, and deactivated NPI files                                      |
+| CMS Open Payments program page                | https://www.cms.gov/priorities/key-initiatives/open-payments/data                                                 | Program overview and publication cadence                                        |
+| Open Payments dataset catalog API             | https://openpaymentsdata.cms.gov/api/1/metastore/schemas/dataset/items?show-reference-ids=false                   | Machine-readable catalog with direct download URLs                              |
+| OIG LEIE                                      | https://oig.hhs.gov/exclusions/downloadables/UPDATED.csv                                                          | Direct CSV download for the exclusion list                                      |
+| CMS fraud portal                              | https://www.cms.gov/fraud                                                                                         | Public view of CMS fraud and program-integrity infrastructure                   |
+| Fraud Prevention Operations Center fact sheet | https://www.cms.gov/files/document/fact-sheet-fraud-prevention-operations-center-fpoc.pdf                         | Public description of the operational fraud review environment                  |
+| Fraud Prevention System 2 PIA                 | https://www.cms.gov/files/document/fps2-pia.pdf                                                                   | Public description of the data-sharing and analytics environment                |
+| UPIC overview                                 | https://www.cms.gov/medicare/medicaid-coordination/center-program-integrity/unified-program-integrity-contractors | Public description of contractor-led investigation and review workflow          |
 
 ## What I Downloaded Locally
 
 All downloaded files are staged under `data/raw/public_sources/`.
 
-| Family | Local size | Key files staged locally | Why it matters |
-| --- | ---: | --- | --- |
-| `cms/` | `8.6G` | `part_b_provider_2023.csv`, `part_b_provider_service_2023.csv`, `part_d_provider_2023.csv`, `part_d_provider_drug_2023.csv`, `dme_referring_provider_service_2023.csv`, `public_provider_enrollment_q4_2025.csv`, `revoked_providers_q1_2026.csv`, `geographic_variation_national_state_county_2014_2023.csv` | Core provider behavior, peer baselines, enrollment, and sanctions |
-| `openpayments/` | `9.4G` | `general_payments_2024.csv`, `research_payments_2024.csv`, `ownership_payments_2024.csv`, `physician_distinct_profile_2024.csv`, `reporting_entity_profile_2024.csv`, `provider_profile_id_mapping_2024.csv` | Manufacturer and financial-relationship enrichment |
-| `nppes/` | `1.1G` | `nppes_monthly_2026_03_v2.zip`, `nppes_weekly_2026_03_02_03_08_v2.zip`, `nppes_deactivated_2026_03_v2.zip` | Provider identity, taxonomy, address, activation, and deactivation context |
-| `oig/` | `15M` | `leie_updated.csv` | Exclusion screening and retrospective validation |
+| Family          | Local size | Key files staged locally                                                                                                                                                                                                                                                                                      | Why it matters                                                             |
+| --------------- | ---------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `cms/`          |     `8.6G` | `part_b_provider_2023.csv`, `part_b_provider_service_2023.csv`, `part_d_provider_2023.csv`, `part_d_provider_drug_2023.csv`, `dme_referring_provider_service_2023.csv`, `public_provider_enrollment_q4_2025.csv`, `revoked_providers_q1_2026.csv`, `geographic_variation_national_state_county_2014_2023.csv` | Core provider behavior, peer baselines, enrollment, and sanctions          |
+| `openpayments/` |     `9.4G` | `general_payments_2024.csv`, `research_payments_2024.csv`, `ownership_payments_2024.csv`, `physician_distinct_profile_2024.csv`, `reporting_entity_profile_2024.csv`, `provider_profile_id_mapping_2024.csv`                                                                                                  | Manufacturer and financial-relationship enrichment                         |
+| `nppes/`        |     `1.1G` | `nppes_monthly_2026_03_v2.zip`, `nppes_weekly_2026_03_02_03_08_v2.zip`, `nppes_deactivated_2026_03_v2.zip`                                                                                                                                                                                                    | Provider identity, taxonomy, address, activation, and deactivation context |
+| `oig/`          |      `15M` | `leie_updated.csv`                                                                                                                                                                                                                                                                                            | Exclusion screening and retrospective validation                           |
 
 Approximate total staged footprint: `19G`.
 
@@ -70,36 +70,36 @@ Approximate total staged footprint: `19G`.
 
 ### 1. Core CMS behavior files
 
-| Dataset | Rows | Join key | Quality assessment | Demo role |
-| --- | ---: | --- | --- | --- |
-| Part B provider | `1,259,343` | `Rndrng_NPI` | Strong. One row per NPI, no missing provider type or state in the profiled file. | Core identity and annual provider baseline |
-| Part B provider and service | `9,660,647` | `Rndrng_NPI`, `HCPCS_Cd` | Strong. `HCPCS` and `place_of_service` are complete; only small sparsity in RUCA. | Core scoring table |
-| Part D provider | `1,380,665` | `Prscrbr_NPI` | Usable, but suppression flags are common. | Secondary enrichment |
-| Part D provider and drug | `26,794,878` | `Prscrbr_NPI`, `Brnd_Name`, `Gnrc_Name` | Usable, but heavily suppression-aware. Many subgroup fields contain public suppression markers. | Secondary enrichment for prescribing-risk patterns |
-| DME referring provider and service | `1,439,587` | `Rfrg_NPI`, `HCPCS_CD`, `RBCS_Id` | Mixed. Strong keys, but `Tot_Suplr_Benes` is null in roughly `70%` of rows. | Useful for referral-pattern flags, not for every metric |
-| Public provider enrollment | `2,957,262` | `NPI` | Strong content, but the CSV needs a tolerant parser because of row-format issues. Row count was preserved with permissive parsing. | Critical status and enrollment context |
-| Revoked providers | `7,465` | `NPI` | Strong and compact. Excellent for retrospective validation and risk boosting. | Sanctions and weak-supervision seed |
-| Geographic variation national/state/county | `33,639` | geography keys | Strong and compact. Good peer-normalization layer. | Benchmark normalization |
+| Dataset                                    |         Rows | Join key                                | Quality assessment                                                                                                                 | Demo role                                               |
+| ------------------------------------------ | -----------: | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Part B provider                            |  `1,259,343` | `Rndrng_NPI`                            | Strong. One row per NPI, no missing provider type or state in the profiled file.                                                   | Core identity and annual provider baseline              |
+| Part B provider and service                |  `9,660,647` | `Rndrng_NPI`, `HCPCS_Cd`                | Strong. `HCPCS` and `place_of_service` are complete; only small sparsity in RUCA.                                                  | Core scoring table                                      |
+| Part D provider                            |  `1,380,665` | `Prscrbr_NPI`                           | Usable, but suppression flags are common.                                                                                          | Secondary enrichment                                    |
+| Part D provider and drug                   | `26,794,878` | `Prscrbr_NPI`, `Brnd_Name`, `Gnrc_Name` | Usable, but heavily suppression-aware. Many subgroup fields contain public suppression markers.                                    | Secondary enrichment for prescribing-risk patterns      |
+| DME referring provider and service         |  `1,439,587` | `Rfrg_NPI`, `HCPCS_CD`, `RBCS_Id`       | Mixed. Strong keys, but `Tot_Suplr_Benes` is null in roughly `70%` of rows.                                                        | Useful for referral-pattern flags, not for every metric |
+| Public provider enrollment                 |  `2,957,262` | `NPI`                                   | Strong content, but the CSV needs a tolerant parser because of row-format issues. Row count was preserved with permissive parsing. | Critical status and enrollment context                  |
+| Revoked providers                          |      `7,465` | `NPI`                                   | Strong and compact. Excellent for retrospective validation and risk boosting.                                                      | Sanctions and weak-supervision seed                     |
+| Geographic variation national/state/county |     `33,639` | geography keys                          | Strong and compact. Good peer-normalization layer.                                                                                 | Benchmark normalization                                 |
 
 ### 2. Open Payments
 
-| Dataset | Rows | Join key | Quality assessment | Demo role |
-| --- | ---: | --- | --- | --- |
-| Physician distinct profile | `1,616,118` | `Covered_Recipient_NPI` | Strong direct physician crosswalk with low NPI sparsity. | Best Open Payments bridge table |
-| General payments | `15,383,596` | `Covered_Recipient_NPI`, `Covered_Recipient_Profile_ID` | Strong enough for production-style enrichment. Direct NPI is present for most rows. | Best event-level financial relationship table |
-| Research payments | `756,906` | `Covered_Recipient_Profile_ID` | Weak direct NPI coverage. Most rows do not carry an NPI. | Optional enrichment only |
-| Ownership payments | `4,591` | `Covered_Recipient_NPI`, `Covered_Recipient_Profile_ID` | Small but high-value. | High-signal enrichment |
-| Reporting entity profile | `2,900` | `AMGPO_Making_Payment_ID` | Strong compact dimension table. | Manufacturer or GPO metadata |
-| Provider profile ID mapping | `2,180` | profile IDs | Very small helper mapping. | Minor bridge table |
+| Dataset                     |         Rows | Join key                                                | Quality assessment                                                                  | Demo role                                     |
+| --------------------------- | -----------: | ------------------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------- |
+| Physician distinct profile  |  `1,616,118` | `Covered_Recipient_NPI`                                 | Strong direct physician crosswalk with low NPI sparsity.                            | Best Open Payments bridge table               |
+| General payments            | `15,383,596` | `Covered_Recipient_NPI`, `Covered_Recipient_Profile_ID` | Strong enough for production-style enrichment. Direct NPI is present for most rows. | Best event-level financial relationship table |
+| Research payments           |    `756,906` | `Covered_Recipient_Profile_ID`                          | Weak direct NPI coverage. Most rows do not carry an NPI.                            | Optional enrichment only                      |
+| Ownership payments          |      `4,591` | `Covered_Recipient_NPI`, `Covered_Recipient_Profile_ID` | Small but high-value.                                                               | High-signal enrichment                        |
+| Reporting entity profile    |      `2,900` | `AMGPO_Making_Payment_ID`                               | Strong compact dimension table.                                                     | Manufacturer or GPO metadata                  |
+| Provider profile ID mapping |      `2,180` | profile IDs                                             | Very small helper mapping.                                                          | Minor bridge table                            |
 
 ### 3. NPPES and OIG
 
-| Dataset | Observed size or count | Join key | Quality assessment | Demo role |
-| --- | ---: | --- | --- | --- |
-| NPPES monthly V2 | `1.0G` zip, about `11.26G` uncompressed main CSV | `NPI` | Rich and authoritative, but too heavy to parse live during the demo build. | Baseline identity snapshot after preprocessing |
-| NPPES weekly V2 | `30,722` lines including header in the sampled weekly file | `NPI` | Excellent as a small freshness layer. | Fast delta update source |
-| NPPES deactivated report | `336,536` rows including header in the workbook | `NPI` | Valuable for status changes, but needs workbook parsing. | Status-change enrichment |
-| OIG LEIE | `82,749` rows | NPI when present, otherwise name or org | Weak direct NPI coverage. Roughly `89.7%` of profiled rows had missing or zero NPI. | Screening and retrospective validation only |
+| Dataset                  |                                     Observed size or count | Join key                                | Quality assessment                                                                  | Demo role                                      |
+| ------------------------ | ---------------------------------------------------------: | --------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------- |
+| NPPES monthly V2         |           `1.0G` zip, about `11.26G` uncompressed main CSV | `NPI`                                   | Rich and authoritative, but too heavy to parse live during the demo build.          | Baseline identity snapshot after preprocessing |
+| NPPES weekly V2          | `30,722` lines including header in the sampled weekly file | `NPI`                                   | Excellent as a small freshness layer.                                               | Fast delta update source                       |
+| NPPES deactivated report |            `336,536` rows including header in the workbook | `NPI`                                   | Valuable for status changes, but needs workbook parsing.                            | Status-change enrichment                       |
+| OIG LEIE                 |                                              `82,749` rows | NPI when present, otherwise name or org | Weak direct NPI coverage. Roughly `89.7%` of profiled rows had missing or zero NPI. | Screening and retrospective validation only    |
 
 ## The Most Important Quality Findings
 
@@ -119,17 +119,17 @@ Approximate total staged footprint: `19G`.
 
 Distinct NPI overlap across the staged sources:
 
-| Join | Overlap | Why it matters |
-| --- | ---: | --- |
-| Part B provider -> public provider enrollment | `1,213,556` providers (`96.4%` of Part B providers) | Enrollment is a near-universal status layer |
-| Part B provider -> Part D provider | `835,315` providers (`66.3%`) | Strong cross-program provider overlap |
-| Part B provider -> Open Payments physician profile | `831,175` providers (`66.0%`) | Open Payments can enrich a large share of Part B providers |
-| Part B provider -> Open Payments general payments | `575,263` providers (`45.7%`) | Event-level financial relationships are available for a meaningful subset |
-| Part B provider -> DME referring provider/service | `261,928` providers (`20.8%`) | DME signals are selective but useful |
-| Part B provider -> revoked providers | `863` providers (`0.1%`) | Rare but high-confidence risk cases |
-| Part B provider -> LEIE rows with nonzero NPI | `187` providers | Direct LEIE NPI joins are too sparse to anchor the model |
-| Part D provider -> Open Payments physician profile | `1,040,305` providers (`75.3%` of Part D providers) | Strong bridge between prescribing and financial relationships |
-| Part D provider -> Open Payments general payments | `708,648` providers (`51.3%`) | Good crosswalk for prescriber influence patterns |
+| Join                                               |                                             Overlap | Why it matters                                                            |
+| -------------------------------------------------- | --------------------------------------------------: | ------------------------------------------------------------------------- |
+| Part B provider -> public provider enrollment      | `1,213,556` providers (`96.4%` of Part B providers) | Enrollment is a near-universal status layer                               |
+| Part B provider -> Part D provider                 |                       `835,315` providers (`66.3%`) | Strong cross-program provider overlap                                     |
+| Part B provider -> Open Payments physician profile |                       `831,175` providers (`66.0%`) | Open Payments can enrich a large share of Part B providers                |
+| Part B provider -> Open Payments general payments  |                       `575,263` providers (`45.7%`) | Event-level financial relationships are available for a meaningful subset |
+| Part B provider -> DME referring provider/service  |                       `261,928` providers (`20.8%`) | DME signals are selective but useful                                      |
+| Part B provider -> revoked providers               |                            `863` providers (`0.1%`) | Rare but high-confidence risk cases                                       |
+| Part B provider -> LEIE rows with nonzero NPI      |                                     `187` providers | Direct LEIE NPI joins are too sparse to anchor the model                  |
+| Part D provider -> Open Payments physician profile | `1,040,305` providers (`75.3%` of Part D providers) | Strong bridge between prescribing and financial relationships             |
+| Part D provider -> Open Payments general payments  |                       `708,648` providers (`51.3%`) | Good crosswalk for prescriber influence patterns                          |
 
 ## What This Means for the Demo
 
@@ -165,41 +165,25 @@ Do not present these as real CMS claim-line decisions.
 
 The public data naturally forms a provider-centered evidence graph.
 
-```mermaid
-graph LR
-  Provider --> Enrollment
-  Provider --> Revocation
-  Provider --> Exclusion
-  Provider --> Specialty
-  Provider --> GeoBenchmark
-  Provider --> ProviderServiceCase
-  Provider --> ProviderDrugCase
-  Provider --> ProviderDMECase
-  Provider --> OpenPaymentEvent
-  OpenPaymentEvent --> Manufacturer
-  ProviderServiceCase --> Signal
-  ProviderDrugCase --> Signal
-  ProviderDMECase --> Signal
-  Signal --> SourceRecord
-```
+![Evidence Graph](diagrams/05-evidence-graph.png)
 
 ### Canonical entities
 
-| Node | Backing source | Purpose |
-| --- | --- | --- |
-| `Provider` | Part B, Part D, NPPES, enrollment | Canonical identity anchor |
-| `Enrollment` | Public provider enrollment | Active or recent enrollment context |
-| `Revocation` | Revoked providers | High-confidence adverse status |
-| `Exclusion` | LEIE | Screening and credibility context |
-| `Specialty` | NPPES, Part B, Part D | Peer-group definitions |
-| `GeoBenchmark` | Geographic variation PUF | Regional normalization |
-| `ProviderServiceCase` | Part B provider and service | Main scoring unit |
-| `ProviderDrugCase` | Part D provider and drug | Prescribing-risk scoring unit |
-| `ProviderDMECase` | DME referring provider and service | DME-focused scoring unit |
-| `OpenPaymentEvent` | General payments, ownership payments | Financial relationship event |
-| `Manufacturer` | Reporting entity profile | Paying organization |
-| `Signal` | Engineered features | Human-readable evidence nodes |
-| `SourceRecord` | Any raw file | Provenance back to exact source table and row set |
+| Node                  | Backing source                       | Purpose                                           |
+| --------------------- | ------------------------------------ | ------------------------------------------------- |
+| `Provider`            | Part B, Part D, NPPES, enrollment    | Canonical identity anchor                         |
+| `Enrollment`          | Public provider enrollment           | Active or recent enrollment context               |
+| `Revocation`          | Revoked providers                    | High-confidence adverse status                    |
+| `Exclusion`           | LEIE                                 | Screening and credibility context                 |
+| `Specialty`           | NPPES, Part B, Part D                | Peer-group definitions                            |
+| `GeoBenchmark`        | Geographic variation PUF             | Regional normalization                            |
+| `ProviderServiceCase` | Part B provider and service          | Main scoring unit                                 |
+| `ProviderDrugCase`    | Part D provider and drug             | Prescribing-risk scoring unit                     |
+| `ProviderDMECase`     | DME referring provider and service   | DME-focused scoring unit                          |
+| `OpenPaymentEvent`    | General payments, ownership payments | Financial relationship event                      |
+| `Manufacturer`        | Reporting entity profile             | Paying organization                               |
+| `Signal`              | Engineered features                  | Human-readable evidence nodes                     |
+| `SourceRecord`        | Any raw file                         | Provenance back to exact source table and row set |
 
 ## Fraud Signals and Legitimacy Signals
 
@@ -207,27 +191,29 @@ The product story gets stronger if the model explains both suspicion and stabili
 
 ### Suspicion signals
 
-| Signal family | Example signals | Main source |
-| --- | --- | --- |
-| Volume outliers | Services per beneficiary, claims volume, cost intensity far above specialty and geography peers | Part B, Part D, geographic variation |
-| Mix anomalies | HCPCS or drug mix inconsistent with specialty or enrollment type | Part B, Part D, NPPES, enrollment |
-| Price anomalies | Charge-to-allowed and charge-to-payment ratios well above peers | Part B |
-| Place-of-service anomalies | Facility versus office mix inconsistent with peers or service norm | Part B |
-| Growth shocks | Abrupt year-over-year change in billing or prescribing | Part B, Part D |
-| DME concentration | Unusual concentration in DME categories or suppliers | DME referring provider/service |
-| Influence patterns | Manufacturer payment concentration or ownership ties | Open Payments |
-| Compliance history | Revocation or exclusion adjacency | Revoked providers, LEIE |
+| Signal family              | Example signals                                                                                 | Main source                          |
+| -------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------ |
+| Volume outliers            | Services per beneficiary, claims volume, cost intensity far above specialty and geography peers | Part B, Part D, geographic variation |
+| Mix anomalies              | HCPCS or drug mix inconsistent with specialty or enrollment type                                | Part B, Part D, NPPES, enrollment    |
+| Price anomalies            | Charge-to-allowed and charge-to-payment ratios well above peers                                 | Part B                               |
+| Place-of-service anomalies | Facility versus office mix inconsistent with peers or service norm                              | Part B                               |
+| Growth shocks              | Abrupt year-over-year change in billing or prescribing                                          | Part B, Part D                       |
+| DME concentration          | Unusual concentration in DME categories or suppliers                                            | DME referring provider/service       |
+| Influence patterns         | Manufacturer payment concentration or ownership ties                                            | Open Payments                        |
+| Compliance history         | Revocation or exclusion adjacency                                                               | Revoked providers, LEIE              |
 
 ### Legitimacy signals
 
-| Signal family | Example signals | Main source |
-| --- | --- | --- |
-| Stable identity | NPPES, enrollment, and billing identity agree across sources | NPPES, enrollment, Part B, Part D |
-| Specialty consistency | Billed services and prescribed drugs align with provider taxonomy | NPPES, Part B, Part D |
-| Peer alignment | Utilization and payment ratios stay within peer bands | Part B, Part D, geographic variation |
-| Clean status | No revocation, no exclusion, active enrollment | Enrollment, revoked providers, LEIE |
-| Multi-year stability | No sudden volume spikes or role changes | Part B, Part D, NPPES |
-| Diverse relationships | Open Payments not concentrated to suspicious levels | Open Payments |
+| Signal family         | Example signals                                                   | Main source                          |
+| --------------------- | ----------------------------------------------------------------- | ------------------------------------ |
+| Stable identity       | NPPES, enrollment, and billing identity agree across sources      | NPPES, enrollment, Part B, Part D    |
+| Specialty consistency | Billed services and prescribed drugs align with provider taxonomy | NPPES, Part B, Part D                |
+| Peer alignment        | Utilization and payment ratios stay within peer bands             | Part B, Part D, geographic variation |
+| Clean status          | No revocation, no exclusion, active enrollment                    | Enrollment, revoked providers, LEIE  |
+| Multi-year stability  | No sudden volume spikes or role changes                           | Part B, Part D, NPPES                |
+| Diverse relationships | Open Payments not concentrated to suspicious levels               | Open Payments                        |
+
+![Signal Taxonomy](diagrams/08-signal-taxonomy.png)
 
 ### Recommended output contract
 
@@ -249,17 +235,9 @@ This directly answers the user-facing requirement:
 
 The fastest credible build is a hybrid analytics and graph stack.
 
-```mermaid
-flowchart LR
-  A[Raw CSV and ZIP downloads] --> B[DuckDB profiling and validation]
-  B --> C[Canonical Parquet tables]
-  C --> D[Feature engineering and weak supervision]
-  D --> E[Case scoring engine]
-  C --> F[Graph projection]
-  E --> G[Neo4j explanation graph]
-  F --> G
-  G --> H[API and investigator UI]
-```
+![Data Pipeline](diagrams/03-data-pipeline.png)
+
+> Full architecture specification: [Architecture v3](architecture-v3.md) | All diagrams: [docs/diagrams/](diagrams/)
 
 ### Why this architecture is the right fit
 
