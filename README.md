@@ -60,29 +60,36 @@ CMS loses an estimated $60B+ annually to improper payments across Medicare and M
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     CMS Fraud Detection                      │
-├──────────┬──────────┬──────────────┬────────────┬───────────┤
-│  Ingest  │ Feature  │    Model     │ Explainer  │    API    │
-│ Pipeline │ Engineering │  Ensemble  │   (SHAP)   │ Dashboard │
-├──────────┼──────────┼──────────────┼────────────┼───────────┤
-│ CMS Open │ Provider │ Isolation    │ Per-claim  │ FastAPI   │
-│ Data     │ Profiles │ Forest +     │ risk       │ + React   │
-│ Download │ Peer     │ XGBoost +    │ factors    │ dashboard │
-│ + Clean  │ Groups   │ Autoencoder  │ narratives │           │
-└──────────┴──────────┴──────────────┴────────────┴───────────┘
-```
+> Full architecture specification: [docs/architecture-v3.md](docs/architecture-v3.md)
+
+![System Architecture](docs/diagrams/01-system-architecture.png)
 
 ### Data Flow
 
-```
-Raw CMS Data → Cleaned Parquet → Feature Store → Model Scoring → Risk API → Dashboard
-                                                       ↓
-                                              SHAP Explanations
-                                                       ↓
-                                              Human Review Queue
-```
+![Data Pipeline](docs/diagrams/03-data-pipeline.png)
+
+### Scoring Engine
+
+![Scoring Engine](docs/diagrams/04-scoring-engine.png)
+
+### Deployment
+
+![Deployment Architecture](docs/diagrams/02-deployment-architecture.png)
+
+### All Diagrams
+
+| Diagram                                                                 | Description                          |
+| ----------------------------------------------------------------------- | ------------------------------------ |
+| [System Architecture](docs/diagrams/01-system-architecture.png)         | Full-stack component map             |
+| [Deployment Architecture](docs/diagrams/02-deployment-architecture.png) | CI/CD → EKS pipeline                 |
+| [Data Pipeline](docs/diagrams/03-data-pipeline.png)                     | 19GB ETL flow                        |
+| [Scoring Engine](docs/diagrams/04-scoring-engine.png)                   | Dual scoring with signal provenance  |
+| [Evidence Graph](docs/diagrams/05-evidence-graph.png)                   | Neo4j relationship model             |
+| [AI Reasoning](docs/diagrams/06-ai-reasoning.png)                       | Text-to-SQL + narrative flow         |
+| [Demo User Journey](docs/diagrams/07-demo-user-journey.png)             | 5-7 min demo script                  |
+| [Signal Taxonomy](docs/diagrams/08-signal-taxonomy.png)                 | Risk + legitimacy signal definitions |
+| [Fairness Evaluation](docs/diagrams/09-fairness-evaluation.png)         | Responsible AI metrics pipeline      |
+| [Path to CMS Pilot](docs/diagrams/10-path-to-pilot.png)                 | MVP → Pilot → Production roadmap     |
 
 ## Public Data Sources
 
@@ -96,62 +103,41 @@ Raw CMS Data → Cleaned Parquet → Feature Store → Model Scoring → Risk AP
 
 ## Tech Stack
 
-| Layer            | Technology                                   |
-| ---------------- | -------------------------------------------- |
-| Language         | Python 3.12+                                 |
-| Data Processing  | Polars, DuckDB                               |
-| ML Models        | scikit-learn, XGBoost, PyTorch (autoencoder) |
-| Explainability   | SHAP, Alibi                                  |
-| API              | FastAPI                                      |
-| Frontend         | React + TypeScript                           |
-| Containerization | Docker                                       |
-| Orchestration    | Kubernetes (k3s)                             |
-| Storage          | PostgreSQL + Parquet files                   |
+| Layer         | Technology               | Why                                                    |
+| ------------- | ------------------------ | ------------------------------------------------------ |
+| Frontend      | Next.js 15 + TypeScript  | SSR, app router, API routes as BFF                     |
+| UI Components | shadcn/ui + Tailwind CSS | Polished, accessible, fast to build                    |
+| Charts        | Recharts                 | React-native, composable, AI can specify chart configs |
+| Backend       | Python 3.12 + FastAPI    | Async, auto-docs, scoring engine                       |
+| Database      | PostgreSQL 16            | Operational store, SQL queries, production-grade       |
+| Graph         | Neo4j 5                  | Relationship traversal, Cypher queries                 |
+| ETL           | DuckDB + Polars          | One-time data processing (not runtime)                 |
+| AI            | AWS Bedrock (Claude)     | FedRAMP authorized, GovCloud-ready                     |
+| Containers    | Docker + docker-compose  | Local dev, multi-service                               |
+| CI            | GitHub Actions           | Lint, test, build, coverage                            |
+| CD            | ArgoCD                   | GitOps deployment to EKS                               |
+| Registry      | Amazon ECR               | AWS-native container image store                       |
 
-## Target Project Structure
-
-```
-cms-fraud-detection/
-├── src/
-│   ├── data/           # Data ingestion and cleaning
-│   ├── pipeline/        # Feature engineering pipeline
-│   ├── models/          # Model training and inference
-│   ├── explainability/  # SHAP explanations and narratives
-│   └── api/             # FastAPI endpoints
-├── tests/               # Unit and integration tests
-├── notebooks/           # EDA and prototyping
-├── data/
-│   ├── raw/             # Downloaded CMS datasets
-│   ├── processed/       # Cleaned data
-│   └── features/        # Engineered feature store
-├── docs/                # Architecture and design docs
-├── manifests/           # K8s deployment manifests
-├── Dockerfile
-├── pyproject.toml
-└── README.md
-```
-
-## Planned Quickstart
+## Quickstart
 
 ```bash
-# Setup
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
+# Clone and configure
+git clone git@github.com:precisesoft/cms-fraud-detection.git
+cd cms-fraud-detection
+cp .env.example .env  # Edit with your AWS credentials
 
-# Download CMS data
-python -m src.data.download
+# Start all services
+docker compose up -d
 
-# Run feature pipeline
-python -m src.pipeline.build_features
+# Run ETL pipeline (one-time)
+docker compose exec backend python -m backend.src.etl.load
 
-# Train models
-python -m src.models.train
-
-# Start API
-uvicorn src.api.main:app --reload
+# Access the app
+# Frontend: http://localhost:3000
+# Backend API docs: http://localhost:8000/docs
 
 # Run tests
-pytest
+docker compose exec backend pytest
 ```
 
 ## Team

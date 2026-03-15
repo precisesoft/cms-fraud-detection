@@ -4,9 +4,12 @@
 > Replaces the ML ensemble approach with an LLM-powered reasoning layer over a
 > structured analytics engine and evidence graph.
 
-STATUS: draft
+STATUS: superseded
 created: 2026-03-14
-updated: 2026-03-14
+updated: 2026-03-15
+
+> **Note**: This document is superseded by [Architecture v3](architecture-v3.md).
+> Rendered diagrams for the current architecture are in [docs/diagrams/](diagrams/).
 
 ---
 

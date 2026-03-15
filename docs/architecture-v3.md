@@ -3,9 +3,28 @@
 > Production-grade, containerized application deployed via CI/CD to EKS.
 > Supersedes v2. This is the build plan.
 
-STATUS: approved-draft
+STATUS: approved
 created: 2026-03-14
-updated: 2026-03-14
+updated: 2026-03-15
+
+---
+
+## Diagrams
+
+All diagrams are in `docs/diagrams/` as Mermaid source (`.mmd`) with rendered PNGs.
+
+| #   | Diagram                                                            | File                         | Purpose                                                      |
+| --- | ------------------------------------------------------------------ | ---------------------------- | ------------------------------------------------------------ |
+| 1   | [System Architecture](diagrams/01-system-architecture.png)         | `01-system-architecture`     | Full-stack component map with all 13 API endpoints           |
+| 2   | [Deployment Architecture](diagrams/02-deployment-architecture.png) | `02-deployment-architecture` | CI/CD pipeline: GitHub Actions → ECR → ArgoCD → EKS          |
+| 3   | [Data Pipeline](diagrams/03-data-pipeline.png)                     | `03-data-pipeline`           | ETL flow: 19GB raw CMS CSVs → DuckDB → PostgreSQL + Neo4j    |
+| 4   | [Scoring Engine](diagrams/04-scoring-engine.png)                   | `04-scoring-engine`          | Claim input → signal extraction → dual scoring → narrative   |
+| 5   | [Evidence Graph](diagrams/05-evidence-graph.png)                   | `05-evidence-graph`          | Neo4j model: Provider → Case → Signal → Source               |
+| 6   | [AI Reasoning](diagrams/06-ai-reasoning.png)                       | `06-ai-reasoning`            | Sequence: text-to-SQL chat flow + risk narrative generation  |
+| 7   | [Demo User Journey](diagrams/07-demo-user-journey.png)             | `07-demo-user-journey`       | 6-section, 5-7 min demo script with timing                   |
+| 8   | [Signal Taxonomy](diagrams/08-signal-taxonomy.png)                 | `08-signal-taxonomy`         | All risk + legitimacy signals with sources and point weights |
+| 9   | [Fairness Evaluation](diagrams/09-fairness-evaluation.png)         | `09-fairness-evaluation`     | Cohort analysis → statistical tests → dashboard              |
+| 10  | [Path to CMS Pilot](diagrams/10-path-to-pilot.png)                 | `10-path-to-pilot`           | MVP → Pilot (6mo) → Production (12mo) roadmap                |
 
 ---
 
@@ -23,6 +42,8 @@ interfaces:
    plain English questions and get answers with charts
 
 ## System Architecture
+
+![System Architecture](diagrams/01-system-architecture.png)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -42,14 +63,19 @@ interfaces:
 ├─────────────────────────────────────────────────────────────────────────┤
 │                        API Layer (FastAPI)                               │
 │                                                                         │
-│  POST /api/score          — Score a claim against provider profile       │
-│  GET  /api/providers      — List/search providers                       │
-│  GET  /api/providers/{npi}— Full provider evidence profile              │
-│  GET  /api/claims         — Paginated claims/cases queue                │
-│  POST /api/chat           — Natural language query → answer + chart     │
-│  GET  /api/signals/{npi}  — All signals for a provider                  │
-│  GET  /api/peers/{npi}    — Peer group comparison data                  │
-│  GET  /api/health         — Health check for k8s probes                 │
+│  GET  /api/dashboard       — Aggregate stats, risk distribution, top flags│
+│  GET  /api/dashboard/heatmap — Risk scores aggregated by state           │
+│  POST /api/score           — Score a claim against provider profile      │
+│  GET  /api/providers       — List/search providers (?q= autocomplete)    │
+│  GET  /api/providers/{npi} — Full provider evidence profile              │
+│  GET  /api/providers/{npi}/trends — Time-series billing data             │
+│  GET  /api/claims          — Paginated claims/cases queue                │
+│  POST /api/chat            — NL query → streamed answer + chart (SSE)    │
+│  GET  /api/signals/{npi}   — All signals for a provider                  │
+│  GET  /api/peers/{npi}     — Peer group comparison data                  │
+│  GET  /api/fairness        — Flagging rate by geography + specialty       │
+│  GET  /api/graph/{npi}     — Evidence graph nodes + edges from Neo4j      │
+│  GET  /api/health          — Health check for k8s probes                 │
 ├──────────┬──────────┬──────────────────┬────────────────────────────────┤
 │  Signal  │    AI    │  Scoring Engine  │  Data Access Layer             │
 │ Harvester│ Reasoner │                  │                                │
@@ -79,15 +105,48 @@ interfaces:
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Two Interfaces, One Application
+## Three Views, One Application
 
-### Interface 1: Claims Simulator (Main View)
+### View 1: Overview Dashboard (Landing Page)
 
-This is what judges see first. It simulates the real CMS workflow:
+This is what judges see first. Immediate visual impact with aggregate intelligence.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  CMS Provider Intelligence Platform                    [Chat ▸]    │
+│  CMS Provider Intelligence Platform    [🔍 Search NPI/name]  [Chat]│
+├─────────────────────────────────────────────────────────────────────┤
+│  Dashboard  │  Claims Simulator  │  Fairness                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐          │
+│  │  42,186   │ │  1,247    │ │   2,891   │ │   38,048  │          │
+│  │ Providers │ │ High Risk │ │  Review   │ │  Stable   │          │
+│  └───────────┘ └───────────┘ └───────────┘ └───────────┘          │
+│                                                                     │
+│  Risk Heatmap (US States)            Top Flagged Providers          │
+│  ┌─────────────────────────┐        ┌──────────────────────┐       │
+│  │                         │        │ 1. NPI 1234  Risk:93 │       │
+│  │    [US Choropleth Map]  │        │ 2. NPI 5678  Risk:89 │       │
+│  │    Green → Yellow → Red │        │ 3. NPI 9012  Risk:87 │       │
+│  │                         │        │ ...                   │       │
+│  │  Click state to filter  │        │ [View All →]          │       │
+│  └─────────────────────────┘        └──────────────────────┘       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Flow**: Open app → See aggregate stats + heatmap → Click a state or flagged provider
+→ Navigate to Claims Simulator filtered by that selection.
+
+### View 2: Claims Simulator
+
+The core workflow. Simulates CMS payment scanning with full transparency.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  CMS Provider Intelligence Platform    [🔍 Search NPI/name]  [Chat]│
+├─────────────────────────────────────────────────────────────────────┤
+│  Dashboard  │  Claims Simulator  │  Fairness                       │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
 │  Claims Queue                              Provider Detail Panel    │
@@ -105,17 +164,27 @@ This is what judges see first. It simulates the real CMS workflow:
 │                                            │ │ ▼ Revoke  none   │ │
 │                                            │ └──────────────────┘ │
 │                                            │                      │ │
+│                                            │ Peer Comparison:     │ │
+│                                            │ [Bar Chart: vs FL    │ │
+│                                            │  cardiologist avg]   │ │
+│                                            │                      │ │
+│                                            │ Billing Trends:      │ │
+│                                            │ [Line Chart: volume  │ │
+│                                            │  over time vs peers] │ │
+│                                            │                      │ │
 │                                            │ AI Narrative:        │ │
 │                                            │ "This cardiologist   │ │
 │                                            │  bills 4.2x the FL  │ │
 │                                            │  peer average for    │ │
 │                                            │  echocardiograms..." │ │
+│                                            │                      │ │
+│                                            │ [Evidence Graph ▸]   │ │
 │                                            └──────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
 **Flow**: Select a claim → Click "Scan" → Scoring engine runs → Risk score appears
-with full signal breakdown and AI-generated narrative explaining every factor.
+with full signal breakdown, peer comparison, time-series trends, and AI narrative.
 
 ### Interface 2: Chat Sidebar
 
@@ -154,7 +223,42 @@ Slides in from the right. Anyone can ask plain English questions:
 
 **How it works**: User types question → API sends to Claude with DB schema context →
 Claude generates SQL → Executes against PostgreSQL → Claude formats response +
-optional chart spec → Frontend renders Recharts visualization.
+optional chart spec → Frontend renders streamed text + Recharts visualization.
+
+### View 4: Fairness Dashboard
+
+Proves responsible AI compliance. Most teams write a paragraph — we show live metrics.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  CMS Provider Intelligence Platform    [🔍 Search NPI/name]  [Chat]│
+├─────────────────────────────────────────────────────────────────────┤
+│  Dashboard  │  Claims Simulator  │  Fairness                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Fairness Analysis                                                  │
+│                                                                     │
+│  Statistical Parity: ✅ PASS (0.03 difference)                      │
+│  Disparate Impact:   ✅ PASS (0.92 ratio, threshold > 0.80)         │
+│                                                                     │
+│  Flagging Rate by Specialty              Flagging Rate by State     │
+│  ┌────────────────────────┐             ┌────────────────────────┐  │
+│  │ Cardiology     ██████ 8%│             │ FL  ██████ 4.1%       │  │
+│  │ Orthopedics    █████ 6% │             │ TX  █████ 3.8%        │  │
+│  │ Internal Med   ████ 4%  │             │ CA  █████ 3.6%        │  │
+│  │ Family Med     ███ 3%   │             │ NY  ████ 3.2%         │  │
+│  │ Radiology      ███ 3%   │             │ ...                   │  │
+│  └────────────────────────┘             └────────────────────────┘  │
+│                                                                     │
+│  Note: Higher flagging rates for certain specialties reflect known   │
+│  billing pattern variations, not systemic bias. See methodology.    │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**How it works**: Pre-computed fairness metrics from batch analysis. Shows flagging
+rate distribution across geography and specialty cohorts with statistical parity
+and disparate impact measures.
 
 ## Tech Stack
 
@@ -174,6 +278,8 @@ optional chart spec → Frontend renders Recharts visualization.
 | Registry      | Amazon ECR               | AWS-native container image store                       |
 
 ## Data Flow
+
+![Data Pipeline](diagrams/03-data-pipeline.png)
 
 ```
 Phase 1: ETL (one-time, offline)
@@ -197,17 +303,25 @@ Phase 2: Runtime (application)
     → Return: { score, signals[], narrative, provenance[] }
     → Frontend renders risk breakdown
 
-Phase 3: Chat (on-demand)
+Phase 3: Chat (on-demand, streamed)
   User types question in chat sidebar
     → POST /api/chat with message + conversation history
-    → Claude API:
+    → Claude API (via AWS Bedrock):
         1. Receives question + PostgreSQL schema + few-shot examples
         2. Generates SQL query
         3. Backend executes against PostgreSQL
         4. Claude formats natural language answer
         5. Optionally generates Recharts chart specification
-    → Return: { answer, chart_spec?, data? }
-    → Frontend renders text + optional chart
+    → Return: SSE stream with tokens + chart_spec event at end
+    → Frontend renders streamed text + optional chart
+
+Phase 4: Fairness (batch, pre-computed)
+  After ETL:
+    → Group scores by provider_state and provider_type
+    → Compute flagging rate (% above risk threshold) per cohort
+    → Compute statistical parity difference and disparate impact ratio
+    → Store in fairness_metrics table
+    → GET /api/fairness serves pre-computed results
 ```
 
 ## PostgreSQL Schema
@@ -306,6 +420,20 @@ CREATE TABLE peer_baselines (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Fairness metrics (pre-computed during ETL)
+CREATE TABLE fairness_metrics (
+    id SERIAL PRIMARY KEY,
+    cohort_type TEXT,              -- 'state' or 'specialty'
+    cohort_value TEXT,             -- e.g. 'FL' or 'Cardiology'
+    total_providers INT,
+    flagged_providers INT,
+    flagging_rate NUMERIC(6,4),
+    avg_risk_score NUMERIC(6,2),
+    statistical_parity_diff NUMERIC(6,4),
+    disparate_impact_ratio NUMERIC(6,4),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Indexes for common query patterns
 CREATE INDEX idx_cases_npi ON cases(npi);
 CREATE INDEX idx_cases_label ON cases(case_label);
@@ -318,6 +446,8 @@ CREATE INDEX idx_providers_type ON providers(provider_type);
 ```
 
 ## Neo4j Graph Model
+
+![Evidence Graph](diagrams/05-evidence-graph.png)
 
 ```cypher
 // Node types
@@ -345,11 +475,14 @@ cms-fraud-detection/
 │   │   ├── api/                # FastAPI routes
 │   │   │   ├── main.py         # App factory, middleware, lifespan
 │   │   │   ├── routes/
+│   │   │   │   ├── dashboard.py# GET /api/dashboard, /api/dashboard/heatmap
 │   │   │   │   ├── score.py    # POST /api/score
-│   │   │   │   ├── providers.py# GET /api/providers, /api/providers/{npi}
+│   │   │   │   ├── providers.py# GET /api/providers, .../trends
 │   │   │   │   ├── claims.py   # GET /api/claims
-│   │   │   │   ├── chat.py     # POST /api/chat
-│   │   │   │   └── signals.py  # GET /api/signals/{npi}, /api/peers/{npi}
+│   │   │   │   ├── chat.py     # POST /api/chat (SSE streaming)
+│   │   │   │   ├── signals.py  # GET /api/signals/{npi}, /api/peers/{npi}
+│   │   │   │   ├── fairness.py # GET /api/fairness
+│   │   │   │   └── graph.py    # GET /api/graph/{npi}
 │   │   │   └── schemas.py      # Pydantic request/response models
 │   │   ├── scoring/            # Scoring engine
 │   │   │   ├── engine.py       # Risk + legitimacy score computation
@@ -373,10 +506,13 @@ cms-fraud-detection/
 │   │       ├── canonicalize.py # Build provider identity spine
 │   │       ├── signals.py      # Harvest signals from all sources
 │   │       ├── peers.py        # Compute peer baselines
+│   │       ├── fairness.py    # Compute fairness metrics per cohort
+│   │       ├── fixture.py     # Generate small demo dataset (500 providers)
 │   │       └── load.py         # Parquet → PostgreSQL + Neo4j
 │   ├── tests/
 │   │   ├── test_scoring.py
 │   │   ├── test_signals.py
+│   │   ├── test_fairness.py
 │   │   ├── test_api.py
 │   │   └── test_chat.py
 │   ├── pyproject.toml
@@ -385,24 +521,37 @@ cms-fraud-detection/
 │       └── versions/
 ├── frontend/                   # Next.js 15 application
 │   ├── app/
-│   │   ├── layout.tsx          # Root layout
-│   │   ├── page.tsx            # Claims simulator (main view)
+│   │   ├── layout.tsx          # Root layout + nav + search bar
+│   │   ├── page.tsx            # Overview dashboard (landing page)
+│   │   ├── claims/
+│   │   │   └── page.tsx        # Claims simulator view
+│   │   ├── fairness/
+│   │   │   └── page.tsx        # Fairness dashboard view
 │   │   ├── providers/
 │   │   │   └── [npi]/
 │   │   │       └── page.tsx    # Provider detail page
 │   │   └── api/                # BFF routes (optional proxy)
 │   ├── components/
 │   │   ├── ui/                 # shadcn/ui components
+│   │   ├── dashboard/
+│   │   │   ├── stats-cards.tsx # Aggregate stat cards
+│   │   │   ├── risk-heatmap.tsx# US choropleth map
+│   │   │   └── top-flagged.tsx # Top flagged providers list
 │   │   ├── claims-table.tsx
 │   │   ├── provider-detail.tsx
+│   │   ├── provider-search.tsx # Autocomplete search bar
 │   │   ├── signal-card.tsx
 │   │   ├── risk-gauge.tsx
 │   │   ├── peer-chart.tsx
+│   │   ├── trend-chart.tsx     # Time-series billing trends
+│   │   ├── fairness-charts.tsx # Flagging rate bar charts
+│   │   ├── evidence-graph.tsx  # Node-link graph visualization
 │   │   ├── chat-sidebar.tsx
 │   │   └── chart-renderer.tsx
 │   ├── hooks/
 │   │   ├── use-score.ts
-│   │   ├── use-chat.ts
+│   │   ├── use-chat.ts        # Handles SSE streaming
+│   │   ├── use-dashboard.ts
 │   │   └── use-providers.ts
 │   ├── lib/
 │   │   ├── api.ts              # API client (fetch wrapper)
@@ -432,12 +581,15 @@ cms-fraud-detection/
 │       ├── ci.yaml             # Lint, test, build, coverage
 │       └── cd.yaml             # Build images, push to registry
 ├── docker-compose.yml          # Local dev: backend + frontend + pg + neo4j
+├── .env.example                # Documented environment variable template
 ├── docs/
 ├── data/                       # gitignored — raw and processed data
 └── README.md
 ```
 
 ## Deployment Architecture
+
+![Deployment Architecture](diagrams/02-deployment-architecture.png)
 
 ```
 Local Development:
@@ -561,6 +713,7 @@ PostgreSQL database and Neo4j graph, ready for the application to query.
 6. Bulk load Parquet into PostgreSQL
 7. Project graph into Neo4j
 8. Write ETL integration test
+9. Create demo data fixture (500 providers, 5K cases for fast dev/demo)
 
 ---
 
@@ -581,6 +734,8 @@ breakdown and source provenance.
 - [ ] Scoring works for providers already in the database (lookup) and new patterns
       (compute against peer baselines on the fly)
 - [ ] Scoring engine has >90% test coverage
+- [ ] Fairness metrics computed: flagging rate by state and specialty cohorts
+- [ ] Statistical parity and disparate impact measures pass thresholds
 
 **Stories**:
 
@@ -590,7 +745,8 @@ breakdown and source provenance.
 4. Implement legitimacy score computation
 5. Implement case labeling logic (high_risk / review / stable)
 6. Implement on-the-fly scoring for new claim patterns
-7. Write comprehensive scoring tests with known expected outputs
+7. Implement fairness analysis across geography and specialty
+8. Write comprehensive scoring tests with known expected outputs
 
 ---
 
@@ -635,6 +791,7 @@ knowing SQL.
 - [ ] SQL injection prevention: generated SQL is validated before execution
 - [ ] Fallback: if AI generates invalid SQL, returns helpful error, not a crash
 - [ ] Response latency < 5s for typical queries
+- [ ] Chat responses stream via SSE (token-by-token delivery)
 
 **Stories**:
 
@@ -644,8 +801,9 @@ knowing SQL.
 4. Implement narrative generator for risk score explanations
 5. Implement chat endpoint with conversation history
 6. Build chart specification generator (AI → Recharts config)
-7. Write test suite with 20+ representative questions
-8. Add SQL injection guards and query complexity limits
+7. Implement streaming chat responses (SSE via Bedrock streaming API)
+8. Write test suite with 20+ representative questions
+9. Add SQL injection guards and query complexity limits
 
 ---
 
@@ -668,45 +826,61 @@ capabilities. Production-ready with proper error handling, CORS, health checks.
 **Stories**:
 
 1. FastAPI app factory with middleware and lifespan
-2. Implement `/api/providers` and `/api/providers/{npi}` routes
-3. Implement `/api/claims` route with pagination and filtering
-4. Implement `/api/score` route (scoring engine integration)
-5. Implement `/api/chat` route (AI layer integration)
-6. Implement `/api/signals/{npi}` and `/api/peers/{npi}` routes
-7. Add Pydantic schemas and response models
-8. Add health check, CORS, error handling middleware
+2. Implement `/api/dashboard` and `/api/dashboard/heatmap` routes
+3. Implement `/api/providers` and `/api/providers/{npi}` routes (with ?q= search)
+4. Implement `/api/providers/{npi}/trends` route
+5. Implement `/api/claims` route with pagination and filtering
+6. Implement `/api/score` route (scoring engine integration)
+7. Implement `/api/chat` route with SSE streaming (AI layer integration)
+8. Implement `/api/signals/{npi}` and `/api/peers/{npi}` routes
+9. Implement `/api/fairness` route
+10. Implement `/api/graph/{npi}` route (Neo4j traversal)
+11. Add Pydantic schemas and response models
+12. Add health check, CORS, error handling middleware
 
 ---
 
-## Epic 6: Claims Simulator UI
+## Epic 6: Frontend — Dashboard, Claims Simulator, Fairness
 
-**Goal**: React frontend that shows a claims queue, lets judges select and scan
-claims through the scoring engine, and displays full risk breakdowns with
-signal cards and peer comparison charts.
+**Goal**: Next.js frontend with three views: (1) overview dashboard with risk heatmap,
+(2) claims simulator with scoring and transparency, (3) fairness dashboard proving
+responsible AI. Provider search available from every view.
 
 **Acceptance Criteria**:
 
+- [ ] Overview dashboard as landing page with stat cards and risk heatmap
+- [ ] US choropleth heatmap colored by average risk score per state
+- [ ] Top flagged providers list on dashboard
+- [ ] Provider search with autocomplete (NPI, name, specialty)
 - [ ] Claims data table with sortable columns (NPI, HCPCS, risk score, band)
 - [ ] Click a row → Provider detail panel slides in
 - [ ] "Scan" button pushes claim through scoring engine, shows result
 - [ ] Risk gauge component (0-100 with color bands)
 - [ ] Signal cards showing risk and legitimacy factors
 - [ ] Peer comparison chart (provider vs peer average)
+- [ ] Time-series billing trend chart (provider vs peer over time)
+- [ ] Evidence graph visualization (expandable, P2)
 - [ ] AI narrative displayed in the detail panel
+- [ ] Fairness dashboard with flagging rates by specialty and state
+- [ ] Statistical parity and disparate impact pass/fail badges
 - [ ] Responsive layout, works on desktop and tablet
 - [ ] Loading states and error handling
 
 **Stories**:
 
 1. Scaffold Next.js 15 + TypeScript + shadcn/ui project
-2. Build API client and TypeScript types
-3. Build claims data table component
-4. Build provider detail panel with signal cards
-5. Build risk gauge component
-6. Build peer comparison chart (Recharts)
-7. Integrate scoring engine — "Scan" button flow
-8. Build responsive layout with slide-in detail panel
-9. Add loading states, error boundaries, empty states
+2. Build overview dashboard page (stat cards, top flagged list)
+3. Build risk heatmap component (US choropleth map)
+4. Build provider search with autocomplete
+5. Build claims data table component
+6. Build provider detail panel with signal cards
+7. Build risk gauge component
+8. Build peer comparison chart (Recharts)
+9. Build time-series trend chart
+10. Integrate scoring engine — "Scan" button flow
+11. Build fairness dashboard view (flagging rate charts + metrics)
+12. Build evidence graph visualization (P2 — if time permits)
+13. Add loading states, error boundaries, empty states
 
 ---
 
@@ -725,17 +899,18 @@ and get answers with optional charts. No SQL knowledge needed.
 - [ ] Conversation history maintained during session
 - [ ] Suggested questions shown when chat is empty
 - [ ] Loading indicator while AI is processing
+- [ ] Streaming responses — tokens render as they arrive (SSE)
+- [ ] Markdown rendering in AI responses
 
 **Stories**:
 
 1. Build chat sidebar shell (slide in/out, responsive)
-2. Build message list component (user + AI messages)
+2. Build message list component (user + AI messages with markdown)
 3. Build text input with send action
-4. Integrate with `/api/chat` endpoint
+4. Integrate with `/api/chat` endpoint (SSE streaming)
 5. Build chart renderer for AI-generated chart specs
 6. Build data table renderer for query results
 7. Add suggested questions component
-8. Add streaming response support (SSE or chunked)
 
 ---
 
@@ -757,14 +932,16 @@ CI, ArgoCD for CD to EKS.
 
 **Stories**:
 
-1. Create GitHub Actions CI workflow (backend)
-2. Create GitHub Actions CI workflow (frontend)
-3. Create GitHub Actions CD workflow (build + push images)
-4. Write Dockerfiles for backend and frontend (multi-stage)
-5. Create Kustomize base manifests (deployments, services, ingress)
-6. Create Kustomize overlays (dev, prod)
-7. Create ArgoCD Application manifest
-8. Configure GitHub branch protection and Copilot review
+1. Scaffold monorepo with docker-compose.yml
+2. Create .env.example with documented variables
+3. Create GitHub Actions CI workflow (backend)
+4. Create GitHub Actions CI workflow (frontend)
+5. Create GitHub Actions CD workflow (build + push images)
+6. Write Dockerfiles for backend and frontend (multi-stage)
+7. Create Kustomize base manifests (deployments, services, ingress)
+8. Create Kustomize overlays (dev, prod)
+9. Create ArgoCD Application manifest
+10. Configure GitHub branch protection and PR template
 
 ---
 
@@ -781,34 +958,38 @@ CI, ArgoCD for CD to EKS.
 - [ ] AI tool usage disclosure
 - [ ] Open-source library disclosure
 - [ ] README with quickstart (docker-compose up)
-- [ ] End-to-end demo script for judges
+- [ ] End-to-end demo script, timed and rehearsed
+- [ ] Judge access to private repo configured
 
 **Stories**:
 
 1. Generate architecture diagram
 2. Write risk-scoring methodology document
-3. Write responsible AI considerations
-4. Draft "Path to CMS Pilot" briefing
+3. Write responsible AI considerations (references fairness metrics)
+4. Draft "Path to CMS Pilot" 5-minute briefing
 5. Create AI tool usage and open-source disclosures
 6. Update README with final quickstart
-7. Write demo script with talking points
+7. Write demo script (5-7 min) and rehearse on deployed system
+8. Set up judge access to private repo
 
 ---
 
 ## Epic Execution Order
 
 ```
-Epic 1: Data Foundation         ━━━━━━━━━━ (Days 1-3)
-Epic 2: Scoring Engine          ━━━━━━━━ (Days 2-4, overlaps with E1)
-Epic 3: Evidence Graph          ━━━━━━ (Days 3-5)
-Epic 4: AI Reasoning Layer      ━━━━━━━━ (Days 4-6)
-Epic 5: API Layer               ━━━━━━━━ (Days 4-7, parallel with E4)
-Epic 6: Claims Simulator UI     ━━━━━━━━━━ (Days 5-9)
-Epic 7: Chat Sidebar            ━━━━━━━━ (Days 7-9, after E6 shell exists)
 Epic 8: CI/CD Pipeline          ━━━━ (Days 1-2, then maintenance)
-Epic 9: Docs & Deliverables     ━━━━━━ (Days 9-11)
+Epic 1: Data Foundation         ━━━━━━━━━━ (Days 1-3)
+Epic 2: Scoring Engine          ━━━━━━━━━━ (Days 2-4, overlaps with E1)
+Epic 3: Evidence Graph          ━━━━━━ (Days 3-5)
+Epic 4: AI Reasoning Layer      ━━━━━━━━ (Days 4-7)
+Epic 5: API Layer               ━━━━━━━━━━ (Days 4-8, parallel with E4)
+Epic 6: Frontend (all views)    ━━━━━━━━━━━━ (Days 5-10)
+Epic 7: Chat Sidebar            ━━━━━━━━ (Days 8-10, after E6 shell exists)
+Epic 9: Docs & Deliverables     ━━━━━━ (Days 10-12)
+         Demo rehearsal          ━━━━ (Days 12-13)
 ```
 
-**Critical path**: E1 → E2 → E5 → E6 (data → scoring → API → UI)
+**Critical path**: E8 → E1 → E2 → E5 → E6 (infra → data → scoring → API → UI)
 **Parallel track**: E3 + E4 can build alongside E2 and E5
 **Start early**: E8 (CI/CD) should be first so all subsequent work flows through it
+**End strong**: Demo script and rehearsal are the last and highest-leverage activities
