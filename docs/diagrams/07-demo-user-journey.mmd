@@ -1,0 +1,35 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e2e8f0', 'primaryTextColor': '#1e293b', 'primaryBorderColor': '#94a3b8', 'lineColor': '#64748b', 'secondaryColor': '#f1f5f9', 'tertiaryColor': '#f8fafc', 'fontFamily': 'Inter, system-ui, sans-serif'}}}%%
+
+graph TB
+    subgraph S1["1. The Hook — 30s"]
+        OPEN["Open App"] --> DASH["Dashboard<br/><i>42K providers loaded<br/>1,247 flagged high-risk</i>"]
+    end
+
+    subgraph S2["2. Geographic View — 45s"]
+        HEAT["Risk Heatmap<br/><i>US choropleth<br/>colored by state risk</i>"] --> CLICK_STATE["Click Florida<br/><i>Filter to FL providers</i>"]
+    end
+
+    subgraph S3["3. Deep Dive — 90s"]
+        CLAIMS["Claims Table<br/><i>FL providers<br/>sorted by risk</i>"] --> SELECT["Select High-Risk<br/>Provider"]
+        SELECT --> SCAN["Click Scan<br/><i>Real-time scoring</i>"]
+        SCAN --> DETAIL["Provider Detail<br/><i>Risk: 83 / Legit: 31</i>"]
+        DETAIL --> PEERS["Peer Comparison<br/><i>Bar chart vs FL<br/>cardiologists</i>"]
+        DETAIL --> TRENDS["Billing Trends<br/><i>Time-series vs<br/>peer baseline</i>"]
+    end
+
+    subgraph S4["4. AI Intelligence — 60s"]
+        CHAT_OPEN["Open Chat Sidebar"] --> ASK["Ask: What is the avg<br/>charge for 93306 in FL?"]
+        ASK --> STREAM["Streamed Response<br/><i>+ Bar Chart rendered</i>"]
+        STREAM --> FOLLOW["Follow-up:<br/>Compare this to TX"]
+    end
+
+    subgraph S5["5. Responsible AI — 45s"]
+        FAIR["Fairness Dashboard<br/><i>Flagging rate by<br/>specialty + state</i>"] --> METRICS["Statistical Parity: PASS<br/>Disparate Impact: 0.92"]
+        METRICS --> DUAL["Explain Dual Scoring<br/><i>Risk signals +<br/>Legitimacy signals</i>"]
+    end
+
+    subgraph S6["6. Path to Pilot — 60s"]
+        ARCH["Architecture Slide<br/><i>EKS + ArgoCD pipeline</i>"] --> PILOT["Pilot Roadmap<br/><i>MVP → Pilot → Prod</i>"]
+    end
+
+    S1 --> S2 --> S3 --> S4 --> S5 --> S6

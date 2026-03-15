@@ -1,0 +1,53 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e2e8f0', 'primaryTextColor': '#1e293b', 'primaryBorderColor': '#94a3b8', 'lineColor': '#64748b', 'secondaryColor': '#f1f5f9', 'tertiaryColor': '#f8fafc', 'fontFamily': 'Inter, system-ui, sans-serif'}}}%%
+
+graph TB
+    INPUT["Claim Input<br/><i>NPI + HCPCS + Place of Service<br/>+ Charge + Volume</i>"]
+
+    subgraph Lookup["1. Provider Lookup"]
+        PROFILE["Fetch Provider Profile<br/><i>PostgreSQL: providers table</i>"]
+        BASELINE["Fetch Peer Baselines<br/><i>specialty x state x HCPCS</i>"]
+    end
+
+    subgraph Signals["2. Signal Extraction"]
+        direction TB
+        subgraph Risk["Risk Signals"]
+            VOL["Volume Outlier<br/><i>z-score > 2.0</i>"]
+            CHARGE["Charge Anomaly<br/><i>submitted/allowed ratio</i>"]
+            INTENSITY["Service Intensity<br/><i>services per bene</i>"]
+            ENROLL_GAP["Enrollment Gap<br/><i>Not in enrollment file</i>"]
+            REVOKED["Revocation Flag<br/><i>OIG exclusion match</i>"]
+        end
+        subgraph Legit["Legitimacy Signals"]
+            PARTIC["Medicare Participating<br/><i>Accepts assignment</i>"]
+            LOW_VOL["Low Volume<br/><i>Below outlier threshold</i>"]
+            CLEAN["Clean Record<br/><i>No revocations</i>"]
+            ENROLLED["Active Enrollment<br/><i>Present in file</i>"]
+        end
+    end
+
+    subgraph Compute["3. Score Computation"]
+        ZSCORE["Compute Z-Scores<br/><i>Provider vs Peer Group</i>"]
+        RISK_SCORE["Risk Score<br/><i>0-100, weighted sum<br/>of risk signal points</i>"]
+        LEGIT_SCORE["Legitimacy Score<br/><i>0-100, weighted sum<br/>of legit signal points</i>"]
+        LABEL["Case Label<br/><i>high_risk / review / stable</i>"]
+    end
+
+    subgraph Output["4. Enrichment"]
+        NARRATIVE["AI Narrative<br/><i>AWS Bedrock: Claude<br/>Structured signals →<br/>human-readable brief</i>"]
+        PROVENANCE["Source Provenance<br/><i>Which table, column,<br/>and value drove<br/>each signal</i>"]
+    end
+
+    RESULT["ScoreResult<br/><i>risk_score, legitimacy_score,<br/>case_label, signals[],<br/>narrative, provenance[]</i>"]
+
+    INPUT --> Lookup
+    PROFILE --> Signals
+    BASELINE --> Signals
+    Signals --> ZSCORE
+    ZSCORE --> RISK_SCORE
+    ZSCORE --> LEGIT_SCORE
+    RISK_SCORE --> LABEL
+    LEGIT_SCORE --> LABEL
+    LABEL --> NARRATIVE
+    LABEL --> PROVENANCE
+    NARRATIVE --> RESULT
+    PROVENANCE --> RESULT

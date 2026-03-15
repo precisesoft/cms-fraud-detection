@@ -1,0 +1,46 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e2e8f0', 'primaryTextColor': '#1e293b', 'primaryBorderColor': '#94a3b8', 'lineColor': '#64748b', 'secondaryColor': '#f1f5f9', 'tertiaryColor': '#f8fafc', 'fontFamily': 'Inter, system-ui, sans-serif'}}}%%
+
+graph TB
+    subgraph Input["Scoring Output"]
+        ALL["All Scored Providers<br/><i>~42K providers with<br/>risk + legitimacy scores</i>"]
+    end
+
+    subgraph Cohorts["Cohort Grouping"]
+        direction LR
+        GEO["Group by State<br/><i>50 states + DC</i>"]
+        SPEC["Group by Specialty<br/><i>~100 provider types</i>"]
+    end
+
+    subgraph Metrics["Fairness Metrics per Cohort"]
+        direction TB
+        FLAG["Flagging Rate<br/><i>% providers with<br/>risk_score ≥ 70</i>"]
+        AVG["Average Risk Score<br/><i>Mean score per cohort</i>"]
+        COUNT["Provider Count<br/><i>Total in cohort</i>"]
+    end
+
+    subgraph Tests["Statistical Tests"]
+        direction LR
+        SP["Statistical Parity<br/><i>max(flagging_rate) -<br/>min(flagging_rate)</i><br/>PASS if < 0.10"]
+        DI["Disparate Impact<br/><i>min(flagging_rate) /<br/>max(flagging_rate)</i><br/>PASS if > 0.80"]
+        OUTLIER["Cohort Outlier Check<br/><i>Flag if any cohort<br/>> 2σ above mean</i>"]
+    end
+
+    subgraph Output["Outputs"]
+        direction LR
+        TABLE["fairness_metrics Table<br/><i>PostgreSQL: pre-computed<br/>per cohort results</i>"]
+        API_OUT["GET /api/fairness<br/><i>Serves to frontend</i>"]
+        DOC["Responsible AI Doc<br/><i>References live metrics<br/>not just prose</i>"]
+    end
+
+    subgraph UI["Fairness Dashboard"]
+        BAR1["Bar Chart<br/><i>Flagging rate by<br/>top 15 specialties</i>"]
+        BAR2["Bar Chart<br/><i>Flagging rate by<br/>top 20 states</i>"]
+        BADGE["Pass/Fail Badges<br/><i>Statistical Parity: PASS<br/>Disparate Impact: PASS</i>"]
+    end
+
+    ALL --> Cohorts
+    GEO --> Metrics
+    SPEC --> Metrics
+    Metrics --> Tests
+    Tests --> Output
+    API_OUT --> UI

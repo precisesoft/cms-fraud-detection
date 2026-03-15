@@ -1,0 +1,61 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e2e8f0', 'primaryTextColor': '#1e293b', 'primaryBorderColor': '#94a3b8', 'lineColor': '#64748b', 'secondaryColor': '#f1f5f9', 'tertiaryColor': '#f8fafc', 'fontFamily': 'Inter, system-ui, sans-serif'}}}%%
+
+graph TB
+    subgraph Frontend["Frontend — Next.js 15 + TypeScript + shadcn/ui"]
+        direction LR
+        DASH["Dashboard<br/><i>Overview + Heatmap</i>"]
+        CLAIMS["Claims Simulator<br/><i>Score + Signals + Drill-down</i>"]
+        FAIR_UI["Fairness Dashboard<br/><i>Cohort Analysis</i>"]
+        CHAT_UI["Chat Sidebar<br/><i>NL Questions + Charts</i>"]
+        SEARCH["Provider Search<br/><i>Autocomplete</i>"]
+    end
+
+    subgraph API["API Layer — FastAPI"]
+        direction LR
+        DASH_API["/api/dashboard<br/>/api/dashboard/heatmap"]
+        SCORE_API["/api/score"]
+        PROV_API["/api/providers<br/>/api/providers/{npi}<br/>/api/providers/{npi}/trends"]
+        CLAIMS_API["/api/claims"]
+        CHAT_API["/api/chat<br/><i>SSE Streaming</i>"]
+        SIG_API["/api/signals/{npi}<br/>/api/peers/{npi}"]
+        FAIR_API["/api/fairness"]
+        GRAPH_API["/api/graph/{npi}"]
+    end
+
+    subgraph Engine["Core Engine"]
+        direction LR
+        HARVEST["Signal<br/>Harvester"]
+        SCORING["Scoring<br/>Engine<br/><i>Risk + Legitimacy</i>"]
+        AI["AI Reasoner<br/><i>AWS Bedrock<br/>Claude Sonnet</i>"]
+        FAIRNESS["Fairness<br/>Analyzer"]
+    end
+
+    subgraph Data["Data Layer"]
+        direction LR
+        PG[("PostgreSQL 16<br/><i>Providers, Cases,<br/>Signals, Baselines,<br/>Fairness Metrics</i>")]
+        NEO[("Neo4j 5<br/><i>Evidence Graph<br/>Provider → Case →<br/>Signal → Source</i>")]
+        DUCK[("DuckDB<br/><i>ETL Only<br/>Not Runtime</i>")]
+    end
+
+    Frontend --> API
+    DASH --> DASH_API
+    CLAIMS --> SCORE_API
+    CLAIMS --> PROV_API
+    CLAIMS --> CLAIMS_API
+    CHAT_UI --> CHAT_API
+    FAIR_UI --> FAIR_API
+    SEARCH --> PROV_API
+
+    SCORE_API --> SCORING
+    CHAT_API --> AI
+    DASH_API --> PG
+    FAIR_API --> FAIRNESS
+    GRAPH_API --> NEO
+
+    SCORING --> PG
+    HARVEST --> PG
+    AI --> PG
+    FAIRNESS --> PG
+    SCORING --> NEO
+    SIG_API --> PG
+    SIG_API --> NEO

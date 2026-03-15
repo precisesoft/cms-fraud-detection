@@ -1,0 +1,37 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e2e8f0', 'primaryTextColor': '#1e293b', 'primaryBorderColor': '#94a3b8', 'lineColor': '#64748b', 'secondaryColor': '#f1f5f9', 'tertiaryColor': '#f8fafc', 'fontFamily': 'Inter, system-ui, sans-serif'}}}%%
+
+graph LR
+    subgraph Sources["Public CMS Data Sources — 19GB"]
+        direction TB
+        PARTB["Medicare Part B<br/>Provider Utilization<br/><i>~1.1M providers</i>"]
+        PARTB_SVC["Medicare Part B<br/>Provider-Service<br/><i>~10M rows</i>"]
+        ENROLL["Medicare<br/>Enrollment<br/><i>Provider status</i>"]
+        REVOKE["OIG Exclusion /<br/>Revocation List<br/><i>Labeled fraud</i>"]
+        NPPES["NPPES Registry<br/><i>Provider metadata</i>"]
+        OPENPAY["Open Payments<br/><i>Industry transfers</i>"]
+    end
+
+    subgraph ETL["ETL Pipeline — DuckDB + Polars"]
+        direction TB
+        INGEST["1. Ingest<br/><i>Raw CSV → DuckDB<br/>Profile + Validate</i>"]
+        SPINE["2. Identity Spine<br/><i>Join on NPI<br/>Deduplicate</i>"]
+        PEERS["3. Peer Baselines<br/><i>Group by specialty<br/>× state × HCPCS</i>"]
+        SIGNALS["4. Signal Harvest<br/><i>Z-scores, flags,<br/>cross-source checks</i>"]
+        SCORE["5. Score<br/><i>Risk + Legitimacy<br/>Deterministic formula</i>"]
+        FAIR["6. Fairness<br/><i>Cohort flagging rates<br/>Statistical parity</i>"]
+        PARQUET["Canonical<br/>Parquet Files"]
+
+        INGEST --> SPINE --> PEERS --> SIGNALS --> SCORE --> FAIR
+        INGEST --> PARQUET
+    end
+
+    subgraph Load["Data Stores — Runtime"]
+        direction TB
+        PG[("PostgreSQL 16<br/><i>providers, cases,<br/>signals, peer_baselines,<br/>fairness_metrics</i>")]
+        NEO[("Neo4j 5<br/><i>Evidence Graph<br/>5 node types<br/>6 relationship types</i>")]
+    end
+
+    Sources --> INGEST
+    PARQUET --> PG
+    PARQUET --> NEO
+    FAIR --> PG
