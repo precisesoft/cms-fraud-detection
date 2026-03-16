@@ -9,7 +9,7 @@ description = "Proactive CMS provider fraud detection with explainable AI"
 requires-python = ">=3.12"
 dependencies = [
     "polars>=1.0",
-    "duckdb>=1.0",
+    "psycopg[binary]>=3.2",
     "scikit-learn>=1.5",
     "xgboost>=2.0",
     "shap>=0.45",
@@ -29,6 +29,9 @@ dev = [
 ]
 gpu = [
     "torch>=2.4",
+]
+etl = [
+    "duckdb>=1.0",
 ]
 
 [tool.ruff]
