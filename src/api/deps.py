@@ -1,0 +1,36 @@
+"""Database connection pool and FastAPI dependencies."""
+
+from __future__ import annotations
+
+import os
+
+from psycopg_pool import AsyncConnectionPool
+
+FORGE_HOST = "172.16.0.191"
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    f"postgresql://cms:cms_local_dev@{FORGE_HOST}:30432/cms_fraud",
+)
+
+pool: AsyncConnectionPool | None = None
+
+
+async def open_pool() -> AsyncConnectionPool:
+    global pool
+    pool = AsyncConnectionPool(conninfo=DATABASE_URL, min_size=2, max_size=10, open=False)
+    await pool.open()
+    await pool.wait()
+    return pool
+
+
+async def close_pool() -> None:
+    global pool
+    if pool:
+        await pool.close()
+        pool = None
+
+
+async def get_db():
+    """FastAPI dependency — yields an async connection from the pool."""
+    async with pool.connection() as conn:
+        yield conn
