@@ -35,19 +35,16 @@ def load_service_cases(conn: psycopg.Connection, csv_path: Path = DEMO_CSV) -> i
     conn.execute("TRUNCATE provider_service_cases")
 
     with open(csv_path) as f:
-        reader = csv.reader(f)
-        header = next(reader)
-
-        # Build COPY command from CSV header
-        cols = ", ".join(header)
+        header_line = f.readline().strip()
+        cols = ", ".join(header_line.split(","))
         copy_sql = f"COPY provider_service_cases ({cols}) FROM STDIN WITH (FORMAT CSV)"
 
-        # Stream rows via COPY
         with conn.cursor().copy(copy_sql) as copy:
-            for row in reader:
-                # Replace empty strings with None for proper NULL handling
-                cleaned = "\t".join(v if v else "\\N" for v in row)
-                copy.write(cleaned + "\n")
+            while True:
+                chunk = f.read(65536)
+                if not chunk:
+                    break
+                copy.write(chunk)
 
     conn.commit()
     count = conn.execute("SELECT COUNT(*) FROM provider_service_cases").fetchone()[0]
