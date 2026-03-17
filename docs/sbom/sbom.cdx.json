@@ -465,7 +465,7 @@
       "version": "7.2.2"
     },
     {
-      "bom-ref": "cyclonedx-python-lib==11.6.0",
+      "bom-ref": "cyclonedx-python-lib==11.7.0",
       "description": "Python library for CycloneDX",
       "externalReferences": [
         {
@@ -520,9 +520,9 @@
           "value": "validation"
         }
       ],
-      "purl": "pkg:pypi/cyclonedx-python-lib@11.6.0",
+      "purl": "pkg:pypi/cyclonedx-python-lib@11.7.0",
       "type": "library",
-      "version": "11.6.0"
+      "version": "11.7.0"
     },
     {
       "bom-ref": "defusedxml==0.7.1",
@@ -2713,7 +2713,7 @@
     {
       "dependsOn": [
         "chardet==5.2.0",
-        "cyclonedx-python-lib==11.6.0",
+        "cyclonedx-python-lib==11.7.0",
         "packageurl-python==0.17.6",
         "packaging==26.0",
         "pip-requirements-parser==32.0.1"
@@ -2731,7 +2731,7 @@
         "sortedcontainers==2.4.0",
         "typing_extensions==4.15.0"
       ],
-      "ref": "cyclonedx-python-lib==11.6.0"
+      "ref": "cyclonedx-python-lib==11.7.0"
     },
     {
       "ref": "defusedxml==0.7.1"
@@ -3219,7 +3219,7 @@
           ],
           "name": "cyclonedx-python-lib",
           "type": "library",
-          "version": "11.6.0"
+          "version": "11.7.0"
         }
       ]
     }
