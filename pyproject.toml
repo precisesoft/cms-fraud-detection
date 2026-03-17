@@ -33,6 +33,7 @@ dev = [
     "pip-audit>=2.7",
     "bandit>=1.7",
     "mypy>=1.11",
+    "cyclonedx-bom>=4.0",
 ]
 gpu = [
     "torch>=2.4",
