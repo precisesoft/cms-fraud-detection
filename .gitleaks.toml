@@ -1,0 +1,15 @@
+# gitleaks configuration
+# https://github.com/gitleaks/gitleaks
+
+title = "cms-fraud-detection gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Dev-only defaults and internal infrastructure (not production secrets)"
+regexTarget = "line"
+regexes = [
+  '''cms_local_dev''',   # dev-only database password in deps.py and load_postgres.py
+  '''172\.16\.0\.191''', # internal LAN IP for forge k3s cluster
+]
