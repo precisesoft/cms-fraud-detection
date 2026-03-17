@@ -15,7 +15,7 @@ Follow CONTRIBUTING.md for all code changes. Key rules:
 4. **Conventional commits:** `type(scope): description (#N)`
 5. **PR must include** `Closes #N` in body.
 6. **Self-validate (BASSPC) before presenting PR** — never skip this.
-7. **After merge:** verify issue closed, update parent epic, `git checkout main && git pull`.
+7. **After merge:** verify issue closed, comment PR# on issue, update parent epic (mark CLOSED with PR#), remove `in-progress` label, `git checkout main && git pull`.
 8. **Watch CI in background** — don't flood context with `gh run watch` output.
 
 ## Project Overview
@@ -49,6 +49,8 @@ Proactive CMS provider fraud detection with explainable AI. Identifies anomalous
 | `ci.yml`       | lint (ruff), typecheck (mypy), test (pytest + coverage) |
 | `secrets.yml`  | gitleaks secrets scan                                   |
 | `security.yml` | pip-audit (CVEs), bandit (SAST)                         |
+| `pr-title.yml` | conventional commit format check                        |
+| `sbom.yml`     | CycloneDX SBOM (push to main only)                      |
 
 ## Conventions
 

@@ -113,6 +113,7 @@ These checks run automatically on every PR:
 | CI       | Lint (ruff), Type check (mypy), Test (pytest + coverage) | Yes           |
 | Secrets  | gitleaks scan                                            | Yes           |
 | Security | pip-audit (dependency CVEs), bandit (SAST)               | Yes           |
+| PR Title | Conventional commit format check                         | Yes           |
 
 All checks must be green before merge.
 
@@ -132,7 +133,9 @@ All checks must be green before merge.
 After merge:
 
 - Verify the issue was auto-closed
-- Update the parent epic checklist if applicable
+- Comment on the issue with the PR number (e.g., `Resolved in PR #N`)
+- Update the parent epic checklist: mark issue as CLOSED with PR number
+- Remove `in-progress` label from the issue
 - `git checkout main && git pull`
 
 ## What NOT to Do
