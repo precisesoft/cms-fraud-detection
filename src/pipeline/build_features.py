@@ -219,7 +219,7 @@ def main() -> None:
     print(f"  Unique NPIs: {df['npi'].n_unique()}")
     print(f"  Revoked providers: {df.filter(pl.col('revoked_2026') == 1).shape[0]}")
     print(f"  High-risk lines > 0: {df.filter(pl.col('n_high_risk_lines') > 0).shape[0]}")
-    print(f"  Mean service_hhi: {df['service_hhi'].mean():.4f}")
+    print(f"  Mean service_hhi: {df['service_hhi'].mean()!r}")
     print("  Null counts:")
     for col in df.columns:
         null_count = df[col].null_count()

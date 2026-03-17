@@ -433,7 +433,8 @@ def build_demo_case_csv() -> Path:
         ORDER BY 1
         """
     ).fetchall()
-    total_rows = con.execute("SELECT COUNT(*) FROM demo_case_export").fetchone()[0]
+    row = con.execute("SELECT COUNT(*) FROM demo_case_export").fetchone()
+    total_rows = row[0] if row else 0
 
     print(f"Created {output_csv}")
     print(f"Total rows: {total_rows}")

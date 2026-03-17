@@ -32,6 +32,7 @@ dev = [
     "ruff>=0.6",
     "pip-audit>=2.7",
     "bandit>=1.7",
+    "mypy>=1.11",
 ]
 gpu = [
     "torch>=2.4",
@@ -51,6 +52,17 @@ select = ["E", "F", "I", "N", "W", "UP"]
 "src/data/build_demo_case_csv.py" = ["E501"]  # embedded SQL strings
 "src/data/load_postgres.py" = ["E501"]  # formatted output strings
 "tests/test_build_features.py" = ["E501"]  # embedded CSV test data
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+check_untyped_defs = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
 
 [tool.bandit]
 exclude_dirs = ["tests", ".venv"]
