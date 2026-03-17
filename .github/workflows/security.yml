@@ -22,7 +22,7 @@ jobs:
         run: pip install -e ".[dev]"
 
       - name: Run pip-audit
-        run: pip install pip-audit && pip-audit --skip-editable --desc
+        run: pip-audit --skip-editable --desc
 
   sast:
     name: SAST (bandit)
@@ -33,12 +33,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
 
-      - name: Install bandit
-        run: pip install bandit
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
 
       - name: Run bandit
-        run: bandit -r src/ -c pyproject.toml --severity-level high -f json -o bandit-report.json || true
+        run: bandit -r src/ -c pyproject.toml -f json -o bandit-report.json || true
 
       - name: Check for HIGH severity findings
         run: |
