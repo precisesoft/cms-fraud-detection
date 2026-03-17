@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import io
 from pathlib import Path
 
 import polars as pl
@@ -19,7 +18,13 @@ from src.pipeline.build_features import (
     read_demo_csv,
 )
 
-DEMO_CSV = Path(__file__).resolve().parents[1] / "data" / "processed" / "demo" / "provider_service_cases_demo.csv"
+DEMO_CSV = (
+    Path(__file__).resolve().parents[1]
+    / "data"
+    / "processed"
+    / "demo"
+    / "provider_service_cases_demo.csv"
+)
 
 # Minimal synthetic CSV for unit tests
 SYNTHETIC_CSV = """\

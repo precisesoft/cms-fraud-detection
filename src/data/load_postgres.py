@@ -6,10 +6,8 @@ then bulk-loads them into the cms_fraud database using COPY.
 
 from __future__ import annotations
 
-import csv
 import io
 import os
-import sys
 from pathlib import Path
 
 import psycopg
@@ -114,7 +112,9 @@ def main() -> None:
         """).fetchall()
         print("\nTop 5 highest risk providers:")
         for row in top5:
-            print(f"  NPI {row[0]} | {row[1]:<30} | {row[2]:<25} | {row[3]} | risk={row[4]} gap={row[5]}")
+            print(
+                f"  NPI {row[0]} | {row[1]:<30} | {row[2]:<25} | {row[3]} | risk={row[4]} gap={row[5]}"
+            )
 
     conn.close()
 

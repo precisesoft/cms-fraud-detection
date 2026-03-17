@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 # Enums
 # ---------------------------------------------------------------------------
 
+
 class RiskBand(StrEnum):
     high_risk = "high_risk"
     review = "review"
@@ -23,6 +24,7 @@ class RiskBand(StrEnum):
 # ---------------------------------------------------------------------------
 # Pagination
 # ---------------------------------------------------------------------------
+
 
 class PaginationMeta(BaseModel):
     total: int
@@ -34,6 +36,7 @@ class PaginationMeta(BaseModel):
 # ---------------------------------------------------------------------------
 # Provider schemas
 # ---------------------------------------------------------------------------
+
 
 class ProviderSummary(BaseModel):
     """Lightweight provider for list views and search results."""
@@ -146,6 +149,7 @@ class ProviderListResponse(BaseModel):
 # Claim / service case schemas
 # ---------------------------------------------------------------------------
 
+
 class Claim(BaseModel):
     """Single provider-service case row."""
 
@@ -206,6 +210,7 @@ class ClaimListResponse(BaseModel):
 # Scoring schemas
 # ---------------------------------------------------------------------------
 
+
 class Signal(BaseModel):
     """Individual risk or legitimacy signal."""
 
@@ -241,6 +246,7 @@ class ScoreResult(BaseModel):
 # Dashboard schemas
 # ---------------------------------------------------------------------------
 
+
 class RiskDistribution(BaseModel):
     high_risk: int
     review: int
@@ -269,6 +275,7 @@ class HeatmapResponse(BaseModel):
 # Fairness schemas
 # ---------------------------------------------------------------------------
 
+
 class CohortFairness(BaseModel):
     """Flagging rate and parity metrics for a single cohort."""
 
@@ -291,6 +298,7 @@ class FairnessReport(BaseModel):
 # Chat schemas
 # ---------------------------------------------------------------------------
 
+
 class ChatMessage(BaseModel):
     role: str = Field(description="user or assistant")
     content: str
@@ -309,14 +317,13 @@ class ChatResponse(BaseModel):
     chart_spec: dict[str, Any] | None = Field(
         default=None, description="Recharts-compatible chart config if applicable"
     )
-    sql_query: str | None = Field(
-        default=None, description="Generated SQL query for transparency"
-    )
+    sql_query: str | None = Field(default=None, description="Generated SQL query for transparency")
 
 
 # ---------------------------------------------------------------------------
 # Health
 # ---------------------------------------------------------------------------
+
 
 class HealthResponse(BaseModel):
     status: str
@@ -327,6 +334,7 @@ class HealthResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def risk_band_from_score(score: int | None) -> RiskBand | None:
     if score is None:
