@@ -34,6 +34,11 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # --- Routers ---
+    from src.api.routes.providers import router as providers_router
+
+    app.include_router(providers_router, prefix="/api")
+
     # --- Health endpoint (no router needed) ---
     from src.api.schemas import HealthResponse
 
