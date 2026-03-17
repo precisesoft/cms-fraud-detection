@@ -4,7 +4,6 @@ from pathlib import Path
 
 import duckdb
 
-
 ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = ROOT / "data" / "raw" / "public_sources" / "cms"
 OUTPUT_DIR = ROOT / "data" / "processed" / "demo"
@@ -420,9 +419,7 @@ def build_demo_case_csv() -> Path:
     """
 
     con.execute(f"CREATE OR REPLACE TEMP TABLE demo_case_export AS {export_query}")
-    con.execute(
-        f"COPY demo_case_export TO '{output_csv}' WITH (FORMAT CSV, HEADER, DELIMITER ',')"
-    )
+    con.execute(f"COPY demo_case_export TO '{output_csv}' WITH (FORMAT CSV, HEADER, DELIMITER ',')")
 
     summary = con.execute(
         """

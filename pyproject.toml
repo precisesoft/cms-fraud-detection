@@ -42,6 +42,11 @@ line-length = 100
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
 
+[tool.ruff.lint.per-file-ignores]
+"src/data/build_demo_case_csv.py" = ["E501"]  # embedded SQL strings
+"src/data/load_postgres.py" = ["E501"]  # formatted output strings
+"tests/test_build_features.py" = ["E501"]  # embedded CSV test data
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"

@@ -72,9 +72,7 @@ def build_concentration_features(lf: pl.LazyFrame) -> pl.LazyFrame:
     """Compute service concentration metrics (HHI, top-code share)."""
     # Compute each service's share of provider's total services
     with_share = lf.with_columns(
-        (pl.col("tot_srvcs") / pl.col("tot_srvcs").sum().over("npi")).alias(
-            "service_share"
-        ),
+        (pl.col("tot_srvcs") / pl.col("tot_srvcs").sum().over("npi")).alias("service_share"),
     )
 
     return with_share.group_by("npi").agg(
@@ -83,11 +81,7 @@ def build_concentration_features(lf: pl.LazyFrame) -> pl.LazyFrame:
         # Top code's share of total services
         pl.col("service_share").max().alias("top_code_share"),
         # Share of top 3 codes
-        pl.col("service_share")
-        .sort(descending=True)
-        .head(3)
-        .sum()
-        .alias("top3_code_share"),
+        pl.col("service_share").sort(descending=True).head(3).sum().alias("top3_code_share"),
     )
 
 
@@ -108,12 +102,8 @@ def build_peer_z_features(lf: pl.LazyFrame) -> pl.LazyFrame:
         pl.col("payment_peer_z").max().alias("max_payment_z"),
         # Count of service lines with z > 2 (outlier lines)
         (pl.col("service_volume_peer_z") > 2.0).sum().alias("n_volume_outlier_lines"),
-        (pl.col("services_per_bene_peer_z") > 2.0)
-        .sum()
-        .alias("n_intensity_outlier_lines"),
-        (pl.col("submitted_to_allowed_peer_z") > 2.0)
-        .sum()
-        .alias("n_charge_outlier_lines"),
+        (pl.col("services_per_bene_peer_z") > 2.0).sum().alias("n_intensity_outlier_lines"),
+        (pl.col("submitted_to_allowed_peer_z") > 2.0).sum().alias("n_charge_outlier_lines"),
     )
 
 
@@ -126,13 +116,9 @@ def build_risk_seed_features(lf: pl.LazyFrame) -> pl.LazyFrame:
         pl.col("seed_legitimacy_score").min().alias("min_seed_legitimacy_score"),
         pl.col("seed_legitimacy_score").mean().alias("avg_seed_legitimacy_score"),
         # Count of high-risk service lines
-        (pl.col("seed_case_label") == "high_risk")
-        .sum()
-        .alias("n_high_risk_lines"),
+        (pl.col("seed_case_label") == "high_risk").sum().alias("n_high_risk_lines"),
         # Peer scope: how many lines had state-specific vs national fallback
-        (pl.col("peer_scope") == "state_specific")
-        .sum()
-        .alias("n_state_peer_lines"),
+        (pl.col("peer_scope") == "state_specific").sum().alias("n_state_peer_lines"),
     )
 
 
@@ -191,9 +177,7 @@ def build_provider_features(csv_path: Path = DEMO_CSV) -> pl.DataFrame:
         "std_payment_amt",
         "std_charge_ratio",
     ]
-    features = features.with_columns(
-        [pl.col(c).fill_null(0.0) for c in std_cols]
-    )
+    features = features.with_columns([pl.col(c).fill_null(0.0) for c in std_cols])
 
     # Compute derived features after join
     features = features.with_columns(
@@ -207,9 +191,7 @@ def build_provider_features(csv_path: Path = DEMO_CSV) -> pl.DataFrame:
             / pl.col("service_line_count").cast(pl.Float64)
         ).alias("frac_volume_outlier_lines"),
         # Charge volatility: std/mean of submitted charges (coefficient of variation)
-        (pl.col("std_submitted_charge") / pl.col("mean_submitted_charge")).alias(
-            "charge_cv"
-        ),
+        (pl.col("std_submitted_charge") / pl.col("mean_submitted_charge")).alias("charge_cv"),
     )
 
     return features.collect()
@@ -233,12 +215,12 @@ def main() -> None:
         print(f"  {col}: {df[col].dtype}")
 
     # Quick sanity stats
-    print(f"\nSanity checks:")
+    print("\nSanity checks:")
     print(f"  Unique NPIs: {df['npi'].n_unique()}")
     print(f"  Revoked providers: {df.filter(pl.col('revoked_2026') == 1).shape[0]}")
     print(f"  High-risk lines > 0: {df.filter(pl.col('n_high_risk_lines') > 0).shape[0]}")
     print(f"  Mean service_hhi: {df['service_hhi'].mean():.4f}")
-    print(f"  Null counts:")
+    print("  Null counts:")
     for col in df.columns:
         null_count = df[col].null_count()
         if null_count > 0:
