@@ -45,8 +45,8 @@ def load_service_cases(conn: psycopg.Connection, csv_path: Path = DEMO_CSV) -> i
                 copy.write(chunk)
 
     conn.commit()
-    count = conn.execute("SELECT COUNT(*) FROM provider_service_cases").fetchone()[0]
-    return count
+    row = conn.execute("SELECT COUNT(*) FROM provider_service_cases").fetchone()
+    return row[0] if row else 0
 
 
 def load_features(conn: psycopg.Connection, parquet_path: Path = FEATURES_PARQUET) -> int:
@@ -74,8 +74,8 @@ def load_features(conn: psycopg.Connection, parquet_path: Path = FEATURES_PARQUE
             copy.write(chunk)
 
     conn.commit()
-    count = conn.execute("SELECT COUNT(*) FROM provider_features").fetchone()[0]
-    return count
+    row = conn.execute("SELECT COUNT(*) FROM provider_features").fetchone()
+    return row[0] if row else 0
 
 
 def main() -> None:
@@ -99,10 +99,12 @@ def main() -> None:
     # Quick validation
     print("\nValidation:")
     for table in ["provider_service_cases", "provider_features"]:
-        count = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+        row = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()
+        count = row[0] if row else 0
         print(f"  {table}: {count:,} rows")
 
-    if conn.execute("SELECT COUNT(*) FROM provider_features").fetchone()[0] > 0:
+    row = conn.execute("SELECT COUNT(*) FROM provider_features").fetchone()
+    if row and row[0] > 0:
         top5 = conn.execute("""
             SELECT npi, provider_name, provider_type, state,
                    max_seed_risk_score, risk_legitimacy_gap

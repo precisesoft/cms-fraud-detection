@@ -43,6 +43,8 @@ def create_app() -> FastAPI:
         try:
             from src.api.deps import pool
 
+            if pool is None:
+                raise RuntimeError("Pool not initialized")
             async with pool.connection() as conn:
                 await conn.execute("SELECT 1")
         except Exception:

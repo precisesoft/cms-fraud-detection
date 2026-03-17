@@ -32,5 +32,7 @@ async def close_pool() -> None:
 
 async def get_db():
     """FastAPI dependency — yields an async connection from the pool."""
+    if pool is None:
+        raise RuntimeError("Database pool not initialized — app lifespan not started")
     async with pool.connection() as conn:
         yield conn
