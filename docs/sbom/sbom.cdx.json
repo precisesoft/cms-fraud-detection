@@ -1316,7 +1316,7 @@
       "version": "32.0.1"
     },
     {
-      "bom-ref": "polars==1.39.0",
+      "bom-ref": "polars==1.39.2",
       "description": "Blazingly fast DataFrame library",
       "externalReferences": [
         {
@@ -1349,12 +1349,12 @@
         }
       ],
       "name": "polars",
-      "purl": "pkg:pypi/polars@1.39.0",
+      "purl": "pkg:pypi/polars@1.39.2",
       "type": "library",
-      "version": "1.39.0"
+      "version": "1.39.2"
     },
     {
-      "bom-ref": "polars-runtime-32==1.39.0",
+      "bom-ref": "polars-runtime-32==1.39.2",
       "description": "Blazingly fast DataFrame library",
       "externalReferences": [
         {
@@ -1387,9 +1387,9 @@
         }
       ],
       "name": "polars-runtime-32",
-      "purl": "pkg:pypi/polars-runtime-32@1.39.0",
+      "purl": "pkg:pypi/polars-runtime-32@1.39.2",
       "type": "library",
-      "version": "1.39.0"
+      "version": "1.39.2"
     },
     {
       "bom-ref": "psycopg==3.3.3",
@@ -2872,19 +2872,19 @@
       "ref": "pip==26.0.1"
     },
     {
-      "ref": "polars-runtime-32==1.39.0"
+      "ref": "polars-runtime-32==1.39.2"
     },
     {
       "dependsOn": [
         "cloudpickle==3.1.2",
         "numpy==2.4.3",
         "pandas==3.0.1",
-        "polars-runtime-32==1.39.0",
+        "polars-runtime-32==1.39.2",
         "pyarrow==23.0.1",
         "pydantic==2.12.5",
         "tzdata==2025.3"
       ],
-      "ref": "polars==1.39.0"
+      "ref": "polars==1.39.2"
     },
     {
       "ref": "psycopg-binary==3.3.3"
@@ -2974,7 +2974,7 @@
         "cyclonedx-bom==7.2.2",
         "fastapi==0.135.1",
         "httpx==0.28.1",
-        "polars==1.39.0",
+        "polars==1.39.2",
         "psycopg-pool==3.3.0",
         "psycopg==3.3.3",
         "pyarrow==23.0.1",
@@ -2994,7 +2994,7 @@
         "joblib==1.5.3",
         "numpy==2.4.3",
         "pandas==3.0.1",
-        "polars==1.39.0",
+        "polars==1.39.2",
         "pyarrow==23.0.1",
         "scipy==1.17.1",
         "threadpoolctl==3.6.0"
