@@ -328,6 +328,7 @@ class ChatResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     database: str
+    graph: str = "unavailable"
     version: str
 
 

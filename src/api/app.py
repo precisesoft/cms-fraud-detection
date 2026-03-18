@@ -8,13 +8,19 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.deps import close_pool, open_pool
+from src.api.graph_client import close_neo4j, open_neo4j
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manage startup/shutdown of the async DB pool."""
+    """Manage startup/shutdown of the async DB pool and Neo4j driver."""
     await open_pool()
+    try:
+        await open_neo4j()
+    except Exception:
+        pass  # Neo4j is optional — API works without it
     yield
+    await close_neo4j()
     await close_pool()
 
 
@@ -64,7 +70,18 @@ def create_app() -> FastAPI:
                 await conn.execute("SELECT 1")
         except Exception:
             db_status = "unavailable"
-        return HealthResponse(status="ok", database=db_status, version="0.1.0")
+
+        graph_status = "ok"
+        try:
+            from src.api.graph_client import driver as neo4j_driver
+
+            if neo4j_driver is None:
+                raise RuntimeError("Neo4j driver not initialized")
+            await neo4j_driver.verify_connectivity()
+        except Exception:
+            graph_status = "unavailable"
+
+        return HealthResponse(status="ok", database=db_status, graph=graph_status, version="0.1.0")
 
     return app
 
