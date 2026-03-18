@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/lib/api";
+import { PeerChart } from "@/components/peer-chart";
 import type { ProviderDetail, Signal } from "@/types/api";
 
 function riskBadge(
@@ -266,6 +267,9 @@ export default async function ProviderDetailPage({
           </div>
         </CardContent>
       </Card>
+
+      {/* Peer Comparison Chart */}
+      <PeerChart npi={npi} />
 
       {/* Signals */}
       {signals.length > 0 && (
