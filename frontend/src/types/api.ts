@@ -1,86 +1,89 @@
 export type RiskBand = "stable" | "review" | "high_risk";
 
-export interface Provider {
-  npi: string;
-  provider_name: string;
-  provider_type: string;
-  state: string;
-  city: string;
-  entity_code: string;
-  max_seed_risk_score: number;
-  risk_band: RiskBand;
-  service_line_count: number;
-  total_estimated_payment: number;
-  revoked_2026: number;
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  per_page: number;
+  pages: number;
 }
 
-export interface ProviderDetail extends Provider {
-  enrolled_2025: number;
-  total_services: number;
-  total_benes: number;
-  unique_hcpcs_codes: number;
-  mean_submitted_charge: number;
-  mean_payment_amt: number;
-  service_hhi: number;
-  top_code_share: number;
+export interface ProviderSummary {
+  npi: string;
+  provider_name: string | null;
+  provider_type: string | null;
+  state: string | null;
+  city: string | null;
+  entity_code: string | null;
+  max_seed_risk_score: number | null;
+  risk_band: RiskBand | null;
+  service_line_count: number | null;
+  total_estimated_payment: number | null;
+  revoked_2026: number | null;
+}
+
+export interface ProviderListResponse {
+  data: ProviderSummary[];
+  meta: PaginationMeta;
+}
+
+export interface RiskDistribution {
+  high_risk: number;
+  review: number;
+  stable: number;
+}
+
+export interface DashboardStats {
+  total_providers: number;
+  total_cases: number;
+  risk_distribution: RiskDistribution;
+  top_providers: ProviderSummary[];
 }
 
 export interface Signal {
-  signal_id: string;
-  category: string;
   name: string;
+  category: string;
   direction: string;
-  value: number;
-  detail: string;
-  weight: number;
-}
-
-export interface PeerComparison {
-  npi: string;
-  provider_name: string;
-  provider_type: string;
-  state: string;
-  risk_score: number;
-  total_services: number;
-  total_payment: number;
-}
-
-export interface Claim {
-  case_id: string;
-  hcpcs_cd: string;
-  hcpcs_desc: string;
-  tot_srvcs: number;
-  tot_benes: number;
-  avg_submitted_charge: number;
-  avg_medicare_payment_amt: number;
-  seed_risk_score: number;
-  seed_case_label: string;
+  value: number | null;
+  threshold: number | null;
+  description: string;
 }
 
 export interface ScoreResult {
   npi: string;
-  provider_name: string;
-  composite_score: number;
+  risk_score: number;
+  legitimacy_score: number;
   risk_band: RiskBand;
   signals: Signal[];
+  narrative: string | null;
 }
 
-export interface DashboardData {
-  total_providers: number;
-  total_cases: number;
-  risk_distribution: {
-    high_risk: number;
-    review: number;
-    stable: number;
-  };
-  top_providers: Provider[];
+export interface Claim {
+  case_id: string;
+  npi: string;
+  hcpcs_cd: string;
+  hcpcs_desc: string | null;
+  tot_benes: number | null;
+  tot_srvcs: number | null;
+  avg_submitted_charge: number | null;
+  avg_medicare_payment_amt: number | null;
+  seed_risk_score: number | null;
+  seed_case_label: string | null;
+}
+
+export interface ClaimListResponse {
+  data: Claim[];
+  meta: PaginationMeta;
 }
 
 export interface HeatmapEntry {
   state: string;
   provider_count: number;
-  high_risk_count: number;
   avg_risk_score: number;
+  flagged_count: number;
+}
+
+export interface HeatmapResponse {
+  data: HeatmapEntry[];
 }
 
 export interface GraphNode {
@@ -108,11 +111,4 @@ export interface HealthResponse {
   database: string;
   graph: string;
   version: string;
-}
-
-export interface ProviderListResponse {
-  data: Provider[];
-  total: number;
-  page: number;
-  per_page: number;
 }

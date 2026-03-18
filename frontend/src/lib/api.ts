@@ -1,14 +1,11 @@
 import type {
-  Claim,
-  DashboardData,
+  ClaimListResponse,
+  DashboardStats,
   GraphResponse,
-  HeatmapEntry,
+  HeatmapResponse,
   HealthResponse,
-  PeerComparison,
-  ProviderDetail,
   ProviderListResponse,
   ScoreResult,
-  Signal,
 } from "@/types/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -24,7 +21,7 @@ async function fetchApi<T>(path: string): Promise<T> {
 export const api = {
   health: () => fetchApi<HealthResponse>("/health"),
 
-  dashboard: () => fetchApi<DashboardData>("/api/dashboard"),
+  dashboard: () => fetchApi<DashboardStats>("/api/dashboard"),
 
   providers: (params?: {
     limit?: number;
@@ -41,18 +38,12 @@ export const api = {
     );
   },
 
-  provider: (npi: string) => fetchApi<ProviderDetail>(`/api/providers/${npi}`),
-
-  signals: (npi: string) => fetchApi<Signal[]>(`/api/providers/${npi}/signals`),
-
-  peers: (npi: string) =>
-    fetchApi<PeerComparison[]>(`/api/providers/${npi}/peers`),
-
-  claims: (npi: string) => fetchApi<Claim[]>(`/api/providers/${npi}/claims`),
+  claims: (npi: string) =>
+    fetchApi<ClaimListResponse>(`/api/providers/${npi}/claims`),
 
   score: (npi: string) => fetchApi<ScoreResult>(`/api/score/${npi}`),
 
-  heatmap: () => fetchApi<HeatmapEntry[]>("/api/heatmap"),
+  heatmap: () => fetchApi<HeatmapResponse>("/api/dashboard/heatmap"),
 
   graph: (npi: string) => fetchApi<GraphResponse>(`/api/graph/${npi}`),
 };
