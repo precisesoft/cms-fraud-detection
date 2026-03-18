@@ -53,8 +53,28 @@ export const api = {
 
   peers: (npi: string) => fetchApi<PeerResponse>(`/api/providers/${npi}/peers`),
 
-  claims: (npi: string) =>
-    fetchApi<ClaimListResponse>(`/api/providers/${npi}/claims`),
+  claims: (params?: {
+    page?: number;
+    per_page?: number;
+    npi?: string;
+    case_label?: string;
+    state?: string;
+    risk_min?: number;
+    risk_max?: number;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.per_page) query.set("per_page", String(params.per_page));
+    if (params?.npi) query.set("npi", params.npi);
+    if (params?.case_label) query.set("case_label", params.case_label);
+    if (params?.state) query.set("state", params.state);
+    if (params?.risk_min != null)
+      query.set("risk_min", String(params.risk_min));
+    if (params?.risk_max != null)
+      query.set("risk_max", String(params.risk_max));
+    const qs = query.toString();
+    return fetchApi<ClaimListResponse>(`/api/claims${qs ? `?${qs}` : ""}`);
+  },
 
   score: (npi: string) => fetchApi<ScoreResult>(`/api/score/${npi}`),
 

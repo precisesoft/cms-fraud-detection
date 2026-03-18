@@ -2,12 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Search, Map, Shield, Activity } from "lucide-react";
+import {
+  LayoutDashboard,
+  Search,
+  Map,
+  Shield,
+  Activity,
+  FileText,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/providers", label: "Providers", icon: Search },
+  { href: "/claims", label: "Claims", icon: FileText },
   { href: "/heatmap", label: "Risk Map", icon: Map },
   { href: "/fairness", label: "Fairness", icon: Shield },
 ];
