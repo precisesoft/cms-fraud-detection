@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cms-fraud
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/precisesoft/precise-manifests.git
+    targetRevision: main
+    path: k8s/cms-fraud
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cms-fraud
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

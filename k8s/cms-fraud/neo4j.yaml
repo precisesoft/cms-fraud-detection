@@ -25,17 +25,24 @@ spec:
               containerPort: 7474
             - name: bolt
               containerPort: 7687
-          envFrom:
-            - secretRef:
-                name: neo4j-credentials
+          env:
+            - name: NEO4J_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: neo4j-credentials
+                  key: NEO4J_AUTH
+            - name: NEO4J_server_config_strict__validation_enabled
+              value: "false"
           volumeMounts:
             - name: data
               mountPath: /data
           readinessProbe:
-            exec:
-              command: ["cypher-shell", "-u", "neo4j", "-p", "cms_graph_dev", "RETURN 1"]
+            httpGet:
+              path: /
+              port: 7474
             initialDelaySeconds: 30
             periodSeconds: 10
+            timeoutSeconds: 5
           resources:
             requests:
               cpu: 250m
