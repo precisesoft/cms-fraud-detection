@@ -998,6 +998,62 @@
       "version": "6.0.2"
     },
     {
+      "bom-ref": "neo4j==6.1.0",
+      "description": "Neo4j Bolt driver for Python",
+      "externalReferences": [
+        {
+          "comment": "from packaging metadata Project-URL: Issue Tracker",
+          "type": "issue-tracker",
+          "url": "https://github.com/neo4j/neo4j-python-driver/issues"
+        },
+        {
+          "comment": "from packaging metadata Project-URL: Forum",
+          "type": "other",
+          "url": "https://community.neo4j.com/c/drivers-stacks/python/"
+        },
+        {
+          "comment": "from packaging metadata Project-URL: Discord",
+          "type": "other",
+          "url": "https://discord.com/invite/neo4j"
+        },
+        {
+          "comment": "from packaging metadata Project-URL: Docs (API Reference)",
+          "type": "other",
+          "url": "https://neo4j.com/docs/api/python-driver/current/"
+        },
+        {
+          "comment": "from packaging metadata Project-URL: Docs (Manual)",
+          "type": "other",
+          "url": "https://neo4j.com/docs/python-manual/current/"
+        },
+        {
+          "comment": "from packaging metadata Project-URL: Changelog",
+          "type": "release-notes",
+          "url": "https://github.com/neo4j/neo4j-python-driver/wiki"
+        },
+        {
+          "comment": "from packaging metadata Project-URL: Repository",
+          "type": "vcs",
+          "url": "https://github.com/neo4j/neo4j-python-driver"
+        },
+        {
+          "comment": "from packaging metadata Project-URL: Homepage",
+          "type": "website",
+          "url": "https://neo4j.com/"
+        }
+      ],
+      "licenses": [
+        {
+          "acknowledgement": "declared",
+          "expression": "Apache-2.0 AND Python-2.0"
+        }
+      ],
+      "name": "neo4j",
+      "purl": "pkg:pypi/neo4j@6.1.0",
+      "type": "library",
+      "version": "6.1.0"
+    },
+    {
       "bom-ref": "packageurl-python==0.17.6",
       "description": "A purl aka. Package URL parser and builder",
       "externalReferences": [
@@ -1590,6 +1646,34 @@
       "purl": "pkg:pypi/python-dotenv@1.2.2",
       "type": "library",
       "version": "1.2.2"
+    },
+    {
+      "bom-ref": "pytz==2026.1.post1",
+      "description": "World timezone definitions, modern and historical",
+      "externalReferences": [
+        {
+          "comment": "from packaging metadata: Download-URL",
+          "type": "distribution",
+          "url": "https://pypi.org/project/pytz/"
+        },
+        {
+          "comment": "from packaging metadata: Home-page",
+          "type": "website",
+          "url": "http://pythonhosted.org/pytz"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "acknowledgement": "declared",
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "pytz",
+      "purl": "pkg:pypi/pytz@2026.1.post1",
+      "type": "library",
+      "version": "2026.1.post1"
     },
     {
       "bom-ref": "referencing==0.37.0",
@@ -2239,6 +2323,7 @@
     {
       "dependsOn": [
         "python-dateutil==2.9.0.post0",
+        "pytz==2026.1.post1",
         "tzdata==2025.3"
       ],
       "ref": "arrow==1.4.0"
@@ -2373,6 +2458,13 @@
       "ref": "lxml==6.0.2"
     },
     {
+      "dependsOn": [
+        "pyarrow==23.0.1",
+        "pytz==2026.1.post1"
+      ],
+      "ref": "neo4j==6.1.0"
+    },
+    {
       "ref": "packageurl-python==0.17.6"
     },
     {
@@ -2461,6 +2553,9 @@
       "ref": "python-dotenv==1.2.2"
     },
     {
+      "ref": "pytz==2026.1.post1"
+    },
+    {
       "dependsOn": [
         "attrs==25.4.0",
         "rpds-py==0.30.0",
@@ -2488,6 +2583,7 @@
         "cyclonedx-bom==7.2.2",
         "fastapi==0.135.1",
         "httpx==0.28.1",
+        "neo4j==6.1.0",
         "polars==1.39.2",
         "psycopg-pool==3.3.0",
         "psycopg==3.3.3",
