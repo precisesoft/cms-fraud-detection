@@ -24,14 +24,20 @@ export const api = {
   dashboard: () => fetchApi<DashboardStats>("/api/dashboard"),
 
   providers: (params?: {
-    limit?: number;
-    offset?: number;
-    search?: string;
+    page?: number;
+    per_page?: number;
+    q?: string;
+    state?: string;
+    provider_type?: string;
+    risk_band?: string;
   }) => {
     const query = new URLSearchParams();
-    if (params?.limit) query.set("limit", String(params.limit));
-    if (params?.offset) query.set("offset", String(params.offset));
-    if (params?.search) query.set("search", params.search);
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.per_page) query.set("per_page", String(params.per_page));
+    if (params?.q) query.set("q", params.q);
+    if (params?.state) query.set("state", params.state);
+    if (params?.provider_type) query.set("provider_type", params.provider_type);
+    if (params?.risk_band) query.set("risk_band", params.risk_band);
     const qs = query.toString();
     return fetchApi<ProviderListResponse>(
       `/api/providers${qs ? `?${qs}` : ""}`,
