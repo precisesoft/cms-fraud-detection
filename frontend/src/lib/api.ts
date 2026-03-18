@@ -4,8 +4,11 @@ import type {
   GraphResponse,
   HeatmapResponse,
   HealthResponse,
+  PeerResponse,
+  ProviderDetail,
   ProviderListResponse,
   ScoreResult,
+  Signal,
 } from "@/types/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -43,6 +46,12 @@ export const api = {
       `/api/providers${qs ? `?${qs}` : ""}`,
     );
   },
+
+  provider: (npi: string) => fetchApi<ProviderDetail>(`/api/providers/${npi}`),
+
+  signals: (npi: string) => fetchApi<Signal[]>(`/api/providers/${npi}/signals`),
+
+  peers: (npi: string) => fetchApi<PeerResponse>(`/api/providers/${npi}/peers`),
 
   claims: (npi: string) =>
     fetchApi<ClaimListResponse>(`/api/providers/${npi}/claims`),
