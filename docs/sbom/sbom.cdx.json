@@ -382,35 +382,6 @@
       "version": "8.3.1"
     },
     {
-      "bom-ref": "cloudpickle==3.1.2",
-      "description": "Pickler class to extend the standard pickle.Pickler functionality",
-      "externalReferences": [
-        {
-          "comment": "from packaging metadata: Home-page",
-          "type": "website",
-          "url": "https://github.com/cloudpipe/cloudpickle"
-        }
-      ],
-      "licenses": [
-        {
-          "license": {
-            "acknowledgement": "declared",
-            "id": "BSD-3-Clause"
-          }
-        },
-        {
-          "license": {
-            "acknowledgement": "declared",
-            "name": "License :: OSI Approved :: BSD License"
-          }
-        }
-      ],
-      "name": "cloudpickle",
-      "purl": "pkg:pypi/cloudpickle@3.1.2",
-      "type": "library",
-      "version": "3.1.2"
-    },
-    {
       "bom-ref": "cyclonedx-bom==7.2.2",
       "description": "CycloneDX Software Bill of Materials (SBOM) generator for Python projects and environments",
       "externalReferences": [
@@ -813,34 +784,6 @@
       "version": "20.11.0"
     },
     {
-      "bom-ref": "joblib==1.5.3",
-      "description": "Lightweight pipelining with Python functions",
-      "externalReferences": [
-        {
-          "comment": "from packaging metadata Project-URL: Source",
-          "type": "other",
-          "url": "https://github.com/joblib/joblib"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: Homepage",
-          "type": "website",
-          "url": "https://joblib.readthedocs.io"
-        }
-      ],
-      "licenses": [
-        {
-          "license": {
-            "acknowledgement": "declared",
-            "id": "BSD-3-Clause"
-          }
-        }
-      ],
-      "name": "joblib",
-      "purl": "pkg:pypi/joblib@1.5.3",
-      "type": "library",
-      "version": "1.5.3"
-    },
-    {
       "bom-ref": "jsonpointer==3.0.0",
       "description": "Identify specific nodes in a JSON document (RFC 6901) ",
       "externalReferences": [
@@ -1022,32 +965,6 @@
       "version": "30.4.4"
     },
     {
-      "bom-ref": "llvmlite==0.46.0",
-      "description": "lightweight wrapper around basic LLVM functionality",
-      "externalReferences": [
-        {
-          "comment": "from packaging metadata Project-URL: Source",
-          "type": "other",
-          "url": "https://github.com/numba/llvmlite"
-        },
-        {
-          "comment": "from packaging metadata: Home-page",
-          "type": "website",
-          "url": "http://llvmlite.readthedocs.io"
-        }
-      ],
-      "licenses": [
-        {
-          "acknowledgement": "declared",
-          "expression": "BSD-2-Clause AND Apache-2.0 WITH LLVM-exception"
-        }
-      ],
-      "name": "llvmlite",
-      "purl": "pkg:pypi/llvmlite@0.46.0",
-      "type": "library",
-      "version": "0.46.0"
-    },
-    {
       "bom-ref": "lxml==6.0.2",
       "description": "Powerful and Pythonic XML processing library combining libxml2/libxslt with the ElementTree API.",
       "externalReferences": [
@@ -1079,98 +996,6 @@
       "purl": "pkg:pypi/lxml@6.0.2",
       "type": "library",
       "version": "6.0.2"
-    },
-    {
-      "bom-ref": "numba==0.64.0",
-      "description": "compiling Python code using LLVM",
-      "externalReferences": [
-        {
-          "comment": "from packaging metadata: Home-page",
-          "type": "website",
-          "url": "https://numba.pydata.org"
-        }
-      ],
-      "licenses": [
-        {
-          "license": {
-            "acknowledgement": "declared",
-            "name": "License :: OSI Approved :: BSD License"
-          }
-        }
-      ],
-      "name": "numba",
-      "purl": "pkg:pypi/numba@0.64.0",
-      "type": "library",
-      "version": "0.64.0"
-    },
-    {
-      "bom-ref": "numpy==2.4.3",
-      "description": "Fundamental package for array computing in Python",
-      "externalReferences": [
-        {
-          "comment": "from packaging metadata Project-URL: download",
-          "type": "distribution",
-          "url": "https://pypi.org/project/numpy/#files"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: documentation",
-          "type": "documentation",
-          "url": "https://numpy.org/doc/"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: tracker",
-          "type": "issue-tracker",
-          "url": "https://github.com/numpy/numpy/issues"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: source",
-          "type": "other",
-          "url": "https://github.com/numpy/numpy"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: release notes",
-          "type": "other",
-          "url": "https://numpy.org/doc/stable/release"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: homepage",
-          "type": "website",
-          "url": "https://numpy.org"
-        }
-      ],
-      "licenses": [
-        {
-          "acknowledgement": "declared",
-          "expression": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0"
-        }
-      ],
-      "name": "numpy",
-      "purl": "pkg:pypi/numpy@2.4.3",
-      "type": "library",
-      "version": "2.4.3"
-    },
-    {
-      "bom-ref": "nvidia-nccl-cu12==2.29.7",
-      "description": "NVIDIA Collective Communication Library (NCCL) Runtime",
-      "externalReferences": [
-        {
-          "comment": "from packaging metadata: Home-page",
-          "type": "website",
-          "url": "https://developer.nvidia.com/cuda-zone"
-        }
-      ],
-      "licenses": [
-        {
-          "license": {
-            "acknowledgement": "declared",
-            "name": "LicenseRef-NVIDIA-Proprietary"
-          }
-        }
-      ],
-      "name": "nvidia-nccl-cu12",
-      "purl": "pkg:pypi/nvidia-nccl-cu12@2.29.7",
-      "type": "library",
-      "version": "2.29.7"
     },
     {
       "bom-ref": "packageurl-python==0.17.6",
@@ -1220,39 +1045,6 @@
       "purl": "pkg:pypi/packaging@26.0",
       "type": "library",
       "version": "26.0"
-    },
-    {
-      "bom-ref": "pandas==3.0.1",
-      "description": "Powerful data structures for data analysis, time series, and statistics",
-      "externalReferences": [
-        {
-          "comment": "from packaging metadata Project-URL: documentation",
-          "type": "documentation",
-          "url": "https://pandas.pydata.org/docs/"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: repository",
-          "type": "vcs",
-          "url": "https://github.com/pandas-dev/pandas"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: homepage",
-          "type": "website",
-          "url": "https://pandas.pydata.org"
-        }
-      ],
-      "licenses": [
-        {
-          "license": {
-            "acknowledgement": "declared",
-            "name": "License :: OSI Approved :: BSD License"
-          }
-        }
-      ],
-      "name": "pandas",
-      "purl": "pkg:pypi/pandas@3.0.1",
-      "type": "library",
-      "version": "3.0.1"
     },
     {
       "bom-ref": "pip==26.0.1",
@@ -1990,125 +1782,6 @@
       "version": "0.30.0"
     },
     {
-      "bom-ref": "scikit-learn==1.8.0",
-      "description": "A set of python modules for machine learning and data mining",
-      "externalReferences": [
-        {
-          "comment": "from packaging metadata Project-URL: download",
-          "type": "distribution",
-          "url": "https://pypi.org/project/scikit-learn/#files"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: tracker",
-          "type": "issue-tracker",
-          "url": "https://github.com/scikit-learn/scikit-learn/issues"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: source",
-          "type": "other",
-          "url": "https://github.com/scikit-learn/scikit-learn"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: release notes",
-          "type": "other",
-          "url": "https://scikit-learn.org/stable/whats_new"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: homepage",
-          "type": "website",
-          "url": "https://scikit-learn.org"
-        }
-      ],
-      "licenses": [
-        {
-          "license": {
-            "acknowledgement": "declared",
-            "id": "BSD-3-Clause"
-          }
-        }
-      ],
-      "name": "scikit-learn",
-      "purl": "pkg:pypi/scikit-learn@1.8.0",
-      "type": "library",
-      "version": "1.8.0"
-    },
-    {
-      "bom-ref": "scipy==1.17.1",
-      "description": "Fundamental algorithms for scientific computing in Python",
-      "externalReferences": [
-        {
-          "comment": "from packaging metadata Project-URL: download",
-          "type": "distribution",
-          "url": "https://github.com/scipy/scipy/releases"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: documentation",
-          "type": "documentation",
-          "url": "https://docs.scipy.org/doc/scipy/"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: tracker",
-          "type": "issue-tracker",
-          "url": "https://github.com/scipy/scipy/issues"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: source",
-          "type": "other",
-          "url": "https://github.com/scipy/scipy"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: homepage",
-          "type": "website",
-          "url": "https://scipy.org/"
-        }
-      ],
-      "licenses": [
-        {
-          "license": {
-            "acknowledgement": "declared",
-            "name": "License :: OSI Approved :: BSD License"
-          }
-        }
-      ],
-      "name": "scipy",
-      "purl": "pkg:pypi/scipy@1.17.1",
-      "type": "library",
-      "version": "1.17.1"
-    },
-    {
-      "bom-ref": "shap==0.51.0",
-      "description": "A unified approach to explain the output of any machine learning model.",
-      "externalReferences": [
-        {
-          "comment": "from packaging metadata Project-URL: Documentation",
-          "type": "documentation",
-          "url": "https://shap.readthedocs.io/en/latest/index.html"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: Release Notes",
-          "type": "other",
-          "url": "https://shap.readthedocs.io/en/latest/release_notes.html"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: Repository",
-          "type": "vcs",
-          "url": "http://github.com/shap/shap"
-        }
-      ],
-      "licenses": [
-        {
-          "license": {
-            "acknowledgement": "declared",
-            "id": "MIT"
-          }
-        }
-      ],
-      "name": "shap",
-      "purl": "pkg:pypi/shap@0.51.0",
-      "type": "library",
-      "version": "0.51.0"
-    },
-    {
       "bom-ref": "six==1.17.0",
       "description": "Python 2 and 3 compatibility utilities",
       "externalReferences": [
@@ -2130,29 +1803,6 @@
       "purl": "pkg:pypi/six@1.17.0",
       "type": "library",
       "version": "1.17.0"
-    },
-    {
-      "bom-ref": "slicer==0.0.8",
-      "description": "A small package for big slicing.",
-      "externalReferences": [
-        {
-          "comment": "from packaging metadata: Home-page",
-          "type": "website",
-          "url": "https://github.com/interpretml/slicer"
-        }
-      ],
-      "licenses": [
-        {
-          "license": {
-            "acknowledgement": "declared",
-            "id": "MIT"
-          }
-        }
-      ],
-      "name": "slicer",
-      "purl": "pkg:pypi/slicer@0.0.8",
-      "type": "library",
-      "version": "0.0.8"
     },
     {
       "bom-ref": "sortedcontainers==2.4.0",
@@ -2219,71 +1869,6 @@
       "purl": "pkg:pypi/starlette@0.52.1",
       "type": "library",
       "version": "0.52.1"
-    },
-    {
-      "bom-ref": "threadpoolctl==3.6.0",
-      "description": "threadpoolctl",
-      "externalReferences": [
-        {
-          "comment": "from packaging metadata: Home-page",
-          "type": "website",
-          "url": "https://github.com/joblib/threadpoolctl"
-        }
-      ],
-      "licenses": [
-        {
-          "license": {
-            "acknowledgement": "declared",
-            "id": "BSD-3-Clause"
-          }
-        },
-        {
-          "license": {
-            "acknowledgement": "declared",
-            "name": "License :: OSI Approved :: BSD License"
-          }
-        }
-      ],
-      "name": "threadpoolctl",
-      "purl": "pkg:pypi/threadpoolctl@3.6.0",
-      "type": "library",
-      "version": "3.6.0"
-    },
-    {
-      "bom-ref": "tqdm==4.67.3",
-      "description": "Fast, Extensible Progress Meter",
-      "externalReferences": [
-        {
-          "comment": "from packaging metadata Project-URL: wiki",
-          "type": "other",
-          "url": "https://github.com/tqdm/tqdm/wiki"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: changelog",
-          "type": "release-notes",
-          "url": "https://tqdm.github.io/releases"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: repository",
-          "type": "vcs",
-          "url": "https://github.com/tqdm/tqdm"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: homepage",
-          "type": "website",
-          "url": "https://tqdm.github.io"
-        }
-      ],
-      "licenses": [
-        {
-          "acknowledgement": "declared",
-          "expression": "MPL-2.0 AND MIT"
-        }
-      ],
-      "name": "tqdm",
-      "purl": "pkg:pypi/tqdm@4.67.3",
-      "type": "library",
-      "version": "4.67.3"
     },
     {
       "bom-ref": "typing-inspection==0.4.2",
@@ -2629,40 +2214,6 @@
       "purl": "pkg:pypi/websockets@16.0",
       "type": "library",
       "version": "16.0"
-    },
-    {
-      "bom-ref": "xgboost==3.2.0",
-      "description": "XGBoost Python Package",
-      "externalReferences": [
-        {
-          "comment": "from packaging metadata Project-URL: documentation",
-          "type": "documentation",
-          "url": "https://xgboost.readthedocs.io/en/stable/"
-        },
-        {
-          "comment": "from packaging metadata Project-URL: repository",
-          "type": "vcs",
-          "url": "https://github.com/dmlc/xgboost"
-        }
-      ],
-      "licenses": [
-        {
-          "license": {
-            "acknowledgement": "declared",
-            "id": "Apache-2.0"
-          }
-        },
-        {
-          "license": {
-            "acknowledgement": "declared",
-            "name": "License :: OSI Approved :: Apache Software License"
-          }
-        }
-      ],
-      "name": "xgboost",
-      "purl": "pkg:pypi/xgboost@3.2.0",
-      "type": "library",
-      "version": "3.2.0"
     }
   ],
   "dependencies": [
@@ -2706,9 +2257,6 @@
     },
     {
       "ref": "click==8.3.1"
-    },
-    {
-      "ref": "cloudpickle==3.1.2"
     },
     {
       "dependsOn": [
@@ -2786,9 +2334,6 @@
       "ref": "isoduration==20.11.0"
     },
     {
-      "ref": "joblib==1.5.3"
-    },
-    {
       "ref": "jsonpointer==3.0.0"
     },
     {
@@ -2825,41 +2370,13 @@
       "ref": "license-expression==30.4.4"
     },
     {
-      "ref": "llvmlite==0.46.0"
-    },
-    {
       "ref": "lxml==6.0.2"
-    },
-    {
-      "dependsOn": [
-        "llvmlite==0.46.0",
-        "numpy==2.4.3"
-      ],
-      "ref": "numba==0.64.0"
-    },
-    {
-      "ref": "numpy==2.4.3"
-    },
-    {
-      "ref": "nvidia-nccl-cu12==2.29.7"
     },
     {
       "ref": "packageurl-python==0.17.6"
     },
     {
       "ref": "packaging==26.0"
-    },
-    {
-      "dependsOn": [
-        "lxml==6.0.2",
-        "numba==0.64.0",
-        "numpy==2.4.3",
-        "pyarrow==23.0.1",
-        "python-dateutil==2.9.0.post0",
-        "scipy==1.17.1",
-        "tzdata==2025.3"
-      ],
-      "ref": "pandas==3.0.1"
     },
     {
       "dependsOn": [
@@ -2876,9 +2393,6 @@
     },
     {
       "dependsOn": [
-        "cloudpickle==3.1.2",
-        "numpy==2.4.3",
-        "pandas==3.0.1",
         "polars-runtime-32==1.39.2",
         "pyarrow==23.0.1",
         "pydantic==2.12.5",
@@ -2979,10 +2493,7 @@
         "psycopg==3.3.3",
         "pyarrow==23.0.1",
         "pydantic==2.12.5",
-        "scikit-learn==1.8.0",
-        "shap==0.51.0",
-        "uvicorn==0.42.0",
-        "xgboost==3.2.0"
+        "uvicorn==0.42.0"
       ],
       "ref": "root-component"
     },
@@ -2990,48 +2501,7 @@
       "ref": "rpds-py==0.30.0"
     },
     {
-      "dependsOn": [
-        "joblib==1.5.3",
-        "numpy==2.4.3",
-        "pandas==3.0.1",
-        "polars==1.39.2",
-        "pyarrow==23.0.1",
-        "scipy==1.17.1",
-        "threadpoolctl==3.6.0"
-      ],
-      "ref": "scikit-learn==1.8.0"
-    },
-    {
-      "dependsOn": [
-        "click==8.3.1",
-        "numpy==2.4.3",
-        "threadpoolctl==3.6.0",
-        "typing_extensions==4.15.0"
-      ],
-      "ref": "scipy==1.17.1"
-    },
-    {
-      "dependsOn": [
-        "cloudpickle==3.1.2",
-        "llvmlite==0.46.0",
-        "numba==0.64.0",
-        "numpy==2.4.3",
-        "packaging==26.0",
-        "pandas==3.0.1",
-        "scikit-learn==1.8.0",
-        "scipy==1.17.1",
-        "slicer==0.0.8",
-        "tqdm==4.67.3",
-        "typing_extensions==4.15.0",
-        "xgboost==3.2.0"
-      ],
-      "ref": "shap==0.51.0"
-    },
-    {
       "ref": "six==1.17.0"
-    },
-    {
-      "ref": "slicer==0.0.8"
     },
     {
       "ref": "sortedcontainers==2.4.0"
@@ -3044,12 +2514,6 @@
         "typing_extensions==4.15.0"
       ],
       "ref": "starlette==0.52.1"
-    },
-    {
-      "ref": "threadpoolctl==3.6.0"
-    },
-    {
-      "ref": "tqdm==4.67.3"
     },
     {
       "dependsOn": [
@@ -3094,17 +2558,6 @@
     },
     {
       "ref": "websockets==16.0"
-    },
-    {
-      "dependsOn": [
-        "cloudpickle==3.1.2",
-        "numpy==2.4.3",
-        "nvidia-nccl-cu12==2.29.7",
-        "pandas==3.0.1",
-        "scikit-learn==1.8.0",
-        "scipy==1.17.1"
-      ],
-      "ref": "xgboost==3.2.0"
     }
   ],
   "metadata": {
