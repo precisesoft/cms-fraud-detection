@@ -1,6 +1,5 @@
 project_name   = "cms-fraud-detection"
 aws_region     = "us-east-1"
 aws_account_id = "376567172837"
-aws_profile    = "precise-eng"
 environment    = "dev"
 github_repo    = "precisesoft/cms-fraud-detection"

@@ -16,12 +16,6 @@ variable "aws_account_id" {
   default     = "376567172837"
 }
 
-variable "aws_profile" {
-  description = "AWS CLI profile to use"
-  type        = string
-  default     = "precise-eng"
-}
-
 variable "environment" {
   description = "Deployment environment"
   type        = string

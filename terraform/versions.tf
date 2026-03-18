@@ -14,6 +14,5 @@ terraform {
     region         = "us-east-1"
     dynamodb_table = "cms-fraud-terraform-locks"
     encrypt        = true
-    profile        = "precise-eng"
   }
 }
