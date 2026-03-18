@@ -321,6 +321,31 @@ class ChatResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Evidence Graph
+# ---------------------------------------------------------------------------
+
+
+class GraphNode(BaseModel):
+    id: str
+    type: str
+    label: str
+    properties: dict[str, Any] = Field(default_factory=dict)
+
+
+class GraphEdge(BaseModel):
+    source: str
+    target: str
+    type: str
+    properties: dict[str, Any] = Field(default_factory=dict)
+
+
+class GraphResponse(BaseModel):
+    npi: str
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]
+
+
+# ---------------------------------------------------------------------------
 # Health
 # ---------------------------------------------------------------------------
 
