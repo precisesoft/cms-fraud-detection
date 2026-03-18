@@ -39,11 +39,13 @@ def create_app() -> FastAPI:
     from src.api.routes.fairness import router as fairness_router
     from src.api.routes.providers import router as providers_router
     from src.api.routes.score import router as score_router
+    from src.api.routes.signals import router as signals_router
 
     app.include_router(providers_router, prefix="/api")
     app.include_router(claims_router, prefix="/api")
     app.include_router(score_router, prefix="/api")
     app.include_router(fairness_router, prefix="/api")
+    app.include_router(signals_router, prefix="/api")
 
     # --- Health endpoint (no router needed) ---
     from src.api.schemas import HealthResponse
