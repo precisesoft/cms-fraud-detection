@@ -156,8 +156,8 @@ class TestScoreCardStructure:
         except AttributeError:
             pass
 
-    def test_empty_case_returns_zero_scores(self):
-        """Completely empty dict → no signals fire → 0/0 → review."""
+    def test_empty_case_defaults(self):
+        """Empty dict → enrollment defaults fire → lands in review."""
         card = score_case({})
         # not enrolled → NOT_IN_ENROLLMENT fires (8 pts risk)
         # not revoked (None → False) → NO_REVOCATION fires (15 pts legitimacy)
