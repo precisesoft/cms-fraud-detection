@@ -60,6 +60,10 @@ export interface ScoreResult {
 export interface Claim {
   case_id: string;
   npi: string;
+  provider_last_org_name: string | null;
+  provider_first_name: string | null;
+  provider_state: string | null;
+  provider_type: string | null;
   hcpcs_cd: string;
   hcpcs_desc: string | null;
   tot_benes: number | null;
