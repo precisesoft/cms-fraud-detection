@@ -93,13 +93,23 @@ CMS loses an estimated $60B+ annually to improper payments across Medicare and M
 
 ## Public Data Sources
 
-| Dataset                                 | Source       | Use                                             |
-| --------------------------------------- | ------------ | ----------------------------------------------- |
-| Medicare Provider Utilization & Payment | data.cms.gov | Billing patterns, service volumes, charges      |
-| Medicare Part D Prescriber              | data.cms.gov | Prescription patterns, opioid flags             |
-| LEIE Exclusion List                     | oig.hhs.gov  | Labeled fraud positives for supervised learning |
-| Medicare Provider Compare               | data.cms.gov | Provider metadata, specialties, locations       |
-| HCPCS/CPT Code Reference                | cms.gov      | Service code descriptions for explainability    |
+All datasets are publicly available and currently downloadable. No PHI is used.
+
+### Active (used in scoring pipeline)
+
+| Dataset                                                                                                                                                                                                                              | Source       | Use                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ | --------------------------------------------------------------- |
+| [Medicare Physician & Other Practitioners — by Provider and Service](https://data.cms.gov/provider-summary-by-type-of-service/medicare-physician-other-practitioners/medicare-physician-other-practitioners-by-provider-and-service) | data.cms.gov | Core billing patterns, service volumes, charges, peer baselines |
+| [Medicare Physician & Other Practitioners — by Provider](https://data.cms.gov/provider-summary-by-type-of-service/medicare-physician-other-practitioners)                                                                            | data.cms.gov | Provider-level totals (benes, services, payments)               |
+| [Public Provider Enrollment](https://data.cms.gov/provider-data/dataset/mj5m-pzi6)                                                                                                                                                   | data.cms.gov | Enrollment status verification                                  |
+| Revoked Providers (Q1 2026)                                                                                                                                                                                                          | data.cms.gov | Revocation flag for risk scoring                                |
+
+### Reference only (not used in current pipeline)
+
+| Dataset                                                                                                                                                              | Source       | Notes                                        |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | -------------------------------------------- |
+| [OIG LEIE Exclusion List](https://oig.hhs.gov/exclusions/)                                                                                                           | oig.hhs.gov  | Potential enrichment; weak NPI join coverage |
+| [Medicare Part D Prescribers](https://data.cms.gov/provider-summary-by-type-of-service/medicare-part-d-prescribers/medicare-part-d-prescribers-by-provider-and-drug) | data.cms.gov | Potential prescribing-pattern enrichment     |
 
 ## Tech Stack
 
