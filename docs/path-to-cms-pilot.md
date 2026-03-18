@@ -35,7 +35,7 @@ We built an **explainable, proactive provider risk detection system** that turns
 
 | Layer    | Technology                | Why                                         |
 | -------- | ------------------------- | ------------------------------------------- |
-| API      | FastAPI (Python 3.12)     | Async, auto-documented, 8 live endpoints    |
+| API      | FastAPI (Python 3.12)     | Async, auto-documented, 9 live endpoints    |
 | Scoring  | Deterministic rule engine | Auditable, reproducible, no model drift     |
 | Data     | PostgreSQL 16 + Neo4j 5   | Relational queries + relationship traversal |
 | AI       | AWS Bedrock (Claude)      | **FedRAMP High authorized**, GovCloud-ready |
