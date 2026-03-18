@@ -29,5 +29,15 @@ build/
 # Claude Code
 .claude/
 
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate*
+terraform/*.tfvars
+
 # Environment
 .env
