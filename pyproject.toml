@@ -14,9 +14,6 @@ dependencies = [
     "polars>=1.0",
     "psycopg[binary]>=3.2",
     "psycopg-pool>=3.2",
-    "scikit-learn>=1.5",
-    "xgboost>=2.0",
-    "shap>=0.45",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "httpx>=0.27",
@@ -34,6 +31,11 @@ dev = [
     "bandit>=1.7",
     "mypy>=1.11",
     "cyclonedx-bom>=4.0",
+]
+ml = [
+    "scikit-learn>=1.5",
+    "xgboost>=2.0",
+    "shap>=0.45",
 ]
 gpu = [
     "torch>=2.4",

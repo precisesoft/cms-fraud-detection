@@ -113,41 +113,45 @@ All datasets are publicly available and currently downloadable. No PHI is used.
 
 ## Tech Stack
 
-| Layer         | Technology               | Why                                                    |
-| ------------- | ------------------------ | ------------------------------------------------------ |
-| Frontend      | Next.js 15 + TypeScript  | SSR, app router, API routes as BFF                     |
-| UI Components | shadcn/ui + Tailwind CSS | Polished, accessible, fast to build                    |
-| Charts        | Recharts                 | React-native, composable, AI can specify chart configs |
-| Backend       | Python 3.12 + FastAPI    | Async, auto-docs, scoring engine                       |
-| Database      | PostgreSQL 16            | Operational store, SQL queries, production-grade       |
-| Graph         | Neo4j 5                  | Relationship traversal, Cypher queries                 |
-| ETL           | DuckDB + Polars          | One-time data processing (not runtime)                 |
-| AI            | AWS Bedrock (Claude)     | FedRAMP authorized, GovCloud-ready                     |
-| Containers    | Docker + docker-compose  | Local dev, multi-service                               |
-| CI            | GitHub Actions           | Lint, test, build, coverage                            |
-| CD            | ArgoCD                   | GitOps deployment to EKS                               |
-| Registry      | Amazon ECR               | AWS-native container image store                       |
+### Implemented
+
+| Layer      | Technology              | Why                                              |
+| ---------- | ----------------------- | ------------------------------------------------ |
+| Backend    | Python 3.12 + FastAPI   | Async, auto-docs, scoring engine                 |
+| Database   | PostgreSQL 16           | Operational store, SQL queries, production-grade |
+| ETL        | DuckDB + Polars         | One-time data processing (not runtime)           |
+| CI         | GitHub Actions          | Lint, typecheck, test, security scan, SBOM       |
+| Containers | Docker + docker-compose | Local dev (Postgres)                             |
+
+### Planned
+
+| Layer    | Technology              | Status      |
+| -------- | ----------------------- | ----------- |
+| Frontend | Next.js 15 + TypeScript | Not started |
+| Graph    | Neo4j 5                 | Not started |
+| AI       | AWS Bedrock (Claude)    | Not started |
+| CD       | ArgoCD → EKS            | Deferred    |
 
 ## Quickstart
 
 ```bash
-# Clone and configure
+# Clone
 git clone git@github.com:precisesoft/cms-fraud-detection.git
 cd cms-fraud-detection
-cp .env.example .env  # Edit with your AWS credentials
 
-# Start all services
+# Start Postgres
 docker compose up -d
 
-# Run ETL pipeline (one-time)
-docker compose exec backend python -m backend.src.etl.load
-
-# Access the app
-# Frontend: http://localhost:3000
-# Backend API docs: http://localhost:8000/docs
+# Install Python dependencies
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
 
 # Run tests
-docker compose exec backend pytest
+pytest --cov=src -q
+
+# Start API server (requires Postgres running)
+uvicorn src.api.app:create_app --factory --host 0.0.0.0 --port 8000
+# API docs: http://localhost:8000/docs
 ```
 
 ## Team

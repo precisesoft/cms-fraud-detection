@@ -160,10 +160,9 @@ pip install -e ".[dev]"
 ```
 src/
   api/          FastAPI app, routes, schemas
+  scoring/      Signal taxonomy, extraction, score computation
   data/         Data loading, CSV generation
   pipeline/     Feature engineering (Polars)
-  models/       ML models (future)
-  explainability/ SHAP explanations (future)
 tests/          pytest test suite
 .github/
   workflows/    CI/CD pipelines
