@@ -1,7 +1,14 @@
 "use client";
 
+import Link from "next/link";
+import {
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  ExternalLink,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { RiskGauge } from "@/components/risk-gauge";
 import { RiskBadge, SignalRow } from "@/components/signal-row";
 import type {
@@ -10,56 +17,112 @@ import type {
   Recommendation,
 } from "@/types/api";
 
-function RecommendationBadge({ rec }: { rec: Recommendation }) {
-  switch (rec) {
-    case "deny":
-      return <Badge variant="destructive">Deny</Badge>;
-    case "review":
-      return (
-        <Badge className="bg-amber-100 text-amber-800 border-amber-200">
-          Review
-        </Badge>
-      );
-    default:
-      return (
-        <Badge className="bg-green-100 text-green-800 border-green-200">
-          Approve
-        </Badge>
-      );
-  }
-}
+// ---------------------------------------------------------------------------
+// Verdict banner config
+// ---------------------------------------------------------------------------
 
-function PeerRow({ stat }: { stat: PeerComparisonStats }) {
-  const isOutlier = Math.abs(stat.z_score) >= 2;
-  const isHigh = stat.z_score >= 2;
+const VERDICT_CONFIG: Record<
+  Recommendation,
+  {
+    label: string;
+    className: string;
+    icon: typeof CheckCircle2;
+    description: string;
+  }
+> = {
+  approve: {
+    label: "APPROVE",
+    className: "bg-green-50 border-green-200 text-green-800",
+    icon: CheckCircle2,
+    description:
+      "This claim falls within normal billing patterns for this provider and procedure.",
+  },
+  review: {
+    label: "REVIEW",
+    className: "bg-amber-50 border-amber-200 text-amber-800",
+    icon: AlertTriangle,
+    description:
+      "Some indicators warrant further review before processing this claim.",
+  },
+  deny: {
+    label: "DENY",
+    className: "bg-red-50 border-red-200 text-red-800",
+    icon: XCircle,
+    description:
+      "Multiple risk signals suggest this claim should be denied and escalated.",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Peer comparison bar
+// ---------------------------------------------------------------------------
+
+function PeerBar({ stat }: { stat: PeerComparisonStats }) {
+  const maxVal = Math.max(stat.provider_value, stat.peer_mean) || 1;
+  const providerPct = (stat.provider_value / maxVal) * 100;
+  const peerPct = (stat.peer_mean / maxVal) * 100;
+  const isOutlier = stat.z_score >= 2;
+  const ratio =
+    stat.peer_mean > 0
+      ? (stat.provider_value / stat.peer_mean).toFixed(1)
+      : "N/A";
+
   return (
-    <div className="grid grid-cols-4 gap-2 text-sm py-1.5 border-b last:border-0">
-      <span className="font-medium text-muted-foreground">
-        {stat.metric.replace(/_/g, " ")}
-      </span>
-      <span className="font-mono text-right">
-        {stat.provider_value.toLocaleString()}
-      </span>
-      <span className="font-mono text-right text-muted-foreground">
-        {stat.peer_mean.toLocaleString()}
-      </span>
-      <span
-        className={`font-mono text-right ${
-          isOutlier
-            ? isHigh
-              ? "text-red-600 font-semibold"
-              : "text-blue-600"
-            : "text-green-600"
-        }`}
-      >
-        {stat.z_score > 0 ? "+" : ""}
-        {stat.z_score.toFixed(1)}z
-      </span>
+    <div className="space-y-1.5 py-2 border-b last:border-0">
+      <div className="flex items-center justify-between text-sm">
+        <span className="font-medium capitalize">
+          {stat.metric.replace(/_/g, " ")}
+        </span>
+        <span
+          className={`text-xs font-mono ${isOutlier ? "text-red-600 font-semibold" : "text-muted-foreground"}`}
+        >
+          {ratio}x peers
+          {isOutlier && " ⚠"}
+        </span>
+      </div>
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground w-12 shrink-0">
+            Yours
+          </span>
+          <div className="flex-1 bg-muted rounded-full h-3 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${
+                isOutlier ? "bg-red-500" : "bg-blue-500"
+              }`}
+              style={{ width: `${providerPct}%` }}
+            />
+          </div>
+          <span className="text-xs font-mono w-16 text-right">
+            {stat.provider_value.toLocaleString()}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground w-12 shrink-0">
+            Peers
+          </span>
+          <div className="flex-1 bg-muted rounded-full h-3 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gray-400"
+              style={{ width: `${peerPct}%` }}
+            />
+          </div>
+          <span className="text-xs font-mono w-16 text-right text-muted-foreground">
+            {stat.peer_mean.toLocaleString()}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
+
 export function SimulateResult({ result }: { result: ClaimSimulationResult }) {
+  const verdict = VERDICT_CONFIG[result.recommendation];
+  const VerdictIcon = verdict.icon;
   const riskSignals = result.signals.filter((s) => s.direction === "risk");
   const legitSignals = result.signals.filter(
     (s) => s.direction === "legitimacy",
@@ -67,14 +130,21 @@ export function SimulateResult({ result }: { result: ClaimSimulationResult }) {
 
   return (
     <div className="space-y-4">
+      {/* Verdict banner — big, bold, unmissable */}
+      <div
+        className={`rounded-lg border-2 p-6 text-center ${verdict.className}`}
+      >
+        <VerdictIcon className="h-10 w-10 mx-auto mb-2" />
+        <p className="text-3xl font-black tracking-wide">{verdict.label}</p>
+        <p className="text-sm mt-1 opacity-80">{verdict.description}</p>
+      </div>
+
+      {/* Risk gauge + provider context */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Scoring Result</CardTitle>
-            <div className="flex items-center gap-2">
-              <RiskBadge band={result.risk_band} />
-              <RecommendationBadge rec={result.recommendation} />
-            </div>
+            <CardTitle className="text-base">Risk Assessment</CardTitle>
+            <RiskBadge band={result.risk_band} />
           </div>
           {result.provider_name && (
             <p className="text-sm text-muted-foreground">
@@ -91,29 +161,25 @@ export function SimulateResult({ result }: { result: ClaimSimulationResult }) {
         </CardContent>
       </Card>
 
+      {/* Peer comparison bars */}
       {result.peer_comparisons.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">Peer Comparison</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              {result.peer_comparisons[0]?.peer_count ?? 0} peers with same
+              specialty + procedure
+            </p>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground font-medium pb-1 border-b">
-              <span>Metric</span>
-              <span className="text-right">Yours</span>
-              <span className="text-right">Peer Avg</span>
-              <span className="text-right">Z-Score</span>
-            </div>
             {result.peer_comparisons.map((p) => (
-              <PeerRow key={p.metric} stat={p} />
+              <PeerBar key={p.metric} stat={p} />
             ))}
-            <p className="text-xs text-muted-foreground mt-2">
-              Peers: {result.peer_comparisons[0]?.peer_count ?? 0} providers
-              with same specialty + procedure
-            </p>
           </CardContent>
         </Card>
       )}
 
+      {/* Signals */}
       {result.signals.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
@@ -132,6 +198,7 @@ export function SimulateResult({ result }: { result: ClaimSimulationResult }) {
         </Card>
       )}
 
+      {/* Narrative */}
       {result.narrative && (
         <Card>
           <CardHeader className="pb-2">
@@ -142,6 +209,45 @@ export function SimulateResult({ result }: { result: ClaimSimulationResult }) {
           </CardContent>
         </Card>
       )}
+
+      {/* Action buttons */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap gap-3">
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white"
+              disabled={result.recommendation === "deny"}
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Approve Payment
+            </Button>
+            <Button
+              variant="outline"
+              className="border-amber-300 text-amber-700 hover:bg-amber-50"
+            >
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              Flag for Review
+            </Button>
+            <Button
+              variant="outline"
+              className="border-red-300 text-red-700 hover:bg-red-50"
+              disabled={result.recommendation === "approve"}
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              Deny &amp; Escalate
+            </Button>
+          </div>
+          <div className="mt-4 pt-3 border-t">
+            <Link
+              href={`/providers/${result.npi}`}
+              className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+            >
+              View full provider investigation
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
