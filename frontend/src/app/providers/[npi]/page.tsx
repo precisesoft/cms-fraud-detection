@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/lib/api";
+import { EvidenceGraph } from "@/components/evidence-graph";
 import { PeerChart } from "@/components/peer-chart";
 import { RiskGauge } from "@/components/risk-gauge";
 import { ScanButton } from "@/components/scan-button";
@@ -270,6 +271,9 @@ export default async function ProviderDetailPage({
 
       {/* Peer Comparison Chart */}
       <PeerChart npi={npi} />
+
+      {/* Evidence Graph */}
+      <EvidenceGraph npi={npi} />
 
       {/* Signals */}
       {signals.length > 0 && (
