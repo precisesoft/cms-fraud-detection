@@ -1,4 +1,6 @@
 import type {
+  ChatRequest,
+  ChatResponse,
   ClaimListResponse,
   ClaimSimulationRequest,
   ClaimSimulationResult,
@@ -105,4 +107,7 @@ export const api = {
       "/api/claims/simulate",
       req,
     ),
+
+  chat: (req: ChatRequest) =>
+    postApi<ChatRequest, ChatResponse>("/api/chat", req),
 };
