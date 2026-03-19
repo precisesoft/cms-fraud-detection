@@ -21,6 +21,12 @@ class RiskBand(StrEnum):
     stable = "stable"
 
 
+class Recommendation(StrEnum):
+    approve = "approve"
+    review = "review"
+    deny = "deny"
+
+
 # ---------------------------------------------------------------------------
 # Pagination
 # ---------------------------------------------------------------------------
@@ -240,6 +246,53 @@ class ScoreResult(BaseModel):
     risk_band: RiskBand
     signals: list[Signal] = []
     narrative: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# Claim Simulation schemas
+# ---------------------------------------------------------------------------
+
+
+class ClaimSimulationRequest(BaseModel):
+    """Input for real-time single-claim scoring."""
+
+    npi: str = Field(description="Provider NPI")
+    hcpcs_cd: str = Field(description="HCPCS procedure code")
+    submitted_charge: float = Field(gt=0, description="Submitted charge amount in USD")
+    num_services: int = Field(gt=0, description="Number of services on this claim")
+    num_benes: int = Field(gt=0, description="Number of beneficiaries")
+    place_of_service: str | None = Field(
+        default=None, description="Place of service code (optional)"
+    )
+
+
+class PeerComparisonStats(BaseModel):
+    """Provider value vs peer baseline for a single metric."""
+
+    metric: str = Field(description="e.g. submitted_charge, services_per_bene")
+    provider_value: float
+    peer_mean: float
+    z_score: float
+    percentile: float | None = Field(
+        default=None, ge=0, le=100, description="Provider percentile among peers"
+    )
+    peer_count: int = Field(description="Number of peers in comparison group")
+
+
+class ClaimSimulationResult(BaseModel):
+    """Output from real-time claim scoring."""
+
+    npi: str
+    hcpcs_cd: str
+    risk_score: int = Field(ge=0, le=100)
+    risk_band: RiskBand
+    recommendation: Recommendation
+    signals: list[Signal] = []
+    peer_comparisons: list[PeerComparisonStats] = []
+    provider_name: str | None = None
+    provider_type: str | None = None
+    state: str | None = None
+    narrative: str | None = Field(default=None, description="AI-generated verdict explanation")
 
 
 # ---------------------------------------------------------------------------

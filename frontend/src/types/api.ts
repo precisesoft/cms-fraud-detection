@@ -57,6 +57,40 @@ export interface ScoreResult {
   narrative: string | null;
 }
 
+export type Recommendation = "approve" | "review" | "deny";
+
+export interface ClaimSimulationRequest {
+  npi: string;
+  hcpcs_cd: string;
+  submitted_charge: number;
+  num_services: number;
+  num_benes: number;
+  place_of_service?: string;
+}
+
+export interface PeerComparisonStats {
+  metric: string;
+  provider_value: number;
+  peer_mean: number;
+  z_score: number;
+  percentile: number | null;
+  peer_count: number;
+}
+
+export interface ClaimSimulationResult {
+  npi: string;
+  hcpcs_cd: string;
+  risk_score: number;
+  risk_band: RiskBand;
+  recommendation: Recommendation;
+  signals: Signal[];
+  peer_comparisons: PeerComparisonStats[];
+  provider_name: string | null;
+  provider_type: string | null;
+  state: string | null;
+  narrative: string | null;
+}
+
 export interface Claim {
   case_id: string;
   npi: string;
