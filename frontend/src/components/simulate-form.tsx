@@ -16,15 +16,15 @@ interface ExampleClaim extends ClaimSimulationRequest {
 const EXAMPLES: ExampleClaim[] = [
   {
     label: "High-risk: excessive volume",
-    npi: "1003000126",
-    hcpcs_cd: "99213",
+    npi: "1760461826",
+    hcpcs_cd: "99215",
     submitted_charge: 450,
     num_services: 800,
     num_benes: 50,
   },
   {
     label: "Stable: normal billing",
-    npi: "1003000126",
+    npi: "1629028733",
     hcpcs_cd: "99213",
     submitted_charge: 75,
     num_services: 30,
@@ -116,7 +116,7 @@ export function SimulateForm({
             </label>
             <Input
               id="npi"
-              placeholder="e.g. 1003000126"
+              placeholder="e.g. 1760461826"
               value={npi}
               onChange={(e) => setNpi(e.target.value)}
               required
