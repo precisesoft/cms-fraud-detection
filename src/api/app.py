@@ -48,10 +48,12 @@ def create_app() -> FastAPI:
     from src.api.routes.providers import router as providers_router
     from src.api.routes.score import router as score_router
     from src.api.routes.signals import router as signals_router
+    from src.api.routes.simulate import router as simulate_router
 
     app.include_router(providers_router, prefix="/api")
     app.include_router(claims_router, prefix="/api")
     app.include_router(score_router, prefix="/api")
+    app.include_router(simulate_router, prefix="/api")
     app.include_router(fairness_router, prefix="/api")
     app.include_router(signals_router, prefix="/api")
     app.include_router(dashboard_router, prefix="/api")
