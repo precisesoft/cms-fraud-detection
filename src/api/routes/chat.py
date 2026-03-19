@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from psycopg import AsyncConnection
 
 from src.ai.text_to_sql import SQLValidationError, text_to_sql
-from src.api.deps import get_db
+from src.api.deps import get_readonly_db
 from src.api.schemas import ChatRequest, ChatResponse
 
 logger = logging.getLogger(__name__)
@@ -37,15 +37,17 @@ def _serialize_row(row: dict) -> dict[str, object]:
 @router.post("", response_model=ChatResponse)
 async def chat(
     req: ChatRequest,
-    conn: AsyncConnection = Depends(get_db),
+    conn: AsyncConnection = Depends(get_readonly_db),
 ) -> ChatResponse:
     """Answer a natural language question about the CMS data.
 
     Routes the question through text-to-SQL: generates SQL via Claude,
     validates it, executes against PostgreSQL, and returns results.
     """
+    history = [{"role": m.role, "content": m.content} for m in req.history] or None
+
     try:
-        result = await text_to_sql(req.message, conn)
+        result = await text_to_sql(req.message, conn, history=history)
     except SQLValidationError as e:
         if "UNANSWERABLE" in str(e):
             return ChatResponse(

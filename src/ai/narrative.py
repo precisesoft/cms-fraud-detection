@@ -89,5 +89,10 @@ async def generate_narrative(
         logger.info("narrative generated for NPI=%s (%d chars)", npi, len(narrative))
         return narrative
     except Exception:
-        logger.exception("narrative generation failed for NPI=%s", npi)
+        logger.exception(
+            "narrative generation failed for NPI=%s risk_score=%d band=%s",
+            npi,
+            risk_score,
+            risk_band,
+        )
         return None

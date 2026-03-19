@@ -65,6 +65,7 @@ async def text_to_sql(
     question: str,
     conn: AsyncConnection,
     *,
+    history: list[dict[str, str]] | None = None,
     model: str = CHAT_MODEL,
 ) -> dict[str, Any]:
     """Convert natural language question to SQL, execute, return results.
@@ -79,9 +80,15 @@ async def text_to_sql(
     """
     system_prompt = build_text_to_sql_system_prompt()
 
+    # Build messages with conversation history for context
+    messages: list[dict[str, str]] = []
+    if history:
+        messages.extend(history[-6:])  # last 3 turns max to limit tokens
+    messages.append({"role": "user", "content": question})
+
     # Ask Claude to generate SQL
     response = await invoke(
-        messages=[{"role": "user", "content": question}],
+        messages=messages,
         system=system_prompt,
         model=model,
         max_tokens=512,
