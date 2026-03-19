@@ -4,8 +4,8 @@
 
 **Hackathon**: Government AI Hackathon — 14-day sprint
 **Challenge**: Proactive Program Integrity (CMS)
-**Status**: Incubating
-**Current Phase**: Solutioning sprint active; final artifacts due March 25, 2026
+**Live App**: [argus.precise-lab.com](https://argus.precise-lab.com)
+**Submission Deadline**: March 25, 2026 at 5:00 PM ET
 
 ## Start Here
 
@@ -39,13 +39,18 @@
   architecture diagram, risk-scoring explanation, responsible AI considerations, and a 5-minute
   "Path to CMS Pilot" briefing
 
-## Planning Focus
+## Sprint Timeline
 
-This repository is the planning and incubation home for the CMS challenge. The immediate job is to
-lock scope, datasets, judging narrative, and demo flow before committing to implementation.
+| Phase                    | Due    | Status          | Key Deliverables                                       |
+| ------------------------ | ------ | --------------- | ------------------------------------------------------ |
+| Phase 0: Project Spine   | Mar 14 | **Done**        | Monorepo, CI/CD, Dockerfiles, branch protection        |
+| Phase 1: Data Foundation | Mar 18 | **Done**        | 19GB ETL, 13K cases + 10K providers, Neo4j graph       |
+| Phase 2: Scoring + API   | Mar 20 | **Done**        | Scoring engine, all REST endpoints, peer baselines     |
+| Phase 3: AI Intelligence | Mar 22 | **In Progress** | Text-to-SQL, risk narratives, chat with charts         |
+| Phase 4: User Interface  | Mar 24 | **In Progress** | Claims simulator, investigation workflow, chat sidebar |
+| Phase 5: Ship            | Mar 26 | Pending         | Demo script, AI/OSS disclosure, judge access           |
 
-The current repo state is documentation-first with empty Python package scaffolding. The architecture,
-project tree, and commands below describe the intended build-out once implementation begins.
+**Demo Day**: March 27, 2026 — Reston, Virginia
 
 ## Problem Statement
 
@@ -113,24 +118,17 @@ All datasets are publicly available and currently downloadable. No PHI is used.
 
 ## Tech Stack
 
-### Implemented
-
-| Layer      | Technology              | Why                                              |
-| ---------- | ----------------------- | ------------------------------------------------ |
-| Backend    | Python 3.12 + FastAPI   | Async, auto-docs, scoring engine                 |
-| Database   | PostgreSQL 16           | Operational store, SQL queries, production-grade |
-| ETL        | DuckDB + Polars         | One-time data processing (not runtime)           |
-| CI         | GitHub Actions          | Lint, typecheck, test, security scan, SBOM       |
-| Containers | Docker + docker-compose | Local dev (Postgres)                             |
-
-### Planned
-
-| Layer    | Technology              | Status      |
-| -------- | ----------------------- | ----------- |
-| Frontend | Next.js 15 + TypeScript | Not started |
-| Graph    | Neo4j 5                 | Not started |
-| AI       | AWS Bedrock (Claude)    | Not started |
-| CD       | ArgoCD → EKS            | Deferred    |
+| Layer    | Technology                                     | Status  |
+| -------- | ---------------------------------------------- | ------- |
+| Frontend | Next.js 16 + TypeScript + Tailwind + shadcn/ui | Live    |
+| Backend  | Python 3.12 + FastAPI + psycopg                | Live    |
+| Database | PostgreSQL 16 (EKS StatefulSet)                | Live    |
+| Graph    | Neo4j 5 Community (EKS StatefulSet)            | Live    |
+| Scoring  | Rule-based taxonomy (14 signals)               | Live    |
+| ETL      | DuckDB + Polars                                | Done    |
+| CI/CD    | GitHub Actions + ECR + ArgoCD                  | Live    |
+| Infra    | AWS EKS + Istio + Terraform                    | Live    |
+| AI       | AWS Bedrock (Claude)                           | Planned |
 
 ## Quickstart
 
