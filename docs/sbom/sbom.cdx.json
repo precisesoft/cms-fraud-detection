@@ -201,7 +201,7 @@
       "version": "1.4.0"
     },
     {
-      "bom-ref": "attrs==25.4.0",
+      "bom-ref": "attrs==26.1.0",
       "description": "Classes Without Boilerplate",
       "externalReferences": [
         {
@@ -239,9 +239,9 @@
         }
       ],
       "name": "attrs",
-      "purl": "pkg:pypi/attrs@25.4.0",
+      "purl": "pkg:pypi/attrs@26.1.0",
       "type": "library",
-      "version": "25.4.0"
+      "version": "26.1.0"
     },
     {
       "bom-ref": "boolean.py==5.0",
@@ -2329,7 +2329,7 @@
       "ref": "arrow==1.4.0"
     },
     {
-      "ref": "attrs==25.4.0"
+      "ref": "attrs==26.1.0"
     },
     {
       "ref": "boolean.py==5.0"
@@ -2429,7 +2429,7 @@
     },
     {
       "dependsOn": [
-        "attrs==25.4.0",
+        "attrs==26.1.0",
         "fqdn==1.5.1",
         "idna==3.11",
         "isoduration==20.11.0",
@@ -2557,7 +2557,7 @@
     },
     {
       "dependsOn": [
-        "attrs==25.4.0",
+        "attrs==26.1.0",
         "rpds-py==0.30.0",
         "typing_extensions==4.15.0"
       ],
