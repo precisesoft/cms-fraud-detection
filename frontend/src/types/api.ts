@@ -211,6 +211,25 @@ export interface FairnessReport {
   disparate_impact_ratio: number | null;
 }
 
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface ChatRequest {
+  message: string;
+  history: ChatMessage[];
+}
+
+export interface ChatResponse {
+  answer: string;
+  sql: string | null;
+  columns: string[];
+  rows: Record<string, unknown>[];
+  row_count: number;
+  duration_ms: number;
+}
+
 export interface HealthResponse {
   status: string;
   database: string;

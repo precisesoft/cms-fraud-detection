@@ -12,6 +12,7 @@ import {
   FlaskConical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ChatPanel } from "@/components/chat-panel";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -54,9 +55,10 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <div className="px-4 py-3 border-t text-xs text-muted-foreground">
-        v0.1.0
+      <div className="px-2 py-2 border-t">
+        <ChatPanel />
       </div>
+      <div className="px-4 py-2 text-xs text-muted-foreground">v0.1.0</div>
     </aside>
   );
 }
