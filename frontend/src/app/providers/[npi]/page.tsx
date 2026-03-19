@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/lib/api";
 import { PeerChart } from "@/components/peer-chart";
+import { ScanButton } from "@/components/scan-button";
 import type { ProviderDetail, Signal } from "@/types/api";
 
 function riskBadge(
@@ -163,6 +164,9 @@ export default async function ProviderDetailPage({
           {riskBadge(provider.risk_band, "lg")}
         </div>
       </div>
+
+      {/* Scan Button */}
+      <ScanButton npi={npi} />
 
       {/* Stats grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
