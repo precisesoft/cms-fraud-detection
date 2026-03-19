@@ -5,6 +5,7 @@ import { ScanLine, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { RiskGauge } from "@/components/risk-gauge";
 import type { ScoreResult, Signal } from "@/types/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -107,13 +108,8 @@ export function ScanButton({ npi }: { npi: string }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Risk Score</p>
-                <p className="text-2xl font-bold font-mono text-destructive">
-                  {result.risk_score}
-                </p>
-              </div>
+            <div className="flex items-center gap-6">
+              <RiskGauge score={result.risk_score} size={90} />
               <div>
                 <p className="text-xs text-muted-foreground">
                   Legitimacy Score
