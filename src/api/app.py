@@ -41,6 +41,7 @@ def create_app() -> FastAPI:
     )
 
     # --- Routers ---
+    from src.api.routes.chat import router as chat_router
     from src.api.routes.claims import router as claims_router
     from src.api.routes.dashboard import router as dashboard_router
     from src.api.routes.fairness import router as fairness_router
@@ -58,6 +59,7 @@ def create_app() -> FastAPI:
     app.include_router(signals_router, prefix="/api")
     app.include_router(dashboard_router, prefix="/api")
     app.include_router(graph_router, prefix="/api")
+    app.include_router(chat_router, prefix="/api")
 
     # --- Health endpoint (no router needed) ---
     from src.api.schemas import HealthResponse

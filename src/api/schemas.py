@@ -296,6 +296,30 @@ class ClaimSimulationResult(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Chat schemas
+# ---------------------------------------------------------------------------
+
+
+class ChatMessage(BaseModel):
+    role: str = Field(description="'user' or 'assistant'")
+    content: str
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=1000)
+    history: list[ChatMessage] = Field(default_factory=list, max_length=20)
+
+
+class ChatResponse(BaseModel):
+    answer: str
+    sql: str | None = Field(default=None, description="Generated SQL (if text-to-SQL was used)")
+    columns: list[str] = Field(default_factory=list)
+    rows: list[dict[str, object]] = Field(default_factory=list)
+    row_count: int = 0
+    duration_ms: int = 0
+
+
+# ---------------------------------------------------------------------------
 # Dashboard schemas
 # ---------------------------------------------------------------------------
 
@@ -345,32 +369,6 @@ class FairnessReport(BaseModel):
     overall_flagging_rate: float
     statistical_parity_diff: float | None = None
     disparate_impact_ratio: float | None = None
-
-
-# ---------------------------------------------------------------------------
-# Chat schemas
-# ---------------------------------------------------------------------------
-
-
-class ChatMessage(BaseModel):
-    role: str = Field(description="user or assistant")
-    content: str
-
-
-class ChatRequest(BaseModel):
-    message: str
-    history: list[ChatMessage] = []
-    provider_npi: str | None = Field(
-        default=None, description="Optional NPI context for provider-scoped questions"
-    )
-
-
-class ChatResponse(BaseModel):
-    reply: str
-    chart_spec: dict[str, Any] | None = Field(
-        default=None, description="Recharts-compatible chart config if applicable"
-    )
-    sql_query: str | None = Field(default=None, description="Generated SQL query for transparency")
 
 
 # ---------------------------------------------------------------------------
