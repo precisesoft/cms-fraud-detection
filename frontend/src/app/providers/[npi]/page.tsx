@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/lib/api";
 import { PeerChart } from "@/components/peer-chart";
+import { RiskGauge } from "@/components/risk-gauge";
 import { ScanButton } from "@/components/scan-button";
 import type { ProviderDetail, Signal } from "@/types/api";
 
@@ -155,12 +156,7 @@ export default async function ProviderDetailPage({
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">Risk Score</p>
-            <p className="text-3xl font-bold font-mono">
-              {provider.max_seed_risk_score ?? "\u2014"}
-            </p>
-          </div>
+          <RiskGauge score={provider.max_seed_risk_score} />
           {riskBadge(provider.risk_band, "lg")}
         </div>
       </div>
