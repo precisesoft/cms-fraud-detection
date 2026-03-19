@@ -3,14 +3,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RiskGauge } from "@/components/risk-gauge";
+import { RiskBadge, SignalRow } from "@/components/signal-row";
 import type {
   ClaimSimulationResult,
   PeerComparisonStats,
-  Signal,
   Recommendation,
 } from "@/types/api";
 
-function recommendationBadge(rec: Recommendation) {
+function RecommendationBadge({ rec }: { rec: Recommendation }) {
   switch (rec) {
     case "deny":
       return <Badge variant="destructive">Deny</Badge>;
@@ -27,54 +27,6 @@ function recommendationBadge(rec: Recommendation) {
         </Badge>
       );
   }
-}
-
-function riskBadge(band: string) {
-  switch (band) {
-    case "high_risk":
-      return <Badge variant="destructive">High Risk</Badge>;
-    case "review":
-      return (
-        <Badge className="bg-amber-100 text-amber-800 border-amber-200">
-          Review
-        </Badge>
-      );
-    default:
-      return (
-        <Badge variant="outline" className="text-green-700 border-green-200">
-          Stable
-        </Badge>
-      );
-  }
-}
-
-function SignalRow({ signal }: { signal: Signal }) {
-  const isRisk = signal.direction === "risk";
-  return (
-    <div
-      className={`flex items-start justify-between gap-2 rounded-md px-3 py-2 text-sm ${
-        isRisk ? "bg-red-50" : "bg-green-50"
-      }`}
-    >
-      <div>
-        <span
-          className={`font-medium ${isRisk ? "text-red-800" : "text-green-800"}`}
-        >
-          {signal.name}
-        </span>
-        <p className={`text-xs ${isRisk ? "text-red-600" : "text-green-600"}`}>
-          {signal.description}
-        </p>
-      </div>
-      {signal.value != null && (
-        <span
-          className={`text-xs font-mono shrink-0 ${isRisk ? "text-red-700" : "text-green-700"}`}
-        >
-          {signal.value.toFixed(1)}
-        </span>
-      )}
-    </div>
-  );
 }
 
 function PeerRow({ stat }: { stat: PeerComparisonStats }) {
@@ -115,14 +67,13 @@ export function SimulateResult({ result }: { result: ClaimSimulationResult }) {
 
   return (
     <div className="space-y-4">
-      {/* Header card with recommendation */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Scoring Result</CardTitle>
             <div className="flex items-center gap-2">
-              {riskBadge(result.risk_band)}
-              {recommendationBadge(result.recommendation)}
+              <RiskBadge band={result.risk_band} />
+              <RecommendationBadge rec={result.recommendation} />
             </div>
           </div>
           {result.provider_name && (
@@ -140,7 +91,6 @@ export function SimulateResult({ result }: { result: ClaimSimulationResult }) {
         </CardContent>
       </Card>
 
-      {/* Peer comparisons */}
       {result.peer_comparisons.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
@@ -164,7 +114,6 @@ export function SimulateResult({ result }: { result: ClaimSimulationResult }) {
         </Card>
       )}
 
-      {/* Signals */}
       {result.signals.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
@@ -183,7 +132,6 @@ export function SimulateResult({ result }: { result: ClaimSimulationResult }) {
         </Card>
       )}
 
-      {/* Narrative */}
       {result.narrative && (
         <Card>
           <CardHeader className="pb-2">
