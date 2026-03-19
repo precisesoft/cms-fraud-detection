@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 
+from src.ai.narrative import generate_narrative
 from src.api.deps import get_db
 from src.api.schemas import ScoreRequest, ScoreResult, Signal, risk_band_from_score
 from src.scoring.extract import FiredSignal
@@ -123,10 +124,20 @@ async def score_claim(
     risk_band = risk_band_from_score(card.risk_score)
     signals = [_fired_to_signal(fs) for fs in card.signals]
 
+    # 6. Generate AI narrative (non-blocking, non-fatal)
+    narrative = await generate_narrative(
+        npi=req.npi,
+        risk_score=card.risk_score,
+        risk_band=str(risk_band) if risk_band else "unknown",
+        signals=[s.model_dump() for s in signals],
+        provider_type=provider.get("provider_type"),
+    )
+
     return ScoreResult(
         npi=req.npi,
         risk_score=card.risk_score,
         legitimacy_score=card.legitimacy_score,
         risk_band=risk_band,  # type: ignore[arg-type]
         signals=signals,
+        narrative=narrative,
     )

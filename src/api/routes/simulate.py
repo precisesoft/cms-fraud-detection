@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 
+from src.ai.narrative import generate_narrative
 from src.api.deps import get_db
 from src.api.schemas import (
     ClaimSimulationRequest,
@@ -181,6 +182,19 @@ async def simulate_claim(
     recommendation = _RISK_TO_RECOMMENDATION.get(risk_band, Recommendation.review)
     signals = [_fired_to_signal(fs) for fs in card.signals]
 
+    # 5. Generate AI narrative (non-blocking, non-fatal)
+    narrative = await generate_narrative(
+        npi=req.npi,
+        risk_score=card.risk_score,
+        risk_band=str(risk_band) if risk_band else "unknown",
+        signals=[s.model_dump() for s in signals],
+        provider_name=provider.get("provider_name"),
+        provider_type=provider.get("provider_type"),
+        state=provider.get("state"),
+        recommendation=recommendation,
+        peer_comparisons=[p.model_dump() for p in peer_comparisons],
+    )
+
     return ClaimSimulationResult(
         npi=req.npi,
         hcpcs_cd=req.hcpcs_cd,
@@ -192,4 +206,5 @@ async def simulate_claim(
         provider_name=provider.get("provider_name"),
         provider_type=provider.get("provider_type"),
         state=provider.get("state"),
+        narrative=narrative,
     )
