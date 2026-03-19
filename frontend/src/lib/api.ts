@@ -1,5 +1,7 @@
 import type {
   ClaimListResponse,
+  ClaimSimulationRequest,
+  ClaimSimulationResult,
   DashboardStats,
   FairnessReport,
   GraphResponse,
@@ -20,6 +22,19 @@ async function fetchApi<T>(path: string): Promise<T> {
     throw new Error(`API error: ${res.status} ${res.statusText}`);
   }
   return res.json() as Promise<T>;
+}
+
+async function postApi<TReq, TRes>(path: string, body: TReq): Promise<TRes> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status} ${res.statusText}`);
+  }
+  return res.json() as Promise<TRes>;
 }
 
 export const api = {
@@ -84,4 +99,10 @@ export const api = {
   graph: (npi: string) => fetchApi<GraphResponse>(`/api/graph/${npi}`),
 
   fairness: () => fetchApi<FairnessReport>("/api/fairness"),
+
+  simulateClaim: (req: ClaimSimulationRequest) =>
+    postApi<ClaimSimulationRequest, ClaimSimulationResult>(
+      "/api/claims/simulate",
+      req,
+    ),
 };
