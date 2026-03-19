@@ -161,6 +161,22 @@ export interface PeerResponse {
   total_lines: number;
 }
 
+export interface CohortFairness {
+  cohort: string;
+  provider_count: number;
+  flagged_count: number;
+  flagging_rate: number;
+  is_outlier: boolean;
+}
+
+export interface FairnessReport {
+  by_state: CohortFairness[];
+  by_specialty: CohortFairness[];
+  overall_flagging_rate: number;
+  statistical_parity_diff: number | null;
+  disparate_impact_ratio: number | null;
+}
+
 export interface HealthResponse {
   status: string;
   database: string;

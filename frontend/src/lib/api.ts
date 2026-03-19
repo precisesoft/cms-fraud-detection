@@ -1,6 +1,7 @@
 import type {
   ClaimListResponse,
   DashboardStats,
+  FairnessReport,
   GraphResponse,
   HeatmapResponse,
   HealthResponse,
@@ -81,4 +82,6 @@ export const api = {
   heatmap: () => fetchApi<HeatmapResponse>("/api/dashboard/heatmap"),
 
   graph: (npi: string) => fetchApi<GraphResponse>(`/api/graph/${npi}`),
+
+  fairness: () => fetchApi<FairnessReport>("/api/fairness"),
 };
