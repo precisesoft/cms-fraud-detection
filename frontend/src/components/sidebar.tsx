@@ -9,11 +9,13 @@ import {
   Shield,
   Activity,
   FileText,
+  FlaskConical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/simulate", label: "Simulate", icon: FlaskConical },
   { href: "/providers", label: "Providers", icon: Search },
   { href: "/claims", label: "Claims", icon: FileText },
   { href: "/heatmap", label: "Risk Map", icon: Map },
