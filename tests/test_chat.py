@@ -8,7 +8,7 @@ import pytest
 
 from src.ai.text_to_sql import SQLValidationError
 from src.api.routes.chat import _serialize_row, chat
-from src.api.schemas import ChatRequest
+from src.api.schemas import ChatMessage, ChatRequest
 
 # ---------------------------------------------------------------------------
 # Serialization tests
@@ -110,3 +110,33 @@ async def test_chat_internal_error():
             await chat(req, conn=AsyncMock())
 
     assert exc_info.value.status_code == 500
+
+
+@pytest.mark.asyncio
+async def test_chat_passes_history():
+    """Verify conversation history is forwarded to text_to_sql."""
+    mock_result = {
+        "answer": "5",
+        "sql": "SELECT count(*) FROM provider_features WHERE state = 'FL'",
+        "columns": ["count"],
+        "rows": [{"count": 5}],
+        "row_count": 1,
+        "duration_ms": 10,
+    }
+
+    with patch(
+        "src.api.routes.chat.text_to_sql", new_callable=AsyncMock, return_value=mock_result
+    ) as mock_t2s:
+        req = ChatRequest(
+            message="What about Florida?",
+            history=[
+                ChatMessage(role="user", content="How many high-risk providers in Texas?"),
+                ChatMessage(role="assistant", content="There are 12."),
+            ],
+        )
+        await chat(req, conn=AsyncMock())
+
+    _, kwargs = mock_t2s.call_args
+    assert kwargs["history"] is not None
+    assert len(kwargs["history"]) == 2
+    assert kwargs["history"][0]["role"] == "user"
