@@ -1,0 +1,17 @@
+# Environment setup for GitHub Copilot Coding Agent
+# The agent runs these steps in a Codespace before making changes.
+# Docs: https://docs.github.com/en/copilot/using-github-copilot/using-the-copilot-coding-agent
+
+setup:
+  - name: Install uv
+    run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+  - name: Install Python dependencies
+    run: uv sync --frozen --all-extras
+
+  - name: Verify CI checks pass
+    run: |
+      uv run ruff check src/ tests/
+      uv run ruff format --check src/ tests/
+      uv run mypy src/
+      uv run pytest --tb=short -q
