@@ -363,12 +363,28 @@ class CohortFairness(BaseModel):
     is_outlier: bool = Field(description="True if > 2 sigma above mean flagging rate")
 
 
+class RevocationImpact(BaseModel):
+    """Impact of the revocation signal on fairness metrics."""
+
+    overall_flagging_rate_with: float = Field(description="Flagging rate with revocation signal")
+    overall_flagging_rate_without: float = Field(
+        description="Flagging rate without revocation signal"
+    )
+    flagging_rate_delta: float = Field(description="Change in flagging rate")
+    disparate_impact_with: float | None = None
+    disparate_impact_without: float | None = None
+
+
 class FairnessReport(BaseModel):
     by_state: list[CohortFairness]
     by_specialty: list[CohortFairness]
     overall_flagging_rate: float
     statistical_parity_diff: float | None = None
     disparate_impact_ratio: float | None = None
+    revocation_impact: RevocationImpact | None = Field(
+        default=None,
+        description="Impact analysis of revocation signal on fairness (included when blind=true)",
+    )
 
 
 # ---------------------------------------------------------------------------
