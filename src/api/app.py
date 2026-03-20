@@ -52,6 +52,7 @@ def create_app() -> FastAPI:
     from src.api.routes.score import router as score_router
     from src.api.routes.signals import router as signals_router
     from src.api.routes.simulate import router as simulate_router
+    from src.api.routes.validation import router as validation_router
 
     app.include_router(providers_router, prefix="/api")
     app.include_router(cases_router, prefix="/api")
@@ -64,6 +65,7 @@ def create_app() -> FastAPI:
     app.include_router(graph_router, prefix="/api")
     app.include_router(network_router, prefix="/api")
     app.include_router(chat_router, prefix="/api")
+    app.include_router(validation_router, prefix="/api")
 
     # --- Health endpoint (no router needed) ---
     from src.api.schemas import HealthResponse

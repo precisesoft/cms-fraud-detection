@@ -113,9 +113,14 @@ async def score_claim(
             case["service_volume_peer_z"] = _z_score(
                 req.tot_srvcs, peers["avg_srvcs"], peers["std_srvcs"]
             )
-            case["services_per_bene_peer_z"] = None  # no bene count in request
-            case["submitted_to_allowed_peer_z"] = None  # no allowed amount in request
-            case["payment_peer_z"] = None  # no payment amount in request
+            case["services_per_bene_peer_z"] = None  # no bene count in ScoreRequest
+            # Use submitted charge as proxy for charge ratio z-score
+            case["submitted_to_allowed_peer_z"] = _z_score(
+                req.avg_submitted_charge, peers["avg_ratio"], peers["std_ratio"]
+            )
+            case["payment_peer_z"] = _z_score(
+                req.avg_submitted_charge, peers["avg_payment"], peers["std_payment"]
+            )
 
     # 4. Score
     card = score_case(case)

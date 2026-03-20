@@ -1,32 +1,32 @@
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e2e8f0', 'primaryTextColor': '#1e293b', 'primaryBorderColor': '#94a3b8', 'lineColor': '#64748b', 'secondaryColor': '#f1f5f9', 'tertiaryColor': '#f8fafc', 'fontFamily': 'Inter, system-ui, sans-serif'}}}%%
 
 graph TB
-    ROOT["Signal Taxonomy<br/><b>CMS Provider Intelligence</b>"]
+    ROOT["Signal Taxonomy<br/><b>13 Explainable Signals</b>"]
 
-    subgraph RISK["RISK SIGNALS (6) — Increase Suspicion"]
+    subgraph RISK["RISK SIGNALS — 6 Signals"]
         direction TB
-        R1["revoked_provider<br/><i>Provider in 2026 revocation file</i><br/>Category: enrollment<br/>Points: +25"]
-        R2["not_in_current_enrollment_file<br/><i>Provider absent from 2025 enrollment</i><br/>Category: enrollment<br/>Points: +8"]
-        R3["service_volume_outlier<br/><i>Total services above peer average</i><br/>Category: peer (z-score)<br/>z≥5.0: +20 · z≥3.0: +14 · z≥2.0: +8"]
-        R4["service_intensity_outlier<br/><i>Services per beneficiary above peers</i><br/>Category: peer (z-score)<br/>z≥5.0: +18 · z≥3.0: +12 · z≥2.0: +7"]
-        R5["charge_ratio_outlier<br/><i>Submitted-to-allowed ratio above peers</i><br/>Category: peer (z-score)<br/>z≥5.0: +18 · z≥3.0: +12 · z≥2.0: +7"]
-        R6["payment_outlier<br/><i>Average payment above peer average</i><br/>Category: peer (z-score)<br/>z≥5.0: +12 · z≥3.0: +8 · z≥2.0: +5"]
+        R1["revoked_provider<br/><i>Provider in 2026 revocation file</i><br/>Category: enrollment<br/><b>+25 points</b>"]
+        R2["not_in_current_enrollment_file<br/><i>Not in current 2025 enrollment</i><br/>Category: enrollment<br/><b>+8 points</b>"]
+        R3["service_volume_outlier<br/><i>Total services z-score vs peers</i><br/>Category: peer<br/><b>z≥5: +20 | z≥3: +14 | z≥2: +8</b>"]
+        R4["service_intensity_outlier<br/><i>Services per bene z-score vs peers</i><br/>Category: peer<br/><b>z≥5: +18 | z≥3: +12 | z≥2: +7</b>"]
+        R5["charge_ratio_outlier<br/><i>Submitted/allowed ratio z-score</i><br/>Category: peer<br/><b>z≥5: +18 | z≥3: +12 | z≥2: +7</b>"]
+        R6["payment_outlier<br/><i>Avg payment z-score vs peers</i><br/>Category: peer<br/><b>z≥5: +12 | z≥3: +8 | z≥2: +5</b>"]
     end
 
-    subgraph LEGIT["LEGITIMACY SIGNALS (7) — Reduce Suspicion"]
+    subgraph LEGIT["LEGITIMACY SIGNALS — 7 Signals"]
         direction TB
-        L1["present_in_current_enrollment_file<br/><i>Provider found in 2025 enrollment</i><br/>Category: enrollment<br/>Points: +20"]
-        L2["no_revocation_match<br/><i>No revocation on record</i><br/>Category: enrollment<br/>Points: +15"]
-        L3["medicare_participating<br/><i>Accepts Medicare assignment</i><br/>Category: enrollment<br/>Points: +10"]
-        L4["peer_aligned_volume<br/><i>Service volume within 1σ of peers</i><br/>Category: peer (|z| &lt; 1.0)<br/>Points: +12"]
-        L5["peer_aligned_intensity<br/><i>Services per bene within 1σ of peers</i><br/>Category: peer (|z| &lt; 1.0)<br/>Points: +12"]
-        L6["peer_aligned_pricing<br/><i>Charge ratio within 1σ of peers</i><br/>Category: peer (|z| &lt; 1.0)<br/>Points: +12"]
-        L7["large_patient_panel<br/><i>Serves 100+ Medicare beneficiaries</i><br/>Category: volume (threshold ≥ 100)<br/>Points: +8"]
+        L1["present_in_current_enrollment_file<br/><i>Found in 2025 enrollment</i><br/>Category: enrollment<br/><b>+20 points</b>"]
+        L2["no_revocation_match<br/><i>No revocation on record</i><br/>Category: enrollment<br/><b>+15 points</b>"]
+        L3["medicare_participating<br/><i>Accepts Medicare assignment</i><br/>Category: enrollment<br/><b>+10 points</b>"]
+        L4["peer_aligned_volume<br/><i>Service volume |z| &lt; 1.0</i><br/>Category: peer<br/><b>+12 points</b>"]
+        L5["peer_aligned_intensity<br/><i>Services per bene |z| &lt; 1.0</i><br/>Category: peer<br/><b>+12 points</b>"]
+        L6["peer_aligned_pricing<br/><i>Charge ratio |z| &lt; 1.0</i><br/>Category: peer<br/><b>+12 points</b>"]
+        L7["large_patient_panel<br/><i>Serves 100+ Medicare benes</i><br/>Category: volume<br/><b>+8 points</b>"]
     end
 
     subgraph SCORING["SCORE COMPUTATION"]
-        FORMULA["Risk Score = Σ risk_points  (capped 0–100)<br/>Legitimacy Score = Σ legit_points  (capped 0–100)<br/>Scores are independent — both always computed"]
-        LABELS["Case labels (label_case):<br/>high_risk: risk ≥ 50 AND risk ≥ legitimacy + 5<br/>stable: legitimacy ≥ 70 AND risk &lt; 30<br/>review: all other cases"]
+        FORMULA["Risk Score = Σ risk signal points<br/>Legitimacy Score = Σ legitimacy signal points<br/>Both capped at 100"]
+        LABELS["<b>high_risk</b>: risk ≥ 51 AND risk ≥ legitimacy + 5<br/><b>stable</b>: legitimacy ≥ 70 AND risk &lt; 30<br/><b>review</b>: everything else"]
         BANDS["Provider risk bands:<br/>high_risk: score ≥ 51 · review: score ≥ 31 · stable: score &lt; 31"]
     end
 
