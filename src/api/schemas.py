@@ -313,7 +313,7 @@ class ClaimSimulationResult(BaseModel):
 
 
 class ChatMessage(BaseModel):
-    role: Literal["user", "assistant"] = Field(description="'user' or 'assistant'")
+    role: Literal["user", "assistant"]
     content: str
 
 
