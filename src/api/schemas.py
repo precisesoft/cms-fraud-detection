@@ -397,6 +397,45 @@ class GraphResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Case Actions (Investigation Workflow)
+# ---------------------------------------------------------------------------
+
+
+class CaseAction(StrEnum):
+    approved = "APPROVED"
+    flagged = "FLAGGED"
+    denied = "DENIED"
+    escalated = "ESCALATED"
+
+
+class CaseActionRequest(BaseModel):
+    action: CaseAction
+    notes: str | None = Field(default=None, max_length=1000)
+
+
+class CaseActionRecord(BaseModel):
+    id: int
+    case_id: str
+    npi: str
+    action: CaseAction
+    notes: str | None = None
+    analyst_id: str
+    created_at: str
+
+
+class CaseActionResponse(BaseModel):
+    case_id: str
+    action: CaseAction
+    message: str
+
+
+class CaseActionsListResponse(BaseModel):
+    case_id: str
+    actions: list[CaseActionRecord]
+    current_status: CaseAction | None = None
+
+
+# ---------------------------------------------------------------------------
 # Health
 # ---------------------------------------------------------------------------
 

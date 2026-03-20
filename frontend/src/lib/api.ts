@@ -1,4 +1,7 @@
 import type {
+  CaseActionRequest,
+  CaseActionResponse,
+  CaseActionsListResponse,
   ChatRequest,
   ChatResponse,
   ClaimListResponse,
@@ -10,6 +13,7 @@ import type {
   HeatmapResponse,
   HealthResponse,
   PeerResponse,
+  PendingCase,
   ProviderDetail,
   ProviderListResponse,
   ScoreResult,
@@ -110,4 +114,16 @@ export const api = {
 
   chat: (req: ChatRequest) =>
     postApi<ChatRequest, ChatResponse>("/api/chat", req),
+
+  caseAction: (caseId: string, req: CaseActionRequest) =>
+    postApi<CaseActionRequest, CaseActionResponse>(
+      `/api/cases/${caseId}/action`,
+      req,
+    ),
+
+  caseActions: (caseId: string) =>
+    fetchApi<CaseActionsListResponse>(`/api/cases/${caseId}/actions`),
+
+  pendingCases: (limit = 50) =>
+    fetchApi<PendingCase[]>(`/api/cases/pending?limit=${limit}`),
 };

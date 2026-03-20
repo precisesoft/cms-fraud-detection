@@ -41,6 +41,7 @@ def create_app() -> FastAPI:
     )
 
     # --- Routers ---
+    from src.api.routes.cases import router as cases_router
     from src.api.routes.chat import router as chat_router
     from src.api.routes.claims import router as claims_router
     from src.api.routes.dashboard import router as dashboard_router
@@ -52,6 +53,7 @@ def create_app() -> FastAPI:
     from src.api.routes.simulate import router as simulate_router
 
     app.include_router(providers_router, prefix="/api")
+    app.include_router(cases_router, prefix="/api")
     app.include_router(claims_router, prefix="/api")
     app.include_router(score_router, prefix="/api")
     app.include_router(simulate_router, prefix="/api")
