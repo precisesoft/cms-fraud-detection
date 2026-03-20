@@ -9,7 +9,7 @@ from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 
 from src.api.deps import get_db
-from src.api.schemas import CohortFairness, FairnessReport
+from src.api.schemas import CohortFairness, FairnessReport, RevocationImpact
 
 router = APIRouter(prefix="/fairness", tags=["fairness"])
 
@@ -39,6 +39,48 @@ ORDER BY provider_type
 _OVERALL_SQL = """
 SELECT count(*)::int AS total,
        count(*) FILTER (WHERE max_seed_risk_score >= %s)::int AS flagged
+FROM provider_features
+"""
+
+# Blind scoring: subtract revocation signal (+25 risk, -15 legitimacy) for revoked providers
+_BLIND_STATE_SQL = """
+SELECT state AS cohort,
+       count(*)::int AS provider_count,
+       count(*) FILTER (WHERE
+           CASE WHEN revoked_2026 = 1
+                THEN GREATEST(max_seed_risk_score - 25, 0)
+                ELSE max_seed_risk_score
+           END >= %s
+       )::int AS flagged_count
+FROM provider_features
+WHERE state IS NOT NULL
+GROUP BY state
+ORDER BY state
+"""
+
+_BLIND_SPECIALTY_SQL = """
+SELECT provider_type AS cohort,
+       count(*)::int AS provider_count,
+       count(*) FILTER (WHERE
+           CASE WHEN revoked_2026 = 1
+                THEN GREATEST(max_seed_risk_score - 25, 0)
+                ELSE max_seed_risk_score
+           END >= %s
+       )::int AS flagged_count
+FROM provider_features
+WHERE provider_type IS NOT NULL
+GROUP BY provider_type
+ORDER BY provider_type
+"""
+
+_BLIND_OVERALL_SQL = """
+SELECT count(*)::int AS total,
+       count(*) FILTER (WHERE
+           CASE WHEN revoked_2026 = 1
+                THEN GREATEST(max_seed_risk_score - 25, 0)
+                ELSE max_seed_risk_score
+           END >= %s
+       )::int AS flagged
 FROM provider_features
 """
 
@@ -94,24 +136,49 @@ def _std_of_rates(rows: list[dict]) -> float:
 @router.get("", response_model=FairnessReport)
 async def get_fairness(
     threshold: int = Query(DEFAULT_THRESHOLD, ge=0, le=100),
+    blind: bool = Query(False, description="If true, exclude revocation signal from scoring"),
     conn: AsyncConnection = Depends(get_db),
 ) -> FairnessReport:
-    """Compute fairness metrics across geography and specialty."""
+    """Compute fairness metrics across geography and specialty.
+
+    When blind=true, scores are adjusted to remove the revocation signal,
+    showing how the system performs on behavioral signals alone. This also
+    returns a revocation_impact comparison.
+    """
+    state_sql = _BLIND_STATE_SQL if blind else _STATE_SQL
+    specialty_sql = _BLIND_SPECIALTY_SQL if blind else _SPECIALTY_SQL
+    overall_sql = _BLIND_OVERALL_SQL if blind else _OVERALL_SQL
+
     async with conn.cursor(row_factory=dict_row) as cur:
         # Overall flagging rate
-        await cur.execute(_OVERALL_SQL, [threshold])
+        await cur.execute(overall_sql, [threshold])
         overall = await cur.fetchone()
         total = overall["total"] if overall else 0
         flagged = overall["flagged"] if overall else 0
         overall_rate = flagged / total if total > 0 else 0.0
 
         # By state
-        await cur.execute(_STATE_SQL, [threshold])
+        await cur.execute(state_sql, [threshold])
         state_rows = await cur.fetchall()
 
         # By specialty
-        await cur.execute(_SPECIALTY_SQL, [threshold])
+        await cur.execute(specialty_sql, [threshold])
         specialty_rows = await cur.fetchall()
+
+        # Revocation impact comparison (always compute when blind=true)
+        revocation_impact = None
+        if blind:
+            # Get non-blind rates for comparison
+            await cur.execute(_OVERALL_SQL, [threshold])
+            orig_overall = await cur.fetchone()
+            orig_flagged = orig_overall["flagged"] if orig_overall else 0
+            orig_rate = orig_flagged / total if total > 0 else 0.0
+
+            await cur.execute(_STATE_SQL, [threshold])
+            orig_state_rows = await cur.fetchall()
+            orig_state_std = _std_of_rates(orig_state_rows)
+            orig_by_state = _build_cohorts(orig_state_rows, orig_rate, orig_state_std)
+            _, orig_di = _compute_parity(orig_by_state)
 
     state_std = _std_of_rates(state_rows)
     specialty_std = _std_of_rates(specialty_rows)
@@ -119,13 +186,20 @@ async def get_fairness(
     by_state = _build_cohorts(state_rows, overall_rate, state_std)
     by_specialty = _build_cohorts(specialty_rows, overall_rate, specialty_std)
 
-    # Parity metrics (use the dimension with more cohorts for meaningful stats)
     spd_state, di_state = _compute_parity(by_state)
     spd_spec, di_spec = _compute_parity(by_specialty)
 
-    # Report worst-case across both dimensions
     spd = max(filter(None, [spd_state, spd_spec]), default=None)
     di = min(filter(None, [di_state, di_spec]), default=None)
+
+    if blind:
+        revocation_impact = RevocationImpact(
+            overall_flagging_rate_with=round(orig_rate, 4),
+            overall_flagging_rate_without=round(overall_rate, 4),
+            flagging_rate_delta=round(overall_rate - orig_rate, 4),
+            disparate_impact_with=orig_di,
+            disparate_impact_without=di,
+        )
 
     return FairnessReport(
         by_state=by_state,
@@ -133,4 +207,5 @@ async def get_fairness(
         overall_flagging_rate=round(overall_rate, 4),
         statistical_parity_diff=spd,
         disparate_impact_ratio=di,
+        revocation_impact=revocation_impact,
     )
