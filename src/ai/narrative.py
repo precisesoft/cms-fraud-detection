@@ -26,6 +26,7 @@ async def generate_narrative(
     state: str | None = None,
     recommendation: str | None = None,
     peer_comparisons: list[dict[str, Any]] | None = None,
+    anomaly_score: float | None = None,
 ) -> str | None:
     """Generate a risk narrative from structured scoring data.
 
@@ -62,6 +63,14 @@ async def generate_narrative(
             desc = s.get("description", s.get("name", "unknown"))
             signal_lines.append(f"  - {desc}")
         parts.append("Legitimacy Signals:\n" + "\n".join(signal_lines))
+
+    if anomaly_score is not None:
+        parts.append(
+            f"Anomaly Score (Isolation Forest): {anomaly_score}/100 — "
+            "independently trained unsupervised model confirms behavioral outlier status"
+            if anomaly_score >= 60
+            else f"Anomaly Score (Isolation Forest): {anomaly_score}/100"
+        )
 
     if peer_comparisons:
         peer_lines = []

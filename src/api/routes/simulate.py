@@ -22,6 +22,7 @@ from src.api.schemas import (
     Signal,
     risk_band_from_score,
 )
+from src.models.anomaly_scorer import score_provider
 from src.scoring.extract import FiredSignal
 from src.scoring.score import score_case
 from src.scoring.taxonomy import MIN_PEER_COUNT
@@ -60,6 +61,10 @@ FROM provider_service_cases
 WHERE provider_type = %s
   AND hcpcs_cd = %s
   AND npi != %s
+"""
+
+_FEATURES_SQL = """
+SELECT * FROM provider_features WHERE npi = %s
 """
 
 # ---------------------------------------------------------------------------
@@ -188,7 +193,15 @@ async def simulate_claim(
     recommendation = _RISK_TO_RECOMMENDATION.get(risk_band, Recommendation.review)
     signals = [_fired_to_signal(fs) for fs in card.signals]
 
-    # 5. Generate AI narrative (non-blocking, non-fatal)
+    # 5. Anomaly score from isolation forest
+    anomaly_score: float | None = None
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(_FEATURES_SQL, [req.npi])
+        features_row = await cur.fetchone()
+    if features_row:
+        anomaly_score = score_provider(features_row)
+
+    # 6. Generate AI narrative (non-blocking, non-fatal)
     narrative = await generate_narrative(
         npi=req.npi,
         risk_score=card.risk_score,
@@ -199,6 +212,7 @@ async def simulate_claim(
         state=provider.get("state"),
         recommendation=recommendation,
         peer_comparisons=[p.model_dump() for p in peer_comparisons],
+        anomaly_score=anomaly_score,
     )
 
     return ClaimSimulationResult(
@@ -213,4 +227,5 @@ async def simulate_claim(
         provider_type=provider.get("provider_type"),
         state=provider.get("state"),
         narrative=narrative,
+        anomaly_score=anomaly_score,
     )

@@ -9,6 +9,7 @@ from psycopg.rows import dict_row
 from src.ai.narrative import generate_narrative
 from src.api.deps import get_db
 from src.api.schemas import ScoreRequest, ScoreResult, Signal, risk_band_from_score
+from src.models.anomaly_scorer import score_provider
 from src.scoring.extract import FiredSignal
 from src.scoring.score import score_case
 from src.scoring.taxonomy import MIN_PEER_COUNT
@@ -27,6 +28,10 @@ SELECT enrolled_2025 AS present_in_2025_enrollment_file,
        provider_total_benes
 FROM provider_features
 WHERE npi = %s
+"""
+
+_FEATURES_SQL = """
+SELECT * FROM provider_features WHERE npi = %s
 """
 
 _PEER_SQL = """
@@ -131,13 +136,22 @@ async def score_claim(
     risk_band = risk_band_from_score(card.risk_score)
     signals = [_fired_to_signal(fs) for fs in card.signals]
 
-    # 6. Generate AI narrative (non-blocking, non-fatal)
+    # 6. Anomaly score from isolation forest
+    anomaly_score: float | None = None
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(_FEATURES_SQL, [req.npi])
+        features_row = await cur.fetchone()
+    if features_row:
+        anomaly_score = score_provider(features_row)
+
+    # 7. Generate AI narrative (non-blocking, non-fatal)
     narrative = await generate_narrative(
         npi=req.npi,
         risk_score=card.risk_score,
         risk_band=str(risk_band) if risk_band else "unknown",
         signals=[s.model_dump() for s in signals],
         provider_type=provider.get("provider_type"),
+        anomaly_score=anomaly_score,
     )
 
     return ScoreResult(
@@ -147,4 +161,5 @@ async def score_claim(
         risk_band=risk_band,  # type: ignore[arg-type]
         signals=signals,
         narrative=narrative,
+        anomaly_score=anomaly_score,
     )
