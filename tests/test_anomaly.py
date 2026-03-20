@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-import numpy as np
-import polars as pl
 import pytest
-from sklearn.ensemble import IsolationForest
-from sklearn.preprocessing import StandardScaler
 
-from src.models.anomaly import (
+np = pytest.importorskip("numpy")
+pl = pytest.importorskip("polars")
+pytest.importorskip("sklearn")
+
+from sklearn.ensemble import IsolationForest  # noqa: E402
+from sklearn.preprocessing import StandardScaler  # noqa: E402
+
+from src.models.anomaly import (  # noqa: E402
     EXCLUDE_COLS,
     build_feature_matrix,
     compute_correlation,

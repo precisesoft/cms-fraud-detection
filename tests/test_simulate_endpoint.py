@@ -10,7 +10,7 @@ import pytest
 from fastapi import FastAPI
 
 from src.api.deps import get_db
-from src.api.routes.simulate import router
+from src.api.routes.simulate import _build_comparison, _z_score, router
 
 # ---------------------------------------------------------------------------
 # Fake DB layer
@@ -101,8 +101,6 @@ def _make_app(
 # ---------------------------------------------------------------------------
 # Unit tests for pure helper functions
 # ---------------------------------------------------------------------------
-
-from src.api.routes.simulate import _build_comparison, _z_score
 
 
 class TestZScore:
