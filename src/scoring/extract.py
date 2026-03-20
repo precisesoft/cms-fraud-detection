@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from src.scoring.taxonomy import (
     CHARGE_RATIO_OUTLIER,
+    CONCENTRATION_OUTLIER,
     ENROLLED_CURRENT,
     LARGE_PATIENT_PANEL,
     MEDICARE_PARTICIPATING,
@@ -67,6 +68,7 @@ def extract_signals(case: dict) -> list[FiredSignal]:
     _extract_peer_risk(case, signals)
     _extract_peer_legitimacy(case, signals)
     _extract_large_panel(case, signals)
+    _extract_concentration(case, signals)
 
     return signals
 
@@ -179,5 +181,39 @@ def _extract_large_panel(case: dict, out: list[FiredSignal]) -> None:
                 points=LARGE_PATIENT_PANEL.points,  # type: ignore[arg-type]
                 value=float(benes),
                 reason=LARGE_PATIENT_PANEL.description,
+            )
+        )
+
+
+def _extract_concentration(case: dict, out: list[FiredSignal]) -> None:
+    top_share = case.get("top_code_share")
+    hhi = case.get("service_hhi")
+
+    # Tiered: top_code_share >= 0.90 → 12pts, >= 0.80 → 8pts, hhi >= 0.50 → 6pts
+    if top_share is not None and top_share >= 0.90:
+        out.append(
+            FiredSignal(
+                signal=CONCENTRATION_OUTLIER,
+                points=12,
+                value=round(float(top_share), 3),
+                reason=f"Provider derives {top_share * 100:.0f}% of billing from one code",
+            )
+        )
+    elif top_share is not None and top_share >= 0.80:
+        out.append(
+            FiredSignal(
+                signal=CONCENTRATION_OUTLIER,
+                points=8,
+                value=round(float(top_share), 3),
+                reason=f"Provider derives {top_share * 100:.0f}% of billing from one code",
+            )
+        )
+    elif hhi is not None and hhi >= 0.50:
+        out.append(
+            FiredSignal(
+                signal=CONCENTRATION_OUTLIER,
+                points=6,
+                value=round(float(hhi), 3),
+                reason=f"Billing concentration index (HHI={hhi:.2f}) indicates narrow service mix",
             )
         )

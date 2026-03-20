@@ -27,6 +27,7 @@ graph TB
     subgraph SCORING["SCORE COMPUTATION"]
         FORMULA["Risk Score = Σ risk signal points<br/>Legitimacy Score = Σ legitimacy signal points<br/>Both capped at 100"]
         LABELS["<b>high_risk</b>: risk ≥ 51 AND risk ≥ legitimacy + 5<br/><b>stable</b>: legitimacy ≥ 70 AND risk &lt; 30<br/><b>review</b>: everything else"]
+        BANDS["Provider risk bands:<br/>high_risk: score ≥ 51 · review: score ≥ 31 · stable: score &lt; 31"]
     end
 
     ROOT --> RISK
