@@ -370,7 +370,9 @@ class RevocationImpact(BaseModel):
     overall_flagging_rate_without: float = Field(
         description="Flagging rate without revocation signal"
     )
-    flagging_rate_delta: float = Field(description="Change in flagging rate")
+    flagging_rate_delta: float = Field(
+        description="without - with: negative means revocation signal increases flagging"
+    )
     disparate_impact_with: float | None = None
     disparate_impact_without: float | None = None
 
