@@ -117,6 +117,8 @@ When asked to plan a sprint or batch of work:
 When suggesting delegation, reference these agents:
 
 - **Senior Developer** — feature implementation (Tier 1-2 tasks)
+- **Data Scientist** — ML models, feature engineering, scoring signals, validation metrics
+- **AI Engineer** — LLM prompts, text-to-SQL, Bedrock integration, narratives
 - **Bug Fixer** — targeted bug fixes with regression tests
 - **Test Engineer** — coverage gaps, 100% goal
 - **Security Auditor** — bandit/pip-audit/OWASP fixes
