@@ -539,7 +539,7 @@ class HealthResponse(BaseModel):
 def risk_band_from_score(score: int | None) -> RiskBand | None:
     if score is None:
         return None
-    if score > HIGH_RISK_SCORE_THRESHOLD:
+    if score >= HIGH_RISK_SCORE_THRESHOLD:
         return RiskBand.high_risk
     if score > STABLE_RISK_CEILING:
         return RiskBand.review

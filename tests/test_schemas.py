@@ -23,11 +23,11 @@ class TestRiskBandFromScore:
         assert risk_band_from_score(31) == RiskBand.review
 
     def test_high_risk_threshold_is_review(self):
-        # score == HIGH_RISK_SCORE_THRESHOLD (50) → review (band is 31-50)
+        # score == 50 → review (band is 31-50; HIGH_RISK_SCORE_THRESHOLD=51)
         assert risk_band_from_score(50) == RiskBand.review
 
     def test_just_above_high_risk_threshold(self):
-        # score == 51 → high_risk (band is 51+)
+        # score == HIGH_RISK_SCORE_THRESHOLD (51) → high_risk (band is 51+)
         assert risk_band_from_score(51) == RiskBand.high_risk
 
     def test_max_score_is_high_risk(self):
