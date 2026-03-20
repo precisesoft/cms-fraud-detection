@@ -62,15 +62,15 @@ CMS loses an estimated $60B+ annually to improper payments across Medicare and M
 
 **Live App**: [argus.precise-lab.com](https://argus.precise-lab.com) | **Validation Endpoint**: [/api/validation](/api/validation)
 
-| Deliverable | Document |
-|---|---|
-| Risk Scoring Methodology | [docs/risk-scoring-methodology.md](docs/risk-scoring-methodology.md) |
-| Responsible AI Considerations | [docs/responsible-ai-considerations.md](docs/responsible-ai-considerations.md) |
-| AI & Open Source Disclosure | [docs/ai-oss-disclosure.md](docs/ai-oss-disclosure.md) |
-| Path to CMS Pilot (5-min brief) | [docs/path-to-cms-pilot.md](docs/path-to-cms-pilot.md) |
-| Demo Script (5-7 min) | [docs/demo-script.md](docs/demo-script.md) |
-| Isolation Forest Model Card | [docs/model-card-isolation-forest.md](docs/model-card-isolation-forest.md) |
-| Architecture Diagrams | [docs/diagrams/](docs/diagrams/) |
+| Deliverable                     | Document                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------ |
+| Risk Scoring Methodology        | [docs/risk-scoring-methodology.md](docs/risk-scoring-methodology.md)           |
+| Responsible AI Considerations   | [docs/responsible-ai-considerations.md](docs/responsible-ai-considerations.md) |
+| AI & Open Source Disclosure     | [docs/ai-oss-disclosure.md](docs/ai-oss-disclosure.md)                         |
+| Path to CMS Pilot (5-min brief) | [docs/path-to-cms-pilot.md](docs/path-to-cms-pilot.md)                         |
+| Demo Script (5-7 min)           | [docs/demo-script.md](docs/demo-script.md)                                     |
+| Isolation Forest Model Card     | [docs/model-card-isolation-forest.md](docs/model-card-isolation-forest.md)     |
+| Architecture Diagrams           | [docs/diagrams/](docs/diagrams/)                                               |
 
 ## Key Principles
 
@@ -137,7 +137,7 @@ All datasets are publicly available and currently downloadable. No PHI is used.
 
 | Layer    | Technology                                           | Status |
 | -------- | ---------------------------------------------------- | ------ |
-| Frontend | Next.js 16 + TypeScript + Tailwind + shadcn/ui       | Live   |
+| Frontend | Next.js 16.2.0 + TypeScript + Tailwind + shadcn/ui   | Live   |
 | Backend  | Python 3.12 + FastAPI + psycopg                      | Live   |
 | Database | PostgreSQL 16 (EKS StatefulSet)                      | Live   |
 | Graph    | Neo4j 5 Community (EKS StatefulSet)                  | Live   |

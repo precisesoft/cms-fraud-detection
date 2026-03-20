@@ -262,20 +262,20 @@ and disparate impact measures.
 
 ## Tech Stack
 
-| Layer         | Technology               | Why                                                    |
-| ------------- | ------------------------ | ------------------------------------------------------ |
-| Frontend      | Next.js 16 + TypeScript  | SSR, app router, API routes as BFF                     |
-| UI Components | shadcn/ui + Tailwind CSS | Polished, accessible, fast to build                    |
-| Charts        | Recharts                 | React-native, composable, AI can specify chart configs |
-| Backend       | Python 3.12 + FastAPI    | Async, auto-docs, scoring engine                       |
-| Database      | PostgreSQL 16            | Operational store, SQL queries, production-grade       |
-| Graph         | Neo4j 5                  | Relationship traversal, Cypher queries                 |
-| ETL           | DuckDB + Polars          | One-time data processing (not runtime)                 |
-| AI            | AWS Bedrock (Claude)     | FedRAMP authorized, GovCloud-ready, multi-model        |
-| Containers    | Docker + docker-compose  | Local dev, multi-service                               |
-| CI            | GitHub Actions           | Lint, test, build, coverage                            |
-| CD            | ArgoCD                   | GitOps deployment to EKS                               |
-| Registry      | Amazon ECR               | AWS-native container image store                       |
+| Layer         | Technology                  | Why                                                    |
+| ------------- | --------------------------- | ------------------------------------------------------ |
+| Frontend      | Next.js 16.2.0 + TypeScript | SSR, app router, API routes as BFF                     |
+| UI Components | shadcn/ui + Tailwind CSS    | Polished, accessible, fast to build                    |
+| Charts        | Recharts                    | React-native, composable, AI can specify chart configs |
+| Backend       | Python 3.12 + FastAPI       | Async, auto-docs, scoring engine                       |
+| Database      | PostgreSQL 16               | Operational store, SQL queries, production-grade       |
+| Graph         | Neo4j 5                     | Relationship traversal, Cypher queries                 |
+| ETL           | DuckDB + Polars             | One-time data processing (not runtime)                 |
+| AI            | AWS Bedrock (Claude)        | FedRAMP authorized, GovCloud-ready, multi-model        |
+| Containers    | Docker + docker-compose     | Local dev, multi-service                               |
+| CI            | GitHub Actions              | Lint, test, build, coverage                            |
+| CD            | ArgoCD                      | GitOps deployment to EKS                               |
+| Registry      | Amazon ECR                  | AWS-native container image store                       |
 
 ## Data Flow
 
@@ -519,7 +519,7 @@ cms-fraud-detection/
 │   ├── Dockerfile
 │   └── alembic/                # DB migrations
 │       └── versions/
-├── frontend/                   # Next.js 16 application
+├── frontend/                   # Next.js 16.2.0 application
 │   ├── app/
 │   │   ├── layout.tsx          # Root layout + nav + search bar
 │   │   ├── page.tsx            # Overview dashboard (landing page)
@@ -868,7 +868,7 @@ responsible AI. Provider search available from every view.
 
 **Stories**:
 
-1. Scaffold Next.js 16 + TypeScript + shadcn/ui project
+1. Scaffold Next.js 16.2.0 + TypeScript + shadcn/ui project
 2. Build overview dashboard page (stat cards, top flagged list)
 3. Build risk heatmap component (US choropleth map)
 4. Build provider search with autocomplete

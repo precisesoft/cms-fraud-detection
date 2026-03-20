@@ -84,7 +84,7 @@ When asked to plan a sprint or batch of work:
 ### Architecture
 
 - **Backend**: FastAPI + psycopg + Polars (Python 3.12+)
-- **Frontend**: Next.js 16 + Tailwind v4 + shadcn/ui
+- **Frontend**: Next.js 16.2.0 + Tailwind v4 + shadcn/ui
 - **DB**: PostgreSQL 16 + Neo4j 5
 - **AI**: AWS Bedrock Claude (text-to-SQL, risk narratives)
 - **Infra**: EKS + ArgoCD + Terraform

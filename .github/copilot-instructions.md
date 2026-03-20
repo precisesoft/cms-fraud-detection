@@ -11,7 +11,7 @@ Proactive CMS provider fraud detection with explainable AI. Identifies anomalous
 - **AI Layer**: AWS Bedrock Claude for text-to-SQL and risk narratives (`src/ai/`)
 - **DB**: PostgreSQL 16 (provider_features: 63 columns, provider_service_cases: case-level)
 - **Graph**: Neo4j 5 for network risk signals
-- **Frontend**: Next.js 16 + Tailwind v4 + shadcn/ui + Recharts
+- **Frontend**: Next.js 16.2.0 + Tailwind v4 + shadcn/ui + Recharts
 - **Python**: 3.12+, type-checked with mypy, linted with ruff
 
 ## Conventions
