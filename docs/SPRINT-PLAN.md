@@ -56,7 +56,7 @@ These can start immediately — no dependency on Arun's scoring work:
 
 ### When ready for frontend
 
-6. **#41** — Scaffold Next.js 15 + shadcn/ui + Tailwind
+6. **#41** — Scaffold Next.js 16 + shadcn/ui + Tailwind
    - This unblocks all 14 frontend issues.
    - Can start any time — independent of backend.
 
