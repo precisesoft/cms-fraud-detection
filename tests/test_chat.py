@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
+import pydantic
 import pytest
 
 from src.ai.text_to_sql import SQLValidationError
@@ -140,3 +141,20 @@ async def test_chat_passes_history():
     assert kwargs["history"] is not None
     assert len(kwargs["history"]) == 2
     assert kwargs["history"][0]["role"] == "user"
+
+
+# ---------------------------------------------------------------------------
+# ChatMessage role validation tests
+# ---------------------------------------------------------------------------
+
+
+def test_chat_message_valid_roles():
+    """ChatMessage accepts 'user' and 'assistant' roles."""
+    assert ChatMessage(role="user", content="hello").role == "user"
+    assert ChatMessage(role="assistant", content="hi").role == "assistant"
+
+
+def test_chat_message_rejects_system_role():
+    """ChatMessage must reject the 'system' role."""
+    with pytest.raises(pydantic.ValidationError):
+        ChatMessage(role="system", content="You are a helpful assistant.")

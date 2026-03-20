@@ -6,7 +6,7 @@ Covers providers, claims, scoring, dashboard, and fairness endpoints.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -301,7 +301,7 @@ class ClaimSimulationResult(BaseModel):
 
 
 class ChatMessage(BaseModel):
-    role: str = Field(description="'user' or 'assistant'")
+    role: Literal["user", "assistant"]
     content: str
 
 
