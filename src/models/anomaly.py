@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
+from typing import TypedDict
 
 import joblib
 import numpy as np
@@ -161,7 +162,7 @@ def compute_permutation_importance(
     feature_cols: list[str],
     n_repeats: int = 10,
     random_state: int = 42,
-) -> list[dict[str, object]]:
+) -> list[FeatureImportance]:
     """Compute permutation importance and return top 10 features.
 
     Uses anomaly scores (decision_function) as a proxy target so that
@@ -187,7 +188,9 @@ def compute_permutation_importance(
         key=lambda x: abs(x[1]),
         reverse=True,
     )
-    top10 = [{"feature": feat, "importance": round(imp, 6)} for feat, imp in ranked[:10]]
+    top10: list[FeatureImportance] = [
+        {"feature": feat, "importance": round(imp, 6)} for feat, imp in ranked[:10]
+    ]
     return top10
 
 
@@ -200,7 +203,7 @@ def run(
     features_path: Path = FEATURES_PATH,
     model_path: Path = MODEL_PATH,
     results_path: Path = RESULTS_PATH,
-) -> dict[str, object]:
+) -> AnomalyResults:
     """Full pipeline: load → scale → train → validate → save."""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
@@ -242,7 +245,7 @@ def run(
     top10_features = compute_permutation_importance(model, x_scaled, feature_cols)
 
     # 8. Assemble results
-    results: dict[str, object] = {
+    results: AnomalyResults = {
         "model_metadata": {
             "model_type": "IsolationForest",
             "n_estimators": 200,
@@ -278,13 +281,39 @@ def run(
     return results
 
 
-def _print_summary(results: dict[str, object]) -> None:
-    meta: dict[str, object] = results["model_metadata"]  # type: ignore[assignment]
-    corr = float(results["correlation_anomaly_vs_rule_risk"])  # type: ignore[arg-type]
-    det: dict[str, object] = results["detection_rates"]  # type: ignore[assignment]
-    feats: list[dict[str, object]] = results[  # type: ignore[assignment]
-        "top10_features_permutation_importance"
-    ]
+class ModelMetadata(TypedDict):
+    model_type: str
+    n_estimators: int
+    contamination: float
+    random_state: int
+    n_features: int
+    n_samples: int
+
+
+class DetectionRates(TypedDict):
+    top_5pct: float
+    top_10pct: float
+    top_20pct: float
+    note: str
+
+
+class FeatureImportance(TypedDict):
+    feature: str
+    importance: float
+
+
+class AnomalyResults(TypedDict):
+    model_metadata: ModelMetadata
+    correlation_anomaly_vs_rule_risk: float
+    detection_rates: DetectionRates
+    top10_features_permutation_importance: list[FeatureImportance]
+
+
+def _print_summary(results: AnomalyResults) -> None:
+    meta = results["model_metadata"]
+    corr = results["correlation_anomaly_vs_rule_risk"]
+    det = results["detection_rates"]
+    feats = results["top10_features_permutation_importance"]
 
     print("\n" + "=" * 60)
     print("ISOLATION FOREST — ANOMALY DETECTION RESULTS")
@@ -295,13 +324,13 @@ def _print_summary(results: dict[str, object]) -> None:
     print(f"Correlation (anomaly score vs rule-based risk): {corr:+.4f}")
     print()
     print("Revoked provider detection rates:")
-    print(f"  Top  5% most anomalous: {float(det['top_5pct']):.1%} of all revoked captured")  # type: ignore[arg-type]
-    print(f"  Top 10% most anomalous: {float(det['top_10pct']):.1%} of all revoked captured")  # type: ignore[arg-type]
-    print(f"  Top 20% most anomalous: {float(det['top_20pct']):.1%} of all revoked captured")  # type: ignore[arg-type]
+    print(f"  Top  5% most anomalous: {det['top_5pct']:.1%} of all revoked captured")
+    print(f"  Top 10% most anomalous: {det['top_10pct']:.1%} of all revoked captured")
+    print(f"  Top 20% most anomalous: {det['top_20pct']:.1%} of all revoked captured")
     print()
     print("Top 10 features by permutation importance:")
     for i, feat_entry in enumerate(feats, 1):
-        print(f"  {i:2d}. {feat_entry['feature']!s:<35s}  {float(feat_entry['importance'])!s:>12s}")  # type: ignore[arg-type]
+        print(f"  {i:2d}. {feat_entry['feature']:<35s}  {feat_entry['importance']:>12.6f}")
     print("=" * 60 + "\n")
 
 
