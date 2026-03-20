@@ -13,11 +13,13 @@ __pycache__/
 dist/
 build/
 
-# Models
+# Models (large binary files)
 *.pkl
 *.joblib
 *.pt
 *.onnx
+# Exception: small trained model needed at runtime
+!data/models/isolation_forest.joblib
 
 # IDE
 .vscode/
