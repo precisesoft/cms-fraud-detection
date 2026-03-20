@@ -1,0 +1,59 @@
+{
+  "model_metadata": {
+    "model_type": "IsolationForest",
+    "n_estimators": 200,
+    "contamination": 0.05,
+    "random_state": 42,
+    "n_features": 49,
+    "n_samples": 10282
+  },
+  "correlation_anomaly_vs_rule_risk": 0.125,
+  "detection_rates": {
+    "top_5pct": 0.2806,
+    "top_10pct": 0.4269,
+    "top_20pct": 0.6299,
+    "note": "Fraction of all revoked providers appearing in top-N most anomalous"
+  },
+  "top10_features_permutation_importance": [
+    {
+      "feature": "max_submitted_charge",
+      "importance": -0.078522
+    },
+    {
+      "feature": "mean_allowed_amt",
+      "importance": -0.072858
+    },
+    {
+      "feature": "mean_payment_amt",
+      "importance": -0.072503
+    },
+    {
+      "feature": "mean_submitted_charge",
+      "importance": -0.061154
+    },
+    {
+      "feature": "max_allowed_amt",
+      "importance": -0.058768
+    },
+    {
+      "feature": "max_payment_amt",
+      "importance": -0.049093
+    },
+    {
+      "feature": "top_code_share",
+      "importance": -0.041497
+    },
+    {
+      "feature": "charge_cv",
+      "importance": -0.041107
+    },
+    {
+      "feature": "enrolled_2025",
+      "importance": -0.037142
+    },
+    {
+      "feature": "unique_hcpcs_codes",
+      "importance": -0.036379
+    }
+  ]
+}
