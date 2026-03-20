@@ -16,9 +16,9 @@ Proactive CMS provider fraud detection with explainable AI. Identifies anomalous
 
 ## Conventions
 
-- **Commits**: `type(scope): description (#N)` — conventional commits, present tense
+- **Commits**: `type(scope): description (#N)` — conventional commits, present tense. `#N` MUST be the real GitHub issue number, never a placeholder like `#issue`. Example: `docs: update README (#42)`
 - **Branches**: `<type>/<issue-number>-<description>`
-- **PRs**: Must include `Closes #N` in body
+- **PRs**: Title must follow the same commit format: `type(scope): description (#N)`. Body must include `Closes #N`. Do not use redundant scopes (e.g., use `docs:` not `docs(docs):`).
 - **Risk bands**: 0-30 stable, 31-50 review, 51+ high_risk (use StrEnum `RiskBand`)
 - **Naming**: kebab-case dirs/files, PascalCase classes, snake_case functions
 - **Tests**: pytest + pytest-asyncio, `asyncio_mode = "auto"`
