@@ -1,0 +1,141 @@
+{
+  "summary": {
+    "total_revoked_cases": 862,
+    "total_revoked_npis": 335,
+    "case_detection_rate": 0.9037,
+    "npi_detection_rate": 0.9134,
+    "avg_blind_risk_score_revoked": 20.4,
+    "avg_risk_score_non_revoked": 41.4,
+    "risk_score_lift": -21.0
+  },
+  "case_level": {
+    "original_labels": {
+      "high_risk": 208,
+      "review": 654
+    },
+    "blind_labels": {
+      "high_risk": 1,
+      "review": 778,
+      "stable": 83
+    }
+  },
+  "provider_level": {
+    "blind_labels": {
+      "high_risk": 1,
+      "review": 305,
+      "stable": 29
+    }
+  },
+  "non_revoked_baseline": {
+    "high_risk": 17,
+    "review": 6346,
+    "stable": 6000
+  },
+  "by_revocation_reason": {
+    "424.535(A)(1) Noncompliance (Not Professionally Licensed);424.535(A)(9) Failure ": {
+      "total": 208,
+      "high_risk": 0,
+      "review": 193,
+      "stable": 15,
+      "detection_rate": 0.9278846153846154
+    },
+    "424.535(A)(1) Noncompliance (Dme Standards Not Met)": {
+      "total": 164,
+      "high_risk": 1,
+      "review": 105,
+      "stable": 58,
+      "detection_rate": 0.6463414634146342
+    },
+    "424.535(A)(9) Failure To Report;424.535(A)(3) Felonies": {
+      "total": 106,
+      "high_risk": 0,
+      "review": 106,
+      "stable": 0,
+      "detection_rate": 1.0
+    },
+    "424.535(A)(5) On-Site Review;424.535(A)(9) Failure To Report": {
+      "total": 94,
+      "high_risk": 0,
+      "review": 90,
+      "stable": 4,
+      "detection_rate": 0.9574468085106383
+    },
+    "424.535(A)(9) Failure To Report;424.535(A)(2) Provider Or Supplier Conduct (Excl": {
+      "total": 38,
+      "high_risk": 0,
+      "review": 38,
+      "stable": 0,
+      "detection_rate": 1.0
+    },
+    "424.535(A)(9) Failure To Report;424.535(A)(12) Other Program Termination (Medica": {
+      "total": 38,
+      "high_risk": 0,
+      "review": 38,
+      "stable": 0,
+      "detection_rate": 1.0
+    },
+    "424.535(A)(8)(Ii) Abuse Of Billing Privileges: Pattern Or Practice": {
+      "total": 34,
+      "high_risk": 0,
+      "review": 32,
+      "stable": 2,
+      "detection_rate": 0.9411764705882353
+    },
+    "424.535(A)(9) Failure To Report;424.535(A)(3) Felonies;424.535(A)(2) Provider Or": {
+      "total": 22,
+      "high_risk": 0,
+      "review": 22,
+      "stable": 0,
+      "detection_rate": 1.0
+    },
+    "424.535(A)(9) Failure To Report;424.535(A)(3) Felonies | 424.535(A)(3) Felonies": {
+      "total": 18,
+      "high_risk": 0,
+      "review": 18,
+      "stable": 0,
+      "detection_rate": 1.0
+    },
+    "424.535(A)(19) Affiliation That Poses An Undue Risk": {
+      "total": 16,
+      "high_risk": 0,
+      "review": 16,
+      "stable": 0,
+      "detection_rate": 1.0
+    },
+    "424.535(A)(5) On-Site Review": {
+      "total": 13,
+      "high_risk": 0,
+      "review": 12,
+      "stable": 1,
+      "detection_rate": 0.9230769230769231
+    },
+    "424.535(A)(3) Felonies | 424.535(A)(9) Failure To Report;424.535(A)(3) Felonies": {
+      "total": 13,
+      "high_risk": 0,
+      "review": 13,
+      "stable": 0,
+      "detection_rate": 1.0
+    },
+    "424.535(A)(12) Other Program Termination (Medicaid)": {
+      "total": 13,
+      "high_risk": 0,
+      "review": 13,
+      "stable": 0,
+      "detection_rate": 1.0
+    },
+    "424.535(A)(13) Prescribing Authority": {
+      "total": 11,
+      "high_risk": 0,
+      "review": 11,
+      "stable": 0,
+      "detection_rate": 1.0
+    },
+    "424.535(A)(9) Failure To Report;424.535(A)(2) Provider Or Supplier Conduct (Othe": {
+      "total": 11,
+      "high_risk": 0,
+      "review": 11,
+      "stable": 0,
+      "detection_rate": 1.0
+    }
+  }
+}
