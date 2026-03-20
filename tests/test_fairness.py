@@ -5,6 +5,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 
 import httpx
+import pytest
 from fastapi import FastAPI
 
 from src.api.deps import get_db
@@ -32,7 +33,13 @@ SPECIALTY_ROWS = [
 
 
 class _FairnessCursor:
-    """Returns overall on first query, states on second, specialties on third."""
+    """Returns canned results matching endpoint query order (non-blind mode):
+
+    1. overall → fetchone  2. by_state → fetchall  3. by_specialty → fetchall
+
+    WARNING: If the endpoint reorders its SQL calls, these tests will silently
+    return wrong data. Keep query order in sync with fairness.py:get_fairness.
+    """
 
     def __init__(self, overall: dict, states: list[dict], specialties: list[dict]):
         self._results: list = [overall, states, specialties]
@@ -265,3 +272,145 @@ class TestStdOfRates:
 
     def test_empty(self):
         assert _std_of_rates([]) == 0.0
+
+
+# ---------------------------------------------------------------------------
+# Tests — blind mode (revocation-blind fairness analysis)
+# ---------------------------------------------------------------------------
+
+# When blind=true, the endpoint runs 6 queries:
+# 1. blind overall, 2. blind state, 3. blind specialty,
+# 4. orig overall, 5. orig state (for comparison)
+BLIND_OVERALL_ROW = {"total": 100, "flagged": 15}  # fewer flagged without revocation
+BLIND_STATE_ROWS = [
+    {"cohort": "CA", "provider_count": 40, "flagged_count": 9},
+    {"cohort": "NY", "provider_count": 30, "flagged_count": 4},
+    {"cohort": "TX", "provider_count": 30, "flagged_count": 2},
+]
+BLIND_SPECIALTY_ROWS = [
+    {"cohort": "Internal Medicine", "provider_count": 50, "flagged_count": 8},
+    {"cohort": "Cardiology", "provider_count": 30, "flagged_count": 5},
+    {"cohort": "Family Practice", "provider_count": 20, "flagged_count": 2},
+]
+
+
+class _BlindFairnessCursor:
+    """Handles 5 queries for blind mode matching fairness.py:get_fairness query order:
+
+    1. blind overall (fetchone)  2. blind state (fetchall)
+    3. blind specialty (fetchall)  4. orig overall (fetchone)
+    5. orig state (fetchall) — for orig disparate_impact
+
+    WARNING: Keep in sync with fairness.py:get_fairness blind=true code path.
+    """
+
+    def __init__(self):
+        self._results: list = [
+            BLIND_OVERALL_ROW,
+            BLIND_STATE_ROWS,
+            BLIND_SPECIALTY_ROWS,
+            OVERALL_ROW,
+            STATE_ROWS,
+        ]
+        self._call = 0
+
+    async def execute(self, sql: str, params: list | None = None):
+        self._call += 1
+
+    async def fetchone(self) -> dict | None:
+        return self._results[self._call - 1]
+
+    async def fetchall(self) -> list[dict]:
+        return self._results[self._call - 1]
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        pass
+
+
+class _BlindFakeConn:
+    def cursor(self, row_factory=None):
+        return _BlindFairnessCursor()
+
+
+def _make_blind_app() -> FastAPI:
+    @asynccontextmanager
+    async def _noop_lifespan(app: FastAPI):
+        yield
+
+    test_app = FastAPI(lifespan=_noop_lifespan)
+    test_app.include_router(router, prefix="/api")
+
+    conn = _BlindFakeConn()
+
+    async def fake_db():
+        yield conn
+
+    test_app.dependency_overrides[get_db] = fake_db
+    return test_app
+
+
+class TestFairnessBlindMode:
+    @pytest.mark.anyio
+    async def test_blind_returns_200(self):
+        app = _make_blind_app()
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/fairness?blind=true")
+        assert resp.status_code == 200
+
+    @pytest.mark.anyio
+    async def test_blind_includes_revocation_impact(self):
+        app = _make_blind_app()
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/fairness?blind=true")
+        body = resp.json()
+        assert body["revocation_impact"] is not None
+        impact = body["revocation_impact"]
+        assert "overall_flagging_rate_with" in impact
+        assert "overall_flagging_rate_without" in impact
+        assert "flagging_rate_delta" in impact
+
+    @pytest.mark.anyio
+    async def test_blind_flagging_rate_lower(self):
+        """Removing revocation signal should reduce flagging rate."""
+        app = _make_blind_app()
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/fairness?blind=true")
+        body = resp.json()
+        # Blind overall = 15/100 = 0.15, original = 20/100 = 0.20
+        assert body["overall_flagging_rate"] == 0.15
+        impact = body["revocation_impact"]
+        assert impact["overall_flagging_rate_with"] == 0.2
+        assert impact["overall_flagging_rate_without"] == 0.15
+        assert impact["flagging_rate_delta"] == -0.05  # 0.15 - 0.20
+
+    @pytest.mark.anyio
+    async def test_blind_has_disparate_impact_comparison(self):
+        app = _make_blind_app()
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/fairness?blind=true")
+        body = resp.json()
+        impact = body["revocation_impact"]
+        assert impact["disparate_impact_with"] is not None
+        assert impact["disparate_impact_without"] is not None
+
+    @pytest.mark.anyio
+    async def test_non_blind_no_revocation_impact(self):
+        """Normal mode should NOT include revocation_impact."""
+        app = _make_app()
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/fairness?blind=false")
+        body = resp.json()
+        assert body["revocation_impact"] is None
