@@ -20,6 +20,8 @@ ENROLLED_PROVIDER = {
     "medicare_participating_ind": "Y",
     "provider_type": "Internal Medicine",
     "provider_total_benes": 200.0,
+    "provider_name": "SMITH JOHN MD",
+    "state": "CA",
 }
 
 REVOKED_PROVIDER = {
@@ -28,6 +30,8 @@ REVOKED_PROVIDER = {
     "medicare_participating_ind": "N",
     "provider_type": "Internal Medicine",
     "provider_total_benes": 30.0,
+    "provider_name": "DOE JANE MD",
+    "state": "TX",
 }
 
 PEER_STATS_NORMAL = {
@@ -40,6 +44,8 @@ PEER_STATS_NORMAL = {
     "std_ratio": 0.3,
     "avg_payment": 80.0,
     "std_payment": 15.0,
+    "avg_charge": 120.0,
+    "std_charge": 25.0,
 }
 
 PEER_STATS_TOO_FEW = {**PEER_STATS_NORMAL, "peer_count": 5}

@@ -24,7 +24,9 @@ SELECT enrolled_2025 AS present_in_2025_enrollment_file,
        revoked_2026  AS present_in_2026_revocation_file,
        medicare_participating AS medicare_participating_ind,
        provider_type,
-       provider_total_benes
+       provider_total_benes,
+       provider_name,
+       state
 FROM provider_features
 WHERE npi = %s
 """
@@ -38,7 +40,9 @@ SELECT count(*)                          AS peer_count,
        avg(submitted_to_allowed_ratio)   AS avg_ratio,
        stddev_pop(submitted_to_allowed_ratio) AS std_ratio,
        avg(avg_medicare_payment_amt)     AS avg_payment,
-       stddev_pop(avg_medicare_payment_amt)   AS std_payment
+       stddev_pop(avg_medicare_payment_amt)   AS std_payment,
+       avg(avg_submitted_charge)         AS avg_charge,
+       stddev_pop(avg_submitted_charge)  AS std_charge
 FROM provider_service_cases
 WHERE provider_type = %s
   AND hcpcs_cd = %s
@@ -101,13 +105,15 @@ async def score_claim(
     }
 
     # 3. Fetch peer baselines and compute z-scores (if HCPCS provided)
+    peer_comparisons: list[dict] = []
     if req.hcpcs_cd:
         async with conn.cursor(row_factory=dict_row) as cur:
             await cur.execute(_PEER_SQL, [provider["provider_type"], req.hcpcs_cd, req.npi])
             peers = await cur.fetchone()
 
         if peers and (peers["peer_count"] or 0) >= MIN_PEER_COUNT:
-            case["peer_case_count"] = peers["peer_count"]
+            peer_count = int(peers["peer_count"])
+            case["peer_case_count"] = peer_count
             case["peer_avg_tot_srvcs"] = peers["avg_srvcs"]
 
             case["service_volume_peer_z"] = _z_score(
@@ -122,6 +128,28 @@ async def score_claim(
                 req.avg_submitted_charge, peers["avg_payment"], peers["std_payment"]
             )
 
+            # Build peer comparison dicts for narrative context
+            for metric, pv, pm, ps in [
+                (
+                    "submitted_charge",
+                    req.avg_submitted_charge,
+                    peers["avg_charge"],
+                    peers["std_charge"],
+                ),
+                ("service_volume", req.tot_srvcs, peers["avg_srvcs"], peers["std_srvcs"]),
+            ]:
+                if pv is not None and pm is not None:
+                    z = _z_score(pv, pm, ps)
+                    peer_comparisons.append(
+                        {
+                            "metric": metric,
+                            "provider_value": round(float(pv), 2),
+                            "peer_mean": round(float(pm), 2),
+                            "z_score": round(z, 2) if z is not None else 0.0,
+                            "peer_count": peer_count,
+                        }
+                    )
+
     # 4. Score
     card = score_case(case)
 
@@ -135,7 +163,11 @@ async def score_claim(
         risk_score=card.risk_score,
         risk_band=str(risk_band) if risk_band else "unknown",
         signals=[s.model_dump() for s in signals],
+        provider_name=provider.get("provider_name"),
         provider_type=provider.get("provider_type"),
+        state=provider.get("state"),
+        recommendation=str(risk_band) if risk_band else None,
+        peer_comparisons=peer_comparisons or None,
     )
 
     return ScoreResult(
