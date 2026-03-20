@@ -73,6 +73,73 @@ def test_reject_non_select_start():
 
 
 # ---------------------------------------------------------------------------
+# Advanced injection prevention tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "bad_sql",
+    [
+        "SELECT 1 UNION SELECT username FROM pg_user",
+        "SELECT * FROM provider_features UNION ALL SELECT 1,2,3",
+    ],
+)
+def test_reject_union(bad_sql: str):
+    with pytest.raises(SQLValidationError, match="Forbidden keyword"):
+        validate_sql(bad_sql)
+
+
+@pytest.mark.parametrize(
+    "bad_sql",
+    [
+        "SELECT pg_sleep(10)",
+        "SELECT pg_read_file('/etc/passwd')",
+        "SELECT lo_import('/etc/passwd')",
+        "SELECT * FROM dblink('host=evil', 'SELECT 1')",
+    ],
+)
+def test_reject_server_functions(bad_sql: str):
+    with pytest.raises(SQLValidationError, match="Forbidden keyword"):
+        validate_sql(bad_sql)
+
+
+def test_reject_sql_line_comment():
+    with pytest.raises(SQLValidationError, match="comments are not allowed"):
+        validate_sql("SELECT 1 -- DROP TABLE provider_features")
+
+
+def test_reject_sql_block_comment():
+    with pytest.raises(SQLValidationError, match="comments are not allowed"):
+        validate_sql("SELECT /* DROP TABLE */ 1 FROM provider_features")
+
+
+def test_reject_multi_statement():
+    with pytest.raises(SQLValidationError, match="Multiple statements"):
+        validate_sql("SELECT 1; DROP TABLE provider_features")
+
+
+def test_reject_privilege_escalation():
+    with pytest.raises(SQLValidationError, match="Forbidden keyword"):
+        validate_sql("SELECT set role admin")
+
+
+def test_valid_select_still_passes():
+    """Ensure hardening doesn't break legitimate queries."""
+    result = validate_sql("SELECT npi, provider_name FROM provider_features WHERE state = 'FL'")
+    assert result.startswith("SELECT npi")
+    assert "LIMIT 500" in result
+
+
+def test_valid_cte_with_aggregation():
+    sql = (
+        "WITH risk AS (SELECT state, count(*) AS n FROM provider_features "
+        "WHERE max_seed_risk_score > 50 GROUP BY state) "
+        "SELECT * FROM risk ORDER BY n DESC LIMIT 10"
+    )
+    assert validate_sql(sql) == sql
+
+
+# ---------------------------------------------------------------------------
 # Format tests
 # ---------------------------------------------------------------------------
 

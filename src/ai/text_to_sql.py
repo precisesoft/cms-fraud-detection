@@ -25,12 +25,25 @@ QUERY_TIMEOUT_MS = 5000
 
 # Patterns that must never appear in generated SQL
 _FORBIDDEN_PATTERNS = re.compile(
-    r"\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|GRANT|REVOKE|EXEC|EXECUTE)\b",
+    r"\b("
+    r"INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|GRANT|REVOKE|EXEC|EXECUTE"
+    r"|UNION"  # prevents UNION-based data exfiltration
+    r"|COPY|LOAD|IMPORT"  # bulk data operations
+    r"|pg_sleep|pg_read_file|pg_read_binary_file|lo_import|lo_export"  # server-side abuse
+    r"|dblink|dblink_exec"  # cross-database queries
+    r"|set\s+role|set\s+session"  # privilege escalation
+    r")\b",
     re.IGNORECASE,
 )
 
+# SQL comments can hide malicious keywords from pattern matching
+_COMMENT_PATTERN = re.compile(r"(--|/\*)")
+
 # Must start with SELECT or WITH (for CTEs)
 _ALLOWED_START = re.compile(r"^\s*(SELECT|WITH)\b", re.IGNORECASE)
+
+# Multiple statements via semicolons (beyond trailing)
+_MULTI_STATEMENT = re.compile(r";.+", re.DOTALL)
 
 
 class SQLValidationError(Exception):
@@ -47,6 +60,14 @@ def validate_sql(sql: str) -> str:
     if cleaned.upper() == "UNANSWERABLE":
         raise SQLValidationError("UNANSWERABLE")
 
+    # Block SQL comments (can hide malicious keywords)
+    if _COMMENT_PATTERN.search(cleaned):
+        raise SQLValidationError("SQL comments are not allowed")
+
+    # Block multi-statement injection (semicolons within the query)
+    if _MULTI_STATEMENT.search(cleaned):
+        raise SQLValidationError("Multiple statements are not allowed")
+
     if not _ALLOWED_START.match(cleaned):
         raise SQLValidationError(f"SQL must start with SELECT or WITH, got: {cleaned[:50]}")
 
@@ -54,7 +75,7 @@ def validate_sql(sql: str) -> str:
     if forbidden:
         raise SQLValidationError(f"Forbidden keyword: {forbidden.group()}")
 
-    # Strip any trailing semicolons and add LIMIT if missing
+    # Add LIMIT if missing
     if not re.search(r"\bLIMIT\b", cleaned, re.IGNORECASE):
         cleaned = f"{cleaned} LIMIT {MAX_ROWS}"
 
