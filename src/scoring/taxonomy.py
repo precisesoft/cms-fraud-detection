@@ -149,6 +149,15 @@ PAYMENT_OUTLIER = SignalDef(
     requires_peers=True,
 )
 
+CONCENTRATION_OUTLIER = SignalDef(
+    name="concentration_outlier",
+    category=SignalCategory.charge,
+    direction=SignalDirection.risk,
+    description="Billing concentrated in a single service code",
+    points=12,  # max tier; extract.py applies tiered logic
+    threshold=0.80,
+)
+
 RISK_SIGNALS: tuple[SignalDef, ...] = (
     REVOKED_PROVIDER,
     NOT_IN_ENROLLMENT,
@@ -156,6 +165,7 @@ RISK_SIGNALS: tuple[SignalDef, ...] = (
     SERVICE_INTENSITY_OUTLIER,
     CHARGE_RATIO_OUTLIER,
     PAYMENT_OUTLIER,
+    CONCENTRATION_OUTLIER,
 )
 
 # ---------------------------------------------------------------------------
