@@ -39,7 +39,7 @@ We built an **explainable, proactive provider risk detection system** that turns
 | Scoring  | Deterministic rule engine | Auditable, reproducible, no model drift     |
 | Data     | PostgreSQL 16 + Neo4j 5   | Relational queries + relationship traversal |
 | AI       | AWS Bedrock (Claude)      | **FedRAMP High authorized**, GovCloud-ready |
-| Frontend | Next.js 15 + shadcn/ui    | Modern, accessible, responsive              |
+| Frontend | Next.js 16 + shadcn/ui    | Modern, accessible, responsive              |
 | Infra    | Kubernetes (k3s)          | Container-native, horizontally scalable     |
 | CI/CD    | GitHub Actions            | 7 automated checks on every PR              |
 
