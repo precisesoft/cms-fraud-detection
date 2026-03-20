@@ -11,8 +11,13 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-import joblib
-import numpy as np
+try:
+    import joblib
+    import numpy as np
+
+    _ML_AVAILABLE = True
+except ImportError:  # scikit-learn / joblib not installed (ml extras not present)
+    _ML_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +48,10 @@ def score_provider(feature_row: dict) -> float | None:
         Anomaly score in [0, 100] where higher = more anomalous.
         Returns None if the model cannot be loaded or features are insufficient.
     """
+    if not _ML_AVAILABLE:
+        logger.debug("ML libraries not installed — anomaly scoring unavailable")
+        return None
+
     try:
         bundle = _load_bundle()
     except Exception:
