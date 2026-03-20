@@ -100,8 +100,26 @@ _MERGE_PROVIDERS = """
 UNWIND $rows AS r
 MERGE (p:Provider {npi: r.npi})
 SET p.name = r.name, p.type = r.type, p.state = r.state,
+    p.city = r.city, p.zip5 = r.zip5,
     p.risk_score = r.risk_score, p.risk_band = r.risk_band,
     p.enrolled = r.enrolled, p.revoked = r.revoked
+"""
+
+_CREATE_SAME_ZIP_RELS = """
+MATCH (a:Provider), (b:Provider)
+WHERE a.zip5 = b.zip5
+  AND a.zip5 IS NOT NULL
+  AND a.npi < b.npi
+  AND (a.risk_band = 'high_risk' OR b.risk_band = 'high_risk')
+MERGE (a)-[:SAME_ZIP]->(b)
+"""
+
+_CREATE_SAME_ORG_RELS = """
+MATCH (a:Provider), (b:Provider)
+WHERE a.name = b.name
+  AND a.name IS NOT NULL
+  AND a.npi < b.npi
+MERGE (a)-[:SAME_ORG]->(b)
 """
 
 _MERGE_CASES = """
@@ -195,7 +213,7 @@ async def _project_providers(driver: AsyncDriver, pg_conninfo: str) -> int:
     async with await psycopg.AsyncConnection.connect(pg_conninfo) as conn:
         async with conn.cursor() as cur:
             await cur.execute(
-                "SELECT npi, provider_name, provider_type, state, "
+                "SELECT npi, provider_name, provider_type, state, city, zip5, "
                 "max_seed_risk_score, enrolled_2025, revoked_2026 "
                 "FROM provider_features"
             )
@@ -207,10 +225,12 @@ async def _project_providers(driver: AsyncDriver, pg_conninfo: str) -> int:
                         "name": row[1],
                         "type": row[2],
                         "state": row[3],
-                        "risk_score": row[4],
-                        "risk_band": _risk_band(row[4]),
-                        "enrolled": bool(row[5]),
-                        "revoked": bool(row[6]),
+                        "city": row[4],
+                        "zip5": row[5],
+                        "risk_score": row[6],
+                        "risk_band": _risk_band(row[6]),
+                        "enrolled": bool(row[7]),
+                        "revoked": bool(row[8]),
                     }
                 )
                 if len(batch) >= BATCH_SIZE:
@@ -316,6 +336,18 @@ async def run_projection(
         await _project_signals(driver)
         provider_count = await _project_providers(driver, pg_conninfo)
         case_count = await _project_cases_and_signals(driver, pg_conninfo)
+
+        # Create network relationships (SAME_ZIP, SAME_ORG)
+        async with driver.session() as session:
+            result = await session.run(_CREATE_SAME_ZIP_RELS)
+            summary = await result.consume()
+            zip_rels = summary.counters.relationships_created
+            log.info("Created %d SAME_ZIP relationships", zip_rels)
+
+            result = await session.run(_CREATE_SAME_ORG_RELS)
+            summary = await result.consume()
+            org_rels = summary.counters.relationships_created
+            log.info("Created %d SAME_ORG relationships", org_rels)
 
         return {"providers": provider_count, "cases": case_count}
     finally:

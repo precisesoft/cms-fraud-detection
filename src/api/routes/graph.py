@@ -19,7 +19,8 @@ OPTIONAL MATCH (p)-[hc:HAS_CASE]->(c:Case)
 OPTIONAL MATCH (c)-[hs:HAS_SIGNAL]->(s:Signal)
 OPTIONAL MATCH (c)-[ip:IN_PEER_GROUP]->(pg:PeerGroup)
 OPTIONAL MATCH (s)-[sf:SOURCED_FROM]->(src:Source)
-RETURN p, hc, c, hs, s, ip, pg, sf, src
+OPTIONAL MATCH (p)-[sz:SAME_ZIP]-(neighbor:Provider)
+RETURN p, hc, c, hs, s, ip, pg, sf, src, sz, neighbor
 """
 
 
@@ -102,10 +103,13 @@ def _build_graph(records: list) -> tuple[list[GraphNode], list[GraphEdge]]:
         pg_id = add_node(record.get("pg"))
         src_id = add_node(record.get("src"))
 
+        neighbor_id = add_node(record.get("neighbor"))
+
         add_edge(p_id, c_id, record.get("hc"))
         add_edge(c_id, s_id, record.get("hs"))
         add_edge(c_id, pg_id, record.get("ip"))
         add_edge(s_id, src_id, record.get("sf"))
+        add_edge(p_id, neighbor_id, record.get("sz"))
 
     return list(nodes_map.values()), edges
 
