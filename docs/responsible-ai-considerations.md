@@ -201,6 +201,8 @@ The investigator workflow remains unchanged:
 
 No automated action is taken based on AI output.
 
+See also [AI & Open-Source Disclosure](./ai-oss-disclosure.md) for the full inventory of AI tools and open-source libraries used in this system.
+
 ## 8. Continuous Improvement
 
 ### Monitoring Plan
