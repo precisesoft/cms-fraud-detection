@@ -71,7 +71,10 @@ def validate_sql(sql: str) -> str:
     if not _ALLOWED_START.match(cleaned):
         raise SQLValidationError(f"SQL must start with SELECT or WITH, got: {cleaned[:50]}")
 
-    forbidden = _FORBIDDEN_PATTERNS.search(cleaned)
+    # Strip string literals before checking forbidden patterns so that
+    # legitimate values like 'Credit Union Bank' don't false-positive.
+    stripped = re.sub(r"'[^']*'", "''", cleaned)
+    forbidden = _FORBIDDEN_PATTERNS.search(stripped)
     if forbidden:
         raise SQLValidationError(f"Forbidden keyword: {forbidden.group()}")
 
@@ -128,7 +131,7 @@ async def text_to_sql(
     # Execute with timeout
     start = time.monotonic()
     async with conn.cursor() as cur:
-        await cur.execute(f"SET statement_timeout = '{QUERY_TIMEOUT_MS}'")
+        await cur.execute("SET statement_timeout = %s", [str(QUERY_TIMEOUT_MS)])
         await cur.execute(sql)
         columns = [desc.name for desc in cur.description] if cur.description else []
         raw_rows = await cur.fetchall()

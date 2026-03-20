@@ -10,11 +10,19 @@ from psycopg.rows import dict_row
 
 from src.api.deps import get_db
 from src.api.schemas import CohortFairness, FairnessReport, RevocationImpact
+from src.scoring.taxonomy import REVOKED_PROVIDER
 
 router = APIRouter(prefix="/fairness", tags=["fairness"])
 
 # Providers at or above this risk score are "flagged"
 DEFAULT_THRESHOLD = 51
+
+# Derived from scoring taxonomy — single source of truth.
+# The blind approximation only adjusts risk (not legitimacy) because the
+# flagging threshold is based on risk_score alone. Legitimacy changes from
+# removing the no_revocation signal don't affect the >= threshold comparison.
+assert REVOKED_PROVIDER.points is not None, "revoked_provider signal must have points"
+REVOCATION_RISK_POINTS: int = REVOKED_PROVIDER.points
 
 _STATE_SQL = """
 SELECT state AS cohort,
@@ -42,45 +50,36 @@ SELECT count(*)::int AS total,
 FROM provider_features
 """
 
-# Blind scoring: subtract revocation signal (+25 risk, -15 legitimacy) for revoked providers
-_BLIND_STATE_SQL = """
+# Blind scoring: subtract revocation signal for revoked providers.
+# Uses REVOCATION_RISK_POINTS constant so this stays in sync with taxonomy.
+_BLIND_CASE = f"""CASE WHEN revoked_2026 = 1
+                THEN GREATEST(max_seed_risk_score - {REVOCATION_RISK_POINTS}, 0)
+                ELSE max_seed_risk_score
+           END"""
+
+_BLIND_STATE_SQL = f"""
 SELECT state AS cohort,
        count(*)::int AS provider_count,
-       count(*) FILTER (WHERE
-           CASE WHEN revoked_2026 = 1
-                THEN GREATEST(max_seed_risk_score - 25, 0)
-                ELSE max_seed_risk_score
-           END >= %s
-       )::int AS flagged_count
+       count(*) FILTER (WHERE {_BLIND_CASE} >= %s)::int AS flagged_count
 FROM provider_features
 WHERE state IS NOT NULL
 GROUP BY state
 ORDER BY state
 """
 
-_BLIND_SPECIALTY_SQL = """
+_BLIND_SPECIALTY_SQL = f"""
 SELECT provider_type AS cohort,
        count(*)::int AS provider_count,
-       count(*) FILTER (WHERE
-           CASE WHEN revoked_2026 = 1
-                THEN GREATEST(max_seed_risk_score - 25, 0)
-                ELSE max_seed_risk_score
-           END >= %s
-       )::int AS flagged_count
+       count(*) FILTER (WHERE {_BLIND_CASE} >= %s)::int AS flagged_count
 FROM provider_features
 WHERE provider_type IS NOT NULL
 GROUP BY provider_type
 ORDER BY provider_type
 """
 
-_BLIND_OVERALL_SQL = """
+_BLIND_OVERALL_SQL = f"""
 SELECT count(*)::int AS total,
-       count(*) FILTER (WHERE
-           CASE WHEN revoked_2026 = 1
-                THEN GREATEST(max_seed_risk_score - 25, 0)
-                ELSE max_seed_risk_score
-           END >= %s
-       )::int AS flagged
+       count(*) FILTER (WHERE {_BLIND_CASE} >= %s)::int AS flagged
 FROM provider_features
 """
 

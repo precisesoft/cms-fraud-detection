@@ -140,6 +140,96 @@ def test_valid_cte_with_aggregation():
 
 
 # ---------------------------------------------------------------------------
+# Edge-case injection tests (extra credit)
+# ---------------------------------------------------------------------------
+
+
+def test_reject_union_case_insensitive():
+    """UNION in mixed case should still be caught."""
+    with pytest.raises(SQLValidationError, match="Forbidden keyword"):
+        validate_sql("SELECT 1 UnIoN SELECT 2")
+
+
+def test_reject_tab_separated_union():
+    """UNION preceded by tab instead of space."""
+    with pytest.raises(SQLValidationError, match="Forbidden keyword"):
+        validate_sql("SELECT 1\tUNION\tSELECT 2")
+
+
+def test_reject_newline_separated_multi_statement():
+    """Newline between statements should still be blocked."""
+    with pytest.raises(SQLValidationError, match="Multiple statements"):
+        validate_sql("SELECT 1;\nDROP TABLE provider_features")
+
+
+def test_reject_pg_read_binary_file():
+    with pytest.raises(SQLValidationError, match="Forbidden keyword"):
+        validate_sql("SELECT pg_read_binary_file('/etc/shadow')")
+
+
+def test_reject_lo_export():
+    with pytest.raises(SQLValidationError, match="Forbidden keyword"):
+        validate_sql("SELECT lo_export(12345, '/tmp/data')")
+
+
+def test_reject_dblink_exec():
+    with pytest.raises(SQLValidationError, match="Forbidden keyword"):
+        validate_sql("SELECT dblink_exec('host=evil', 'DROP TABLE x')")
+
+
+def test_reject_set_session():
+    with pytest.raises(SQLValidationError, match="Forbidden keyword"):
+        validate_sql("SELECT set session authorization 'admin'")
+
+
+def test_reject_copy():
+    with pytest.raises(SQLValidationError, match="Forbidden keyword|must start with SELECT"):
+        validate_sql("COPY provider_features TO '/tmp/dump.csv'")
+
+
+def test_valid_where_clause_with_union_substring():
+    """Column name containing 'union' substring should NOT be blocked (word boundary)."""
+    result = validate_sql("SELECT reunion_date FROM events LIMIT 10")
+    assert "reunion_date" in result
+
+
+def test_valid_select_with_subquery():
+    sql = (
+        "SELECT npi, (SELECT count(*) FROM provider_service_cases c "
+        "WHERE c.npi = p.npi) AS case_count "
+        "FROM provider_features p LIMIT 10"
+    )
+    assert validate_sql(sql) == sql
+
+
+def test_valid_case_expression():
+    """CASE WHEN should not be confused with forbidden keywords."""
+    sql = (
+        "SELECT npi, CASE WHEN max_seed_risk_score >= 51 THEN 'high' "
+        "ELSE 'low' END AS band FROM provider_features LIMIT 10"
+    )
+    assert validate_sql(sql) == sql
+
+
+def test_valid_string_literal_with_union_word():
+    """'Credit Union Bank' in a WHERE clause should NOT be blocked."""
+    sql = "SELECT npi FROM provider_features WHERE provider_name = 'Credit Union Bank' LIMIT 10"
+    assert validate_sql(sql) == sql
+
+
+def test_valid_string_literal_with_delete_word():
+    """String literal containing DELETE keyword should pass."""
+    sql = "SELECT npi FROM provider_features WHERE notes = 'delete this record' LIMIT 10"
+    assert validate_sql(sql) == sql
+
+
+def test_reject_union_outside_string_literal():
+    """UNION keyword outside a string literal must still be blocked."""
+    with pytest.raises(SQLValidationError, match="Forbidden keyword"):
+        validate_sql("SELECT npi FROM provider_features WHERE name = 'safe' UNION SELECT 1")
+
+
+# ---------------------------------------------------------------------------
 # Format tests
 # ---------------------------------------------------------------------------
 
