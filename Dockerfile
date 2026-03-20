@@ -19,6 +19,8 @@ WORKDIR /app
 COPY --from=builder /install /usr/local
 COPY --from=builder /app/src src/
 COPY pyproject.toml .
+COPY data/validation/ data/validation/
+COPY data/models/ data/models/
 
 USER appuser
 
