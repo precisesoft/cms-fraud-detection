@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CaseActions, CaseStatusBadge } from "@/components/case-actions";
-import type { CaseAction, CaseActionRecord } from "@/types/api";
+import type { CaseAction } from "@/types/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -12,7 +12,7 @@ interface ProviderActionsProps {
   caseIds: string[];
 }
 
-export function ProviderActions({ npi, caseIds }: ProviderActionsProps) {
+export function ProviderActions({ caseIds }: ProviderActionsProps) {
   const [actioned, setActioned] = useState<Record<string, CaseAction>>({});
 
   const fetchStatuses = useCallback(async () => {
@@ -31,11 +31,18 @@ export function ProviderActions({ npi, caseIds }: ProviderActionsProps) {
         }
       }),
     );
-    setActioned(statuses);
+    return statuses;
   }, [caseIds]);
 
   useEffect(() => {
-    if (caseIds.length > 0) fetchStatuses();
+    if (caseIds.length === 0) return;
+    let cancelled = false;
+    fetchStatuses().then((statuses) => {
+      if (!cancelled) setActioned(statuses);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [caseIds, fetchStatuses]);
 
   if (caseIds.length === 0) return null;
