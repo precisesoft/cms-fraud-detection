@@ -1,119 +1,128 @@
-# Model Card: Isolation Forest Anomaly Detection
+# Model Card: Isolation Forest Anomaly Detector
 
-> Model card for the unsupervised anomaly detection component used in provider risk scoring.
+_Following [Mitchell et al. (2019)](https://arxiv.org/abs/1810.03993) model card framework._
 
-## Model Overview
+## Model Details
 
-| Field | Value |
-|---|---|
-| **Model Type** | Isolation Forest (unsupervised anomaly detection) |
-| **Implementation** | scikit-learn `IsolationForest` |
-| **Version** | scikit-learn 1.x |
-| **Purpose** | Supplementary anomaly signal for provider-level billing pattern detection |
-| **Role in System** | One signal among 14 in the deterministic scoring taxonomy |
+| Property         | Value                                   |
+| ---------------- | --------------------------------------- |
+| Algorithm        | `sklearn.ensemble.IsolationForest`      |
+| Estimators       | 200                                     |
+| Contamination    | 0.05 (5%)                               |
+| Random state     | 42                                      |
+| Feature scaler   | `sklearn.preprocessing.StandardScaler`  |
+| Feature count    | 49 numeric features                     |
+| Training library | scikit-learn (via joblib serialization) |
+| Model artifact   | `data/models/isolation_forest.joblib`   |
+| Runtime scorer   | `src/models/anomaly_scorer.py`          |
 
 ## Intended Use
 
-The Isolation Forest model generates a binary anomaly flag (`isolation_forest_flag`) for each provider. This flag contributes **up to 10 points** to a provider's risk score as part of the broader signal taxonomy.
+**Primary purpose**: Secondary anomaly detection signal that corroborates the rule-based scoring engine. The isolation forest identifies statistically unusual billing patterns that may not trigger explicit threshold-based rules.
 
-**Intended users:** CMS program integrity investigators and fraud analysts using the Argus dashboard.
+**Role in system**: Advisory only. The anomaly score (0-100, higher = more anomalous) appears alongside the rule-based risk score in API responses and AI-generated narratives. It is never used as the sole basis for any enforcement or flagging decision.
 
-**Intended use cases:**
-- Surfacing providers with statistically unusual billing patterns for human review
-- Supplementing rule-based signals with a data-driven anomaly perspective
-- Prioritizing investigator workload by flagging high-probability anomalies
+**Users**: CMS fraud investigators reviewing provider risk profiles through the Argus dashboard.
 
-**Out-of-scope uses:**
+**Out-of-scope uses**:
+
 - Autonomous enforcement or payment denial decisions
 - Final determination of fraud without human review
 - Use on data domains outside Medicare Part B provider billing patterns
 
 ## Training Data
 
-| Field | Value |
-|---|---|
-| **Dataset** | Medicare Physician & Other Practitioners — by Provider and Service (2022) |
-| **Source** | CMS data.cms.gov (public domain) |
-| **Size** | ~9.66M service lines, ~13K provider-service cases after filtering |
-| **Features** | Provider-level aggregated billing metrics (charges, payments, service volumes) |
-| **Labels** | None — unsupervised model |
-| **PHI** | None — all data is publicly available aggregate statistics |
+| Field      | Value                                                                      |
+| ---------- | -------------------------------------------------------------------------- |
+| Dataset    | Medicare Physician & Other Practitioners -- by Provider and Service (2022) |
+| Source     | CMS data.cms.gov (public domain)                                           |
+| Population | 10,282 providers after feature engineering                                 |
+| Labels     | None -- unsupervised model                                                 |
+| PHI        | None -- all data is publicly available aggregate statistics                |
 
-### Input Features
+### Input Features (49 numeric columns from `provider_features`)
 
-The model trains on a subset of normalized provider-level features:
+- **Volume**: total services, beneficiaries, service lines, services per beneficiary, bene-day services
+- **Charges**: mean/max/std submitted charges, allowed amounts, payments, estimated total payment
+- **Ratios**: charge-to-allowed ratio, payment-to-allowed ratio, services per beneficiary
+- **Concentration**: Herfindahl-Hirschman Index (HHI), top-code share, top-3-code share
+- **Peer z-scores**: volume, intensity, charge, and payment outlier z-scores (mean and max)
+- **Risk scores**: seed risk/legitimacy scores from rule-based engine
 
-| Feature | Description |
-|---|---|
-| `avg_submitted_charge_per_service` | Average charge submitted per service |
-| `avg_medicare_payment` | Average Medicare allowed payment |
-| `service_volume` | Total services billed |
-| `beneficiary_count` | Distinct beneficiaries served |
-| `charge_to_payment_ratio` | Ratio of submitted charges to Medicare payment |
-
-Features are standardized (z-score normalized) before training.
-
-## Model Architecture
-
-- **Algorithm:** Isolation Forest
-- **Contamination:** 0.05 (5% of providers expected to be anomalous)
-- **n_estimators:** 100 isolation trees
-- **random_state:** 42 (reproducible results)
-- **Scoring:** Binary flag — providers in the most anomalous 5% receive `isolation_forest_flag = 1`
+All features are standardized (zero mean, unit variance) via StandardScaler before training.
 
 ## Evaluation
 
-### Retrospective Validation
+### Correlation with Rule-Based Scores
 
-The scoring system (including the Isolation Forest signal) was retrospectively validated against CMS provider revocation data:
+Pearson correlation: **0.125**
 
-- **Detection rate:** The full scoring system detected **91% of eventually-revoked providers** from billing patterns alone
-- The Isolation Forest flag contributes to this result as one of 14 signals
+This low correlation is **by design**. It means the isolation forest captures different anomaly patterns than the rule-based engine. Together, the two approaches provide broader coverage -- the rule engine catches known patterns while the isolation forest surfaces statistically unusual behavior that may not match any explicit rule.
 
-### Limitations of Evaluation
+### Detection Rates (Revoked Providers)
 
-- Revocation is an imperfect ground truth: not all revoked providers were revoked for billing fraud
-- The model was trained and evaluated on 2022 data; performance on future years may differ
-- No prospective validation has been performed
+| Anomaly Percentile    | Detection Rate                      |
+| --------------------- | ----------------------------------- |
+| Top 5% most anomalous | 28.1% of revoked providers captured |
+| Top 10%               | 42.7%                               |
+| Top 20%               | 63.0%                               |
 
-## Fairness Considerations
+Ground truth: 335 revoked NPIs from the 2026 CMS revocation list.
 
-The model does not use protected attributes (race, gender, ethnicity) as features. However, indirect proxies may exist:
+### Top Features by Permutation Importance
 
-- **Geography:** Specialty distribution varies by state; geographic anomalies may correlate with regional practice norms
-- **Specialty:** Different specialties have different billing patterns; per-specialty peer comparison mitigates but does not eliminate this
+| Feature               | Importance |
+| --------------------- | ---------- |
+| max_submitted_charge  | -0.079     |
+| mean_allowed_amt      | -0.073     |
+| mean_payment_amt      | -0.073     |
+| mean_submitted_charge | -0.061     |
+| max_allowed_amt       | -0.059     |
+| max_payment_amt       | -0.049     |
+| top_code_share        | -0.041     |
+| charge_cv             | -0.041     |
+| enrolled_2025         | -0.037     |
+| unique_hcpcs_codes    | -0.036     |
 
-The system includes a dedicated **`/api/fairness` endpoint** that monitors flagging rate disparities across geography and specialty, using statistical parity and disparate impact metrics.
+Note: Negative permutation importance values result from using revocation status as a proxy label for evaluation. The isolation forest is unsupervised and does not use labels during training. These values indicate which features, when shuffled, reduce the model's ability to rank revoked providers as anomalous.
 
-See [docs/responsible-ai-considerations.md](responsible-ai-considerations.md) for the full fairness framework.
+## Scoring Mechanism
 
-## Transparency and Explainability
+The model's `decision_function()` output (lower = more anomalous) is transformed to a 0-100 scale:
 
-The Isolation Forest model produces a **binary flag**, not a score. The flag either fires (contributing 10 points) or does not. This makes the contribution to the final score fully auditable:
+```
+normalized = clamp(50 - raw_score * 100, 0, 100)
+```
 
-- If `isolation_forest_flag = 1`, 10 points are added to the risk score
-- The flag is visible in the provider signal breakdown on the dashboard
-- The signal source is labeled as `isolation_forest` in the signal taxonomy
+Higher scores indicate more anomalous billing patterns. Scores are ordinal rankings, not calibrated probabilities. The score is served via `src/models/anomaly_scorer.py` using lazy-loaded model caching (`lru_cache`).
 
-See [docs/risk-scoring-methodology.md](risk-scoring-methodology.md) for the full signal taxonomy.
+## Limitations
 
-## Known Limitations
+1. **Single-year cross-section**: Trained on 2022 data only. No temporal validation across years. Provider behavior may shift over time.
+2. **Provider-level aggregation**: Operates on provider-level summary statistics, not individual claim lines. Cannot detect anomalies in specific procedures.
+3. **Proxy label evaluation**: Revocation status is an imperfect proxy for fraud. Many revocations are administrative, and many fraudulent providers have not yet been revoked.
+4. **Orthogonal by design**: The 0.125 correlation means the model's anomaly ranking often disagrees with rule-based scores. This is intentional but requires investigators to interpret both signals.
+5. **No calibration**: Scores are ordinal rankings, not probabilities. A score of 80 does not mean "80% chance of fraud."
+6. **Feature leakage risk**: Some input features (seed risk/legitimacy scores) are derived from the rule-based engine, creating partial circularity. However, the low correlation suggests the model learned patterns beyond what rules capture.
+7. **Contamination assumption**: The 5% contamination rate is a hyperparameter, not a measured fraud rate.
 
-1. **Unsupervised:** The model has no labeled fraud examples to learn from — it identifies statistical outliers, which may or may not be fraudulent
-2. **Static training:** The model is trained once on historical data; it does not update in real time
-3. **Feature scope:** Only a subset of available features is used; richer feature engineering could improve detection
-4. **Contamination assumption:** The 5% contamination rate is a hyperparameter, not a measured fraud rate
+## Ethical Considerations
+
+- **Not a standalone decision tool**: Anomaly scores are always presented alongside explainable rule-based signals, peer comparisons, and AI-generated narratives. No automated action is taken based on anomaly scores alone.
+- **No protected attributes**: The model does not use race, gender, ethnicity, or age as features. However, geographic and specialty features may correlate with demographic patterns.
+- **Fairness monitoring**: The system includes a dedicated `/api/fairness` endpoint that monitors flagging rate disparities across geography and specialty, using statistical parity and disparate impact metrics. See [responsible-ai-considerations.md](responsible-ai-considerations.md).
+- **Human-in-the-loop**: All flagged cases require human review before any action is taken. The system is designed to assist, not replace, human judgment.
 
 ## Governance
 
-| Role | Responsibility |
-|---|---|
-| **Human reviewer** | All flagged cases require human review before any action |
-| **System** | Score and flag; never make enforcement decisions autonomously |
-| **Feedback loop** | Reviewer decisions will feed back into signal weight tuning in the pilot phase |
+| Role           | Responsibility                                                           |
+| -------------- | ------------------------------------------------------------------------ |
+| Human reviewer | All flagged cases require human review before any action                 |
+| System         | Score and surface signals; never make enforcement decisions autonomously |
+| Feedback loop  | Reviewer decisions feed back into signal weight tuning in pilot phase    |
 
 ## Version History
 
-| Version | Date | Notes |
-|---|---|---|
-| 1.0.0 | March 2026 | Initial model — hackathon submission |
+| Version | Date       | Notes                                                         |
+| ------- | ---------- | ------------------------------------------------------------- |
+| 1.0.0   | March 2026 | Initial model (200 estimators, 49 features, 10,282 providers) |
