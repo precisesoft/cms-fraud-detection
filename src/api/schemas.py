@@ -489,6 +489,35 @@ class CaseActionsListResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Validation Report
+# ---------------------------------------------------------------------------
+
+
+class DetectionByReason(BaseModel):
+    """Detection stats for a single revocation reason code."""
+
+    reason: str
+    count: int
+    detected: int
+    rate: float
+
+
+class ValidationReport(BaseModel):
+    """Retrospective validation results: detection rate on revoked providers."""
+
+    overall_detection_rate: float = Field(
+        description="Fraction of revoked providers flagged by behavioral signals alone"
+    )
+    total_revoked_providers: int
+    total_revoked_cases: int
+    detection_by_reason: list[DetectionByReason]
+    baseline_flagging_rate: float = Field(
+        description="Fraction of non-revoked providers that were also flagged"
+    )
+    methodology: str
+
+
+# ---------------------------------------------------------------------------
 # Health
 # ---------------------------------------------------------------------------
 

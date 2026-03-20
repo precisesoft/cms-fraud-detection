@@ -163,8 +163,13 @@ async def simulate_claim(
         case["services_per_bene_peer_z"] = _z_score(
             services_per_bene, peers["avg_spb"], peers["std_spb"]
         )
-        case["submitted_to_allowed_peer_z"] = None  # no allowed amount from simulation
-        case["payment_peer_z"] = None  # no payment amount from simulation
+        # Use submitted charge as proxy for charge ratio and payment z-scores
+        case["submitted_to_allowed_peer_z"] = _z_score(
+            req.submitted_charge, peers["avg_ratio"], peers["std_ratio"]
+        )
+        case["payment_peer_z"] = _z_score(
+            req.submitted_charge, peers["avg_payment"], peers["std_payment"]
+        )
 
         # Build peer comparison stats for the response
         for metric, pv, pm, ps in [
