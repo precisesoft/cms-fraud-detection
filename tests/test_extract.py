@@ -5,6 +5,7 @@ from __future__ import annotations
 from src.scoring.extract import FiredSignal, extract_signals
 from src.scoring.taxonomy import (
     CHARGE_RATIO_OUTLIER,
+    CONCENTRATION_OUTLIER,
     ENROLLED_CURRENT,
     LARGE_PATIENT_PANEL,
     MEDICARE_PARTICIPATING,
@@ -286,6 +287,51 @@ class TestLargePatientPanel:
         s = _find(signals, LARGE_PATIENT_PANEL.name)
         assert s is not None
         assert s.value == 250.0
+
+
+# ---------------------------------------------------------------------------
+# Concentration outlier
+# ---------------------------------------------------------------------------
+
+
+class TestConcentrationOutlier:
+    def test_extreme_top_code_share(self):
+        signals = extract_signals(_base_case(top_code_share=0.95))
+        s = _find(signals, CONCENTRATION_OUTLIER.name)
+        assert s is not None
+        assert s.points == 12
+
+    def test_high_top_code_share(self):
+        signals = extract_signals(_base_case(top_code_share=0.85))
+        s = _find(signals, CONCENTRATION_OUTLIER.name)
+        assert s is not None
+        assert s.points == 8
+
+    def test_hhi_fires_when_top_code_below_threshold(self):
+        signals = extract_signals(_base_case(top_code_share=0.5, service_hhi=0.55))
+        s = _find(signals, CONCENTRATION_OUTLIER.name)
+        assert s is not None
+        assert s.points == 6
+
+    def test_top_code_takes_priority_over_hhi(self):
+        signals = extract_signals(_base_case(top_code_share=0.92, service_hhi=0.6))
+        s = _find(signals, CONCENTRATION_OUTLIER.name)
+        assert s is not None
+        assert s.points == 12  # top_code tier, not HHI
+
+    def test_does_not_fire_below_thresholds(self):
+        signals = extract_signals(_base_case(top_code_share=0.5, service_hhi=0.3))
+        assert CONCENTRATION_OUTLIER.name not in _signal_names(signals)
+
+    def test_does_not_fire_when_missing(self):
+        signals = extract_signals(_base_case())
+        assert CONCENTRATION_OUTLIER.name not in _signal_names(signals)
+
+    def test_reason_includes_percentage(self):
+        signals = extract_signals(_base_case(top_code_share=0.91))
+        s = _find(signals, CONCENTRATION_OUTLIER.name)
+        assert s is not None
+        assert "91%" in s.reason
 
 
 # ---------------------------------------------------------------------------
