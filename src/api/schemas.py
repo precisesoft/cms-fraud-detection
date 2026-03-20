@@ -372,6 +372,41 @@ class FairnessReport(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Network Risk
+# ---------------------------------------------------------------------------
+
+
+class NetworkNeighbor(BaseModel):
+    """A provider co-located or co-org with the target."""
+
+    npi: str
+    provider_name: str | None = None
+    provider_type: str | None = None
+    state: str | None = None
+    risk_score: int | None = None
+    revoked: bool = False
+
+
+class NetworkRiskResponse(BaseModel):
+    """Network risk context for a provider."""
+
+    npi: str
+    zip5: str | None = None
+    same_zip_flagged: list[NetworkNeighbor] = Field(
+        default_factory=list,
+        description="Flagged providers in the same zip code",
+    )
+    same_org_flagged: list[NetworkNeighbor] = Field(
+        default_factory=list,
+        description="Flagged providers with the same organization name",
+    )
+    zip_risk_summary: dict[str, Any] | None = Field(
+        default=None,
+        description="Aggregate risk stats for the provider's zip code",
+    )
+
+
+# ---------------------------------------------------------------------------
 # Evidence Graph
 # ---------------------------------------------------------------------------
 
