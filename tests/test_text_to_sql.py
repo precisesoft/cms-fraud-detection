@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
 
-from src.ai.text_to_sql import SQLValidationError, _format_answer, _format_value, validate_sql
+from src.ai.text_to_sql import (
+    SQLValidationError,
+    _format_answer,
+    _format_value,
+    _synthesize_results,
+    validate_sql,
+)
 
 # ---------------------------------------------------------------------------
 # SQL validation tests
@@ -269,3 +277,58 @@ def test_format_answer_multiple_rows():
     rows = [{"id": 1}, {"id": 2}, {"id": 3}]
     result = _format_answer("q", ["id"], rows)
     assert "3 results" in result
+
+
+# ---------------------------------------------------------------------------
+# Synthesis tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_synthesize_results_returns_summary():
+    mock_resp = {"text": "Internal Medicine leads with 23% flagging rate."}
+    with patch(
+        "src.ai.text_to_sql.invoke",
+        new_callable=AsyncMock,
+        return_value=mock_resp,
+    ):
+        result = await _synthesize_results(
+            "Which specialties have the most outliers?",
+            ["specialty", "count"],
+            [
+                {"specialty": "Internal Medicine", "count": 42},
+                {"specialty": "Cardiology", "count": 31},
+            ],
+        )
+    assert result is not None
+    assert "Internal Medicine" in result
+
+
+@pytest.mark.asyncio
+async def test_synthesize_results_fallback_on_error():
+    with patch(
+        "src.ai.text_to_sql.invoke",
+        new_callable=AsyncMock,
+        side_effect=RuntimeError("boom"),
+    ):
+        result = await _synthesize_results(
+            "test question",
+            ["col"],
+            [{"col": 1}, {"col": 2}],
+        )
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_synthesize_limits_to_10_rows():
+    rows = [{"id": i} for i in range(20)]
+    mock_resp = {"text": "Summary of 20 rows."}
+    with patch(
+        "src.ai.text_to_sql.invoke",
+        new_callable=AsyncMock,
+        return_value=mock_resp,
+    ) as mock:
+        await _synthesize_results("q", ["id"], rows)
+        call_args = mock.call_args
+        user_msg = call_args.kwargs["messages"][0]["content"]
+        assert "20 total rows" in user_msg

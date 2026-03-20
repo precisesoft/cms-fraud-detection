@@ -144,6 +144,12 @@ async def text_to_sql(
     # Build a text answer from the results
     answer = _format_answer(question, columns, rows)
 
+    # For multi-row results, synthesize an insight summary via LLM
+    if len(rows) > 1:
+        synthesis = await _synthesize_results(question, columns, rows)
+        if synthesis:
+            answer = synthesis
+
     logger.info(
         "text_to_sql question=%r rows=%d duration=%dms sql=%s",
         question[:80],
@@ -191,3 +197,46 @@ def _format_value(val: Any) -> str:
             return f"{val:,.0f}"
         return f"{val:.2f}"
     return str(val)
+
+
+_SYNTHESIS_PROMPT = (
+    "You are a CMS fraud analyst assistant. "
+    "Summarize these query results in 2-3 sentences. "
+    "Highlight the most notable patterns. Be specific with numbers. "
+    "Do not use markdown formatting."
+)
+
+
+async def _synthesize_results(
+    question: str,
+    columns: list[str],
+    rows: list[dict[str, Any]],
+) -> str | None:
+    """Generate an LLM summary for multi-row query results.
+
+    Returns a 2-3 sentence synthesis, or None on failure (non-fatal).
+    """
+    # Serialize top rows as a compact table for the LLM
+    display_rows = rows[:10]
+    header = " | ".join(columns)
+    lines = [header]
+    for row in display_rows:
+        lines.append(" | ".join(str(row.get(c, "")) for c in columns))
+    if len(rows) > 10:
+        lines.append(f"... ({len(rows)} total rows)")
+    table = "\n".join(lines)
+
+    user_msg = f"Question: {question}\n\nResults:\n{table}"
+
+    try:
+        response = await invoke(
+            messages=[{"role": "user", "content": user_msg}],
+            system=_SYNTHESIS_PROMPT,
+            model=CHAT_MODEL,
+            max_tokens=150,
+            temperature=0.2,
+        )
+        return str(response["text"]).strip()
+    except Exception:
+        logger.exception("Result synthesis failed, falling back to count")
+        return None
