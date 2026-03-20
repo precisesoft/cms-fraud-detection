@@ -21,12 +21,12 @@ All AI-generated code and content was reviewed, tested, and validated by the dev
 | FastAPI | 0.115.x | MIT | REST API framework |
 | psycopg | 3.x | LGPL-3.0 | PostgreSQL async driver |
 | Pydantic | 2.x | MIT | Data validation and serialization |
-| Polars | 0.x | MIT | Dataframe processing (ETL pipeline) |
+| Polars | 1.x | MIT | Dataframe processing (ETL pipeline) |
 | DuckDB | 0.x | MIT | In-process analytics (ETL) |
 | uvicorn | 0.x | BSD | ASGI server |
 | scikit-learn | 1.x | BSD-3-Clause | Isolation Forest anomaly detection |
 | boto3 | 1.x | Apache-2.0 | AWS Bedrock SDK |
-| pytest | 7.x | MIT | Test framework |
+| pytest | 8.x | MIT | Test framework |
 | ruff | 0.x | MIT | Linting and formatting |
 | mypy | 1.x | MIT | Static type checking |
 
