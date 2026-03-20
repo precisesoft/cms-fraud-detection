@@ -131,7 +131,7 @@ async def text_to_sql(
     # Execute with timeout
     start = time.monotonic()
     async with conn.cursor() as cur:
-        await cur.execute("SET statement_timeout = %s", [str(QUERY_TIMEOUT_MS)])
+        await cur.execute(f"SET statement_timeout = {int(QUERY_TIMEOUT_MS)}")
         await cur.execute(sql)
         columns = [desc.name for desc in cur.description] if cur.description else []
         raw_rows = await cur.fetchall()
