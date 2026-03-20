@@ -5,10 +5,7 @@ on:
     branches: [main]
     paths:
       - "terraform/**"
-  push:
-    branches: [main]
-    paths:
-      - "terraform/**"
+  workflow_dispatch:
 
 concurrency:
   group: terraform-${{ github.ref }}
@@ -83,7 +80,7 @@ jobs:
   apply:
     name: Apply
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
 
