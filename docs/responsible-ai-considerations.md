@@ -149,13 +149,59 @@ The scoring engine is deterministic: the same input always produces the same out
 
 ## 7. AI Disclosure
 
-This system uses **deterministic rule-based scoring** rather than machine learning models. The current implementation:
+### Scoring Remains Rule-Based
 
-- Does **not** use neural networks, gradient-boosted trees, or other ML models for scoring
-- Does **not** use generative AI for producing scores or labels
-- **Does** use peer-comparison statistics (z-scores) that are transparent and interpretable
+Risk and legitimacy scores are computed entirely by **deterministic, rule-based logic** — no machine learning models, no neural networks, no gradient-boosted trees. The same input always produces the same score. Scores are auditable, reproducible, and independent of any AI service.
 
-If AI-generated narratives are added in a future phase, they will be clearly labeled as AI-generated content and will serve as supplementary context — never as the basis for scoring or labeling decisions.
+Generative AI does **not**:
+
+- Compute risk or legitimacy scores
+- Assign case labels (`high_risk`, `review`, `stable`)
+- Trigger or recommend enforcement actions
+- Modify any data in the database
+
+### Where Generative AI Is Used
+
+AWS Bedrock Claude is live in three endpoints, each serving an **advisory and investigation-support** role only:
+
+| Endpoint | Model | Purpose |
+|---|---|---|
+| `POST /api/chat` | Claude Haiku 4.5 (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) | Translates analyst natural-language questions into SQL and returns query results |
+| `POST /api/score` | Claude Sonnet 4.6 (`us.anthropic.claude-sonnet-4-6`) | Generates a plain-language narrative summarizing the scored provider's risk signals |
+| `POST /api/claims/simulate` | Claude Sonnet 4.6 (`us.anthropic.claude-sonnet-4-6`) | Generates a plain-language narrative for a simulated claims scenario |
+
+All AI-generated text is surfaced in the UI and clearly presented as supplementary context for human reviewers.
+
+Model IDs are configurable via the `BEDROCK_CHAT_MODEL` and `BEDROCK_NARRATIVE_MODEL` environment variables.
+
+### Safeguards for AI-Generated SQL
+
+The text-to-SQL pipeline includes multiple layers of defense to prevent data exfiltration or unintended database mutations:
+
+| Safeguard | Detail |
+|---|---|
+| **Read-only database user** | The `/api/chat` endpoint connects through a dedicated read-only PostgreSQL user (`get_readonly_db` dependency); the DB user cannot execute DML or DDL regardless of the SQL generated |
+| **Regex keyword blocklist** | Generated SQL is scanned for `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `CREATE`, `TRUNCATE`, `GRANT`, `REVOKE`, `UNION`, `COPY`, `pg_sleep`, `dblink`, privilege-escalation patterns, and others before execution |
+| **SQL comment rejection** | `--` and `/* */` comment syntax is blocked to prevent keyword obfuscation |
+| **SELECT/WITH-only enforcement** | Any query that does not start with `SELECT` or `WITH` is rejected |
+| **LIMIT 500 enforcement** | A `LIMIT 500` clause is automatically appended if absent, capping data returned per query |
+| **5-second statement timeout** | `SET statement_timeout = 5000` is applied to every AI-generated query; long-running queries are cancelled |
+| **Conversation history cap** | At most the last 3 turns (6 messages) of conversation history are sent to the model, limiting context accumulation |
+
+### Human-in-the-Loop
+
+AI narratives are **advisory only**. They surface a plain-language summary of the data already visible in the scoring UI; they do not introduce new facts or conclusions.
+
+The investigator workflow remains unchanged:
+
+1. Analysts review provider risk scores and fired signals
+2. AI narratives provide a readable summary to accelerate review — not to replace judgement
+3. Analysts decide whether anomalies have legitimate explanations
+4. Only a human decision advances a case to further investigation or enforcement
+
+No automated action is taken based on AI output.
+
+See also [AI & Open-Source Disclosure](./ai-oss-disclosure.md) for the full inventory of AI tools and open-source libraries used in this system.
 
 ## 8. Continuous Improvement
 
