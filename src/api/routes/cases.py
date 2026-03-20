@@ -32,29 +32,34 @@ async def record_action(
     req: CaseActionRequest,
     conn: AsyncConnection = Depends(get_db),
 ) -> CaseActionResponse:
-    """Record an analyst action on a case."""
-    # Verify the case exists
+    """Record an analyst action on a case.
+
+    Works for both real cases (in provider_service_cases) and simulated
+    claims where the case_id is constructed as ``npi|hcpcs|pos``.
+    """
     async with conn.cursor() as cur:
+        # Try to resolve NPI from the cases table first
         await cur.execute(
-            "SELECT 1 FROM provider_service_cases WHERE case_id = %s",
+            "SELECT npi FROM provider_service_cases WHERE case_id = %s",
             (case_id,),
         )
-        if not await cur.fetchone():
-            raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
+        row = await cur.fetchone()
+        npi = row[0] if row else case_id.split("|")[0]
+
+        if not npi:
+            raise HTTPException(status_code=400, detail="Cannot resolve NPI from case_id")
 
         await cur.execute(
             """
             INSERT INTO case_actions (case_id, npi, action, notes)
-            SELECT %s, npi, %s, %s
-            FROM provider_service_cases
-            WHERE case_id = %s
+            VALUES (%s, %s, %s, %s)
             RETURNING id
             """,
-            (case_id, req.action.value, req.notes, case_id),
+            (case_id, npi, req.action.value, req.notes),
         )
         await conn.commit()
 
-    logger.info("Case %s action=%s", case_id, req.action.value)
+    logger.info("Case %s npi=%s action=%s", case_id, npi, req.action.value)
 
     return CaseActionResponse(
         case_id=case_id,
