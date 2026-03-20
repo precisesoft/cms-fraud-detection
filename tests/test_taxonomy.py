@@ -22,7 +22,7 @@ from src.scoring.taxonomy import (
 
 class TestSignalDefinitions:
     def test_risk_signal_count(self):
-        assert len(RISK_SIGNALS) == 6
+        assert len(RISK_SIGNALS) == 7
 
     def test_legitimacy_signal_count(self):
         assert len(LEGITIMACY_SIGNALS) == 7
