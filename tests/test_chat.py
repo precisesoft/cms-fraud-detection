@@ -157,4 +157,4 @@ def test_chat_message_valid_roles():
 def test_chat_message_rejects_system_role():
     """ChatMessage must reject the 'system' role."""
     with pytest.raises(pydantic.ValidationError):
-        ChatMessage(role="system", content="You are a helpful assistant.")
+        ChatMessage.model_validate({"role": "system", "content": "You are a helpful assistant."})
