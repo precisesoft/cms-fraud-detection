@@ -5,7 +5,6 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from fastapi import HTTPException
 
 from src.api.routes.cases import list_actions, list_pending, record_action
 from src.api.schemas import CaseAction, CaseActionRequest
@@ -45,9 +44,10 @@ def _mock_conn(rows, description=None):
 
 @pytest.mark.asyncio
 async def test_record_action_success():
-    conn, cur = _mock_conn((1,))
-    # First fetchone returns case exists, second returns insert id
-    cur.fetchone = AsyncMock(side_effect=[(1,), (42,)])
+    """Real case — NPI resolved from provider_service_cases."""
+    conn, cur = _mock_conn(None)
+    # First fetchone returns NPI from DB, second returns insert id
+    cur.fetchone = AsyncMock(side_effect=[("1234567890",), (42,)])
     req = CaseActionRequest(action=CaseAction.flagged, notes="Suspicious billing")
 
     result = await record_action("case-001", req, conn)
@@ -58,23 +58,26 @@ async def test_record_action_success():
 
 
 @pytest.mark.asyncio
-async def test_record_action_case_not_found():
+async def test_record_action_simulated_case():
+    """Simulated case — NPI extracted from pipe-delimited case_id."""
     conn, cur = _mock_conn(None)
-    cur.fetchone = AsyncMock(return_value=None)
+    # DB lookup returns None (case not in provider_service_cases)
+    cur.fetchone = AsyncMock(side_effect=[None, (1,)])
     req = CaseActionRequest(action=CaseAction.approved)
 
-    with pytest.raises(HTTPException) as exc_info:
-        await record_action("nonexistent", req, conn)
+    result = await record_action("1760461826|99215|O", req, conn)
 
-    assert exc_info.value.status_code == 404
+    assert result.case_id == "1760461826|99215|O"
+    assert result.action == CaseAction.approved
+    assert "APPROVED" in result.message
 
 
 @pytest.mark.asyncio
 async def test_record_action_all_types():
     """Verify all action types are accepted."""
     for action in CaseAction:
-        conn, cur = _mock_conn((1,))
-        cur.fetchone = AsyncMock(side_effect=[(1,), (1,)])
+        conn, cur = _mock_conn(None)
+        cur.fetchone = AsyncMock(side_effect=[("1234567890",), (1,)])
         req = CaseActionRequest(action=action)
         result = await record_action("case-001", req, conn)
         assert result.action == action

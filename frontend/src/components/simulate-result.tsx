@@ -216,7 +216,7 @@ export function SimulateResult({ result }: { result: ClaimSimulationResult }) {
           <CardTitle className="text-sm">Analyst Decision</CardTitle>
         </CardHeader>
         <CardContent>
-          <CaseActions caseId={`${result.npi}_${result.hcpcs_cd}`} />
+          <CaseActions caseId={`${result.npi}|${result.hcpcs_cd}|O`} />
           <div className="mt-4 pt-3 border-t">
             <Link
               href={`/providers/${result.npi}`}
