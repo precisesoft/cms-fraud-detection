@@ -6,7 +6,7 @@ Covers providers, claims, scoring, dashboard, and fairness endpoints.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -301,7 +301,7 @@ class ClaimSimulationResult(BaseModel):
 
 
 class ChatMessage(BaseModel):
-    role: str = Field(description="'user' or 'assistant'")
+    role: Literal["user", "assistant"] = Field(description="'user' or 'assistant'")
     content: str
 
 
@@ -486,6 +486,35 @@ class CaseActionsListResponse(BaseModel):
     case_id: str
     actions: list[CaseActionRecord]
     current_status: CaseAction | None = None
+
+
+# ---------------------------------------------------------------------------
+# Validation Report
+# ---------------------------------------------------------------------------
+
+
+class DetectionByReason(BaseModel):
+    """Detection stats for a single revocation reason code."""
+
+    reason: str
+    count: int
+    detected: int
+    rate: float
+
+
+class ValidationReport(BaseModel):
+    """Retrospective validation results: detection rate on revoked providers."""
+
+    overall_detection_rate: float = Field(
+        description="Fraction of revoked providers flagged by behavioral signals alone"
+    )
+    total_revoked_providers: int
+    total_revoked_cases: int
+    detection_by_reason: list[DetectionByReason]
+    baseline_flagging_rate: float = Field(
+        description="Fraction of non-revoked providers that were also flagged"
+    )
+    methodology: str
 
 
 # ---------------------------------------------------------------------------
