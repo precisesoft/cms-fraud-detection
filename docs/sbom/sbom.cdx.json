@@ -267,7 +267,7 @@
       "version": "5.0"
     },
     {
-      "bom-ref": "boto3==1.42.71",
+      "bom-ref": "boto3==1.42.72",
       "description": "The AWS SDK for Python",
       "externalReferences": [
         {
@@ -295,12 +295,12 @@
         }
       ],
       "name": "boto3",
-      "purl": "pkg:pypi/boto3@1.42.71",
+      "purl": "pkg:pypi/boto3@1.42.72",
       "type": "library",
-      "version": "1.42.71"
+      "version": "1.42.72"
     },
     {
-      "bom-ref": "botocore==1.42.71",
+      "bom-ref": "botocore==1.42.72",
       "description": "Low-level, data-driven core of boto 3.",
       "externalReferences": [
         {
@@ -324,9 +324,9 @@
           "value": "crt"
         }
       ],
-      "purl": "pkg:pypi/botocore@1.42.71",
+      "purl": "pkg:pypi/botocore@1.42.72",
       "type": "library",
-      "version": "1.42.71"
+      "version": "1.42.72"
     },
     {
       "bom-ref": "certifi==2026.2.25",
@@ -1249,7 +1249,7 @@
       "version": "32.0.1"
     },
     {
-      "bom-ref": "polars==1.39.2",
+      "bom-ref": "polars==1.39.3",
       "description": "Blazingly fast DataFrame library",
       "externalReferences": [
         {
@@ -1282,12 +1282,12 @@
         }
       ],
       "name": "polars",
-      "purl": "pkg:pypi/polars@1.39.2",
+      "purl": "pkg:pypi/polars@1.39.3",
       "type": "library",
-      "version": "1.39.2"
+      "version": "1.39.3"
     },
     {
-      "bom-ref": "polars-runtime-32==1.39.2",
+      "bom-ref": "polars-runtime-32==1.39.3",
       "description": "Blazingly fast DataFrame library",
       "externalReferences": [
         {
@@ -1320,9 +1320,9 @@
         }
       ],
       "name": "polars-runtime-32",
-      "purl": "pkg:pypi/polars-runtime-32@1.39.2",
+      "purl": "pkg:pypi/polars-runtime-32@1.39.3",
       "type": "library",
-      "version": "1.39.2"
+      "version": "1.39.3"
     },
     {
       "bom-ref": "psycopg==3.3.3",
@@ -2482,11 +2482,11 @@
     },
     {
       "dependsOn": [
-        "botocore==1.42.71",
+        "botocore==1.42.72",
         "jmespath==1.1.0",
         "s3transfer==0.16.0"
       ],
-      "ref": "boto3==1.42.71"
+      "ref": "boto3==1.42.72"
     },
     {
       "dependsOn": [
@@ -2494,7 +2494,7 @@
         "python-dateutil==2.9.0.post0",
         "urllib3==2.6.3"
       ],
-      "ref": "botocore==1.42.71"
+      "ref": "botocore==1.42.72"
     },
     {
       "ref": "certifi==2026.2.25"
@@ -2646,16 +2646,16 @@
       "ref": "pip==26.0.1"
     },
     {
-      "ref": "polars-runtime-32==1.39.2"
+      "ref": "polars-runtime-32==1.39.3"
     },
     {
       "dependsOn": [
-        "polars-runtime-32==1.39.2",
+        "polars-runtime-32==1.39.3",
         "pyarrow==23.0.1",
         "pydantic==2.12.5",
         "tzdata==2025.3"
       ],
-      "ref": "polars==1.39.2"
+      "ref": "polars==1.39.3"
     },
     {
       "ref": "psycopg-binary==3.3.3"
@@ -2745,12 +2745,12 @@
     },
     {
       "dependsOn": [
-        "boto3==1.42.71",
+        "boto3==1.42.72",
         "cyclonedx-bom==7.2.2",
         "fastapi==0.135.1",
         "httpx==0.28.1",
         "neo4j==6.1.0",
-        "polars==1.39.2",
+        "polars==1.39.3",
         "psycopg-pool==3.3.0",
         "psycopg==3.3.3",
         "pyarrow==23.0.1",
@@ -2764,7 +2764,7 @@
     },
     {
       "dependsOn": [
-        "botocore==1.42.71"
+        "botocore==1.42.72"
       ],
       "ref": "s3transfer==0.16.0"
     },
