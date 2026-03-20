@@ -10,6 +10,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from src.scoring.taxonomy import HIGH_RISK_SCORE_THRESHOLD, STABLE_RISK_CEILING
+
 # ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
@@ -537,8 +539,8 @@ class HealthResponse(BaseModel):
 def risk_band_from_score(score: int | None) -> RiskBand | None:
     if score is None:
         return None
-    if score >= 51:
+    if score >= HIGH_RISK_SCORE_THRESHOLD:
         return RiskBand.high_risk
-    if score >= 31:
+    if score > STABLE_RISK_CEILING:
         return RiskBand.review
     return RiskBand.stable

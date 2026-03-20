@@ -23,10 +23,6 @@ HIGH_RISK_GAP = 5  # risk must exceed legitimacy by this much
 STABLE_LEGITIMACY_THRESHOLD = 70
 STABLE_RISK_CEILING = 30
 
-# Provider-level risk band thresholds (used by API display)
-RISK_BAND_HIGH = 51
-RISK_BAND_REVIEW = 31
-
 
 # ---------------------------------------------------------------------------
 # Enums
