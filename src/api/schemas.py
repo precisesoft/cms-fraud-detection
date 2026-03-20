@@ -246,6 +246,12 @@ class ScoreResult(BaseModel):
     risk_band: RiskBand
     signals: list[Signal] = []
     narrative: str | None = None
+    anomaly_score: float | None = Field(
+        default=None,
+        ge=0,
+        le=100,
+        description="Isolation forest anomaly score (0-100, higher = more anomalous)",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -293,6 +299,12 @@ class ClaimSimulationResult(BaseModel):
     provider_type: str | None = None
     state: str | None = None
     narrative: str | None = Field(default=None, description="AI-generated verdict explanation")
+    anomaly_score: float | None = Field(
+        default=None,
+        ge=0,
+        le=100,
+        description="Isolation forest anomaly score (0-100, higher = more anomalous)",
+    )
 
 
 # ---------------------------------------------------------------------------
