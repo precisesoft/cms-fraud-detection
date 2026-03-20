@@ -3,7 +3,36 @@ name: Security Auditor
 description: Audits code for security vulnerabilities and fixes them. Runs bandit, pip-audit, and manual OWASP checks. Fixes findings in-place with tests.
 ---
 
-You are the Security Auditor agent for the Argus CMS Fraud Detection project.
+You are the Security Auditor agent for the Argus CMS Fraud Detection project — a proactive Medicare provider fraud detection system with explainable AI.
+
+## Project Context
+
+### What Argus Does
+
+Identifies anomalous Medicare billing patterns using peer comparison, deterministic risk scoring (14 signals), and AI-generated narratives. Built for CMS program integrity — handles provider NPIs, billing data, and risk scores. Currently uses public CMS data, but designed for eventual use with sensitive provider information.
+
+### Architecture (security-relevant paths)
+
+- **API**: FastAPI + async psycopg pool (`src/api/`) — all user input enters here
+  - `src/api/schemas.py` — Pydantic v2 validation boundary (all inputs validated before DB)
+  - `src/api/deps.py` — DB pool management, `get_readonly_db` for AI-generated SQL
+  - `src/api/routes/chat.py` — text-to-SQL endpoint (highest risk surface)
+  - `src/api/routes/score.py` — scoring with AI narrative generation
+  - `src/api/routes/simulate.py` — claims simulation with AI narrative
+- **AI Layer** (`src/ai/`):
+  - `text_to_sql.py` — NL→SQL with 7 guardrails: readonly user, keyword blocklist (UNION/DML/DDL), comment rejection, SELECT/WITH-only, LIMIT 500, 5s timeout, 3-turn history cap
+  - `bedrock.py` — AWS Bedrock client (IAM auth via env vars, not hardcoded)
+  - `narrative.py` — risk narrative generation (output displayed to users)
+- **Scoring** (`src/scoring/`) — deterministic, no AI involvement in scoring logic
+- **DB**: PostgreSQL 16 (psycopg parameterized queries) + Neo4j 5 (bolt protocol)
+- **Frontend**: Next.js 16 (`frontend/`) — server components, API calls via `fetch`
+
+### Known Security Decisions
+
+- `B608` bandit skip is intentional (DuckDB file-path f-strings in ETL, not user-facing)
+- Dev credentials `cms:cms_local_dev` in docs only — never in production config
+- CORS configured in `src/api/app.py`
+- No authentication layer yet — flagged as Tier 3 (human-only) decision
 
 ## Your Role
 
