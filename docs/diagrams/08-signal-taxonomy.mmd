@@ -3,29 +3,31 @@
 graph TB
     ROOT["Signal Taxonomy<br/><b>CMS Provider Intelligence</b>"]
 
-    subgraph RISK["RISK SIGNALS — Increase Suspicion"]
+    subgraph RISK["RISK SIGNALS (6) — Increase Suspicion"]
         direction TB
-        R1["Volume Outlier<br/><i>tot_srvcs z-score > 2.0</i><br/>Source: Part B Provider-Service<br/>Points: +15 to +25"]
-        R2["Charge Anomaly<br/><i>submitted/allowed ratio z > 2.0</i><br/>Source: Part B Provider-Service<br/>Points: +10 to +20"]
-        R3["Service Intensity<br/><i>services_per_bene z > 2.0</i><br/>Source: Part B Provider-Service<br/>Points: +10 to +20"]
-        R4["Payment Outlier<br/><i>avg_payment z > 2.0</i><br/>Source: Part B Provider-Service<br/>Points: +10 to +15"]
-        R5["Enrollment Gap<br/><i>Not in enrollment file</i><br/>Source: Enrollment<br/>Points: +15"]
-        R6["Revocation Flag<br/><i>OIG exclusion match</i><br/>Source: OIG LEIE<br/>Points: +25"]
-        R7["Abnormal Growth<br/><i>YoY volume spike > 50%</i><br/>Source: Part B multi-year<br/>Points: +10 to +15"]
+        R1["revoked_provider<br/><i>Provider in 2026 revocation file</i><br/>Category: enrollment<br/>Points: +25"]
+        R2["not_in_current_enrollment_file<br/><i>Provider absent from 2025 enrollment</i><br/>Category: enrollment<br/>Points: +8"]
+        R3["service_volume_outlier<br/><i>Total services above peer average</i><br/>Category: peer (z-score)<br/>z≥5.0: +20 · z≥3.0: +14 · z≥2.0: +8"]
+        R4["service_intensity_outlier<br/><i>Services per beneficiary above peers</i><br/>Category: peer (z-score)<br/>z≥5.0: +18 · z≥3.0: +12 · z≥2.0: +7"]
+        R5["charge_ratio_outlier<br/><i>Submitted-to-allowed ratio above peers</i><br/>Category: peer (z-score)<br/>z≥5.0: +18 · z≥3.0: +12 · z≥2.0: +7"]
+        R6["payment_outlier<br/><i>Average payment above peer average</i><br/>Category: peer (z-score)<br/>z≥5.0: +12 · z≥3.0: +8 · z≥2.0: +5"]
     end
 
-    subgraph LEGIT["LEGITIMACY SIGNALS — Stabilize Score"]
+    subgraph LEGIT["LEGITIMACY SIGNALS (7) — Reduce Suspicion"]
         direction TB
-        L1["Medicare Participating<br/><i>Accepts assignment</i><br/>Source: Part B Provider<br/>Points: -10"]
-        L2["Low Volume<br/><i>Below 2σ threshold</i><br/>Source: Part B Provider-Service<br/>Points: -5 to -10"]
-        L3["Clean Record<br/><i>No revocations found</i><br/>Source: OIG LEIE<br/>Points: -5"]
-        L4["Active Enrollment<br/><i>Present in enrollment</i><br/>Source: Enrollment<br/>Points: -5"]
-        L5["Consistent Billing<br/><i>Low variance vs peers</i><br/>Source: Part B Provider-Service<br/>Points: -5"]
+        L1["present_in_current_enrollment_file<br/><i>Provider found in 2025 enrollment</i><br/>Category: enrollment<br/>Points: +20"]
+        L2["no_revocation_match<br/><i>No revocation on record</i><br/>Category: enrollment<br/>Points: +15"]
+        L3["medicare_participating<br/><i>Accepts Medicare assignment</i><br/>Category: enrollment<br/>Points: +10"]
+        L4["peer_aligned_volume<br/><i>Service volume within 1σ of peers</i><br/>Category: peer (|z| &lt; 1.0)<br/>Points: +12"]
+        L5["peer_aligned_intensity<br/><i>Services per bene within 1σ of peers</i><br/>Category: peer (|z| &lt; 1.0)<br/>Points: +12"]
+        L6["peer_aligned_pricing<br/><i>Charge ratio within 1σ of peers</i><br/>Category: peer (|z| &lt; 1.0)<br/>Points: +12"]
+        L7["large_patient_panel<br/><i>Serves 100+ Medicare beneficiaries</i><br/>Category: volume (threshold ≥ 100)<br/>Points: +8"]
     end
 
     subgraph SCORING["SCORE COMPUTATION"]
-        FORMULA["Risk Score = Σ risk_points<br/>Legitimacy Score = Σ legit_points<br/>Both clamped to 0-100"]
-        LABELS["high_risk: risk ≥ 70<br/>review: risk 40-69<br/>stable: risk < 40"]
+        FORMULA["Risk Score = Σ risk_points  (capped 0–100)<br/>Legitimacy Score = Σ legit_points  (capped 0–100)<br/>Scores are independent — both always computed"]
+        LABELS["Case labels (label_case):<br/>high_risk: risk ≥ 50 AND risk ≥ legitimacy + 5<br/>stable: legitimacy ≥ 70 AND risk &lt; 30<br/>review: all other cases"]
+        BANDS["Provider risk bands:<br/>high_risk: score ≥ 51 · review: score ≥ 31 · stable: score &lt; 31"]
     end
 
     ROOT --> RISK
