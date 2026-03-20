@@ -8,7 +8,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { CaseActions } from "@/components/case-actions";
 import { RiskGauge } from "@/components/risk-gauge";
 import { RiskBadge, SignalRow } from "@/components/signal-row";
 import type {
@@ -212,31 +212,11 @@ export function SimulateResult({ result }: { result: ClaimSimulationResult }) {
 
       {/* Action buttons */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-3">
-            <Button
-              className="bg-green-600 hover:bg-green-700 text-white"
-              disabled={result.recommendation === "deny"}
-            >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              Approve Payment
-            </Button>
-            <Button
-              variant="outline"
-              className="border-amber-300 text-amber-700 hover:bg-amber-50"
-            >
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              Flag for Review
-            </Button>
-            <Button
-              variant="outline"
-              className="border-red-300 text-red-700 hover:bg-red-50"
-              disabled={result.recommendation === "approve"}
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              Deny &amp; Escalate
-            </Button>
-          </div>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Analyst Decision</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CaseActions caseId={`${result.npi}_${result.hcpcs_cd}`} />
           <div className="mt-4 pt-3 border-t">
             <Link
               href={`/providers/${result.npi}`}

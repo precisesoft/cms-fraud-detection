@@ -230,6 +230,47 @@ export interface ChatResponse {
   duration_ms: number;
 }
 
+export type CaseAction = "APPROVED" | "FLAGGED" | "DENIED" | "ESCALATED";
+
+export interface CaseActionRequest {
+  action: CaseAction;
+  notes?: string;
+}
+
+export interface CaseActionResponse {
+  case_id: string;
+  action: CaseAction;
+  message: string;
+}
+
+export interface CaseActionRecord {
+  id: number;
+  case_id: string;
+  npi: string;
+  action: CaseAction;
+  notes: string | null;
+  analyst_id: string;
+  created_at: string;
+}
+
+export interface CaseActionsListResponse {
+  case_id: string;
+  actions: CaseActionRecord[];
+  current_status: CaseAction | null;
+}
+
+export interface PendingCase {
+  case_id: string;
+  npi: string;
+  provider_last_org_name: string | null;
+  hcpcs_cd: string;
+  hcpcs_desc: string | null;
+  seed_risk_score: number | null;
+  seed_case_label: string | null;
+  avg_submitted_charge: number | null;
+  tot_srvcs: number | null;
+}
+
 export interface HealthResponse {
   status: string;
   database: string;

@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { api } from "@/lib/api";
 import { EvidenceGraph } from "@/components/evidence-graph";
 import { PeerChart } from "@/components/peer-chart";
+import { ProviderActions } from "@/components/provider-actions";
 import { RiskGauge } from "@/components/risk-gauge";
 import { ScanButton } from "@/components/scan-button";
 import type { ProviderDetail, Signal } from "@/types/api";
@@ -110,12 +111,15 @@ export default async function ProviderDetailPage({
 
   let provider: ProviderDetail | null = null;
   let signals: Signal[] = [];
+  let caseIds: string[] = [];
 
   try {
     [provider, signals] = await Promise.all([
       api.provider(npi),
       api.signals(npi).catch(() => [] as Signal[]),
     ]);
+    const claims = await api.claims({ npi, per_page: 10 }).catch(() => null);
+    caseIds = claims?.data.map((c) => c.case_id) ?? [];
   } catch {
     notFound();
   }
@@ -164,6 +168,9 @@ export default async function ProviderDetailPage({
 
       {/* Scan Button */}
       <ScanButton npi={npi} />
+
+      {/* Investigation Actions */}
+      <ProviderActions npi={npi} caseIds={caseIds} />
 
       {/* Stats grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
