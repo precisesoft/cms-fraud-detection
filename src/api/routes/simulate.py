@@ -163,10 +163,11 @@ async def simulate_claim(
         case["services_per_bene_peer_z"] = _z_score(
             services_per_bene, peers["avg_spb"], peers["std_spb"]
         )
-        # Use submitted charge as proxy for charge ratio and payment z-scores
+        # No avg_medicare_allowed_amt in request — use submitted charge as proxy
         case["submitted_to_allowed_peer_z"] = _z_score(
             req.submitted_charge, peers["avg_ratio"], peers["std_ratio"]
         )
+        # No avg_medicare_payment_amt (only known post-adjudication) — use submitted charge
         case["payment_peer_z"] = _z_score(
             req.submitted_charge, peers["avg_payment"], peers["std_payment"]
         )
