@@ -58,6 +58,20 @@ CMS loses an estimated $60B+ annually to improper payments across Medicare and M
 
 **Validated result:** In retrospective testing, our scoring system detected **91% of eventually-revoked providers from billing patterns alone** — before CMS acted on revocation.
 
+## Judge Resources
+
+**Live App**: [argus.precise-lab.com](https://argus.precise-lab.com) | **Validation Endpoint**: [/api/validation](/api/validation)
+
+| Deliverable | Document |
+|---|---|
+| Risk Scoring Methodology | [docs/risk-scoring-methodology.md](docs/risk-scoring-methodology.md) |
+| Responsible AI Considerations | [docs/responsible-ai-considerations.md](docs/responsible-ai-considerations.md) |
+| AI & Open Source Disclosure | [docs/ai-oss-disclosure.md](docs/ai-oss-disclosure.md) |
+| Path to CMS Pilot (5-min brief) | [docs/path-to-cms-pilot.md](docs/path-to-cms-pilot.md) |
+| Demo Script (5-7 min) | [docs/demo-script.md](docs/demo-script.md) |
+| Isolation Forest Model Card | [docs/model-card-isolation-forest.md](docs/model-card-isolation-forest.md) |
+| Architecture Diagrams | [docs/diagrams/](docs/diagrams/) |
+
 ## Key Principles
 
 1. **Explainable Scoring** — Every risk score traces to specific signals with data provenance
