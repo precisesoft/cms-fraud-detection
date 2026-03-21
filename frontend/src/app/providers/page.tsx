@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,9 +17,75 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import type { ProviderSummary, PaginationMeta } from "@/types/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+const US_STATES = [
+  "AK","AL","AR","AZ","CA","CO","CT","DC","DE","FL","GA","HI","IA","ID","IL",
+  "IN","KS","KY","LA","MA","MD","ME","MI","MN","MO","MS","MT","NC","ND","NE",
+  "NH","NJ","NM","NV","NY","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT",
+  "VA","VT","WA","WI","WV","WY",
+];
+
+const PROVIDER_TYPES = [
+  "Internal Medicine",
+  "Family Practice",
+  "Cardiology",
+  "Orthopedic Surgery",
+  "Ophthalmology",
+  "Dermatology",
+  "Psychiatry",
+  "Neurology",
+  "Gastroenterology",
+  "General Surgery",
+  "Urology",
+  "Pulmonary Disease",
+  "Nephrology",
+  "Hematology/Oncology",
+  "Anesthesiology",
+];
+
+const RISK_BAND_OPTIONS = [
+  { value: "high_risk", label: "High Risk" },
+  { value: "review", label: "Review" },
+  { value: "stable", label: "Stable" },
+];
+
+function FilterSelect({
+  value,
+  onChange,
+  placeholder,
+  options,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  options: { value: string; label: string }[];
+  className?: string;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={cn(
+        "h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm",
+        "focus:outline-none focus:ring-1 focus:ring-ring",
+        "text-foreground disabled:cursor-not-allowed disabled:opacity-50",
+        className,
+      )}
+    >
+      <option value="">{placeholder}</option>
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 function riskBadge(band: ProviderSummary["risk_band"]) {
   switch (band) {
@@ -49,15 +116,40 @@ function formatCurrency(value: number | null) {
 }
 
 export default function ProvidersPage() {
-  const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Initialize from URL params
+  const [query, setQuery] = useState(searchParams.get("q") ?? "");
+  const [debouncedQuery, setDebouncedQuery] = useState(searchParams.get("q") ?? "");
+  const [stateFilter, setStateFilter] = useState(searchParams.get("state") ?? "");
+  const [riskBandFilter, setRiskBandFilter] = useState(searchParams.get("risk_band") ?? "");
+  const [providerTypeFilter, setProviderTypeFilter] = useState(
+    searchParams.get("provider_type") ?? "",
+  );
+  const [page, setPage] = useState(Number(searchParams.get("page") ?? "1"));
+
   const [providers, setProviders] = useState<ProviderSummary[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
-  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Debounce search input by 300ms
+  const hasActiveFilters =
+    !!debouncedQuery || !!stateFilter || !!riskBandFilter || !!providerTypeFilter;
+
+  // Sync URL when filter/page state changes
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (debouncedQuery) params.set("q", debouncedQuery);
+    if (stateFilter) params.set("state", stateFilter);
+    if (riskBandFilter) params.set("risk_band", riskBandFilter);
+    if (providerTypeFilter) params.set("provider_type", providerTypeFilter);
+    if (page > 1) params.set("page", String(page));
+    const qs = params.toString();
+    router.replace(qs ? `/providers?${qs}` : "/providers", { scroll: false });
+  }, [debouncedQuery, stateFilter, riskBandFilter, providerTypeFilter, page, router]);
+
+  // Debounce text search; reset page on new query
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(query);
@@ -65,6 +157,25 @@ export default function ProvidersPage() {
     }, 300);
     return () => clearTimeout(timer);
   }, [query]);
+
+  // Reset page when dropdown filters change
+  const makeFilterHandler =
+    (setFilter: (v: string) => void) => (v: string) => {
+      setFilter(v);
+      setPage(1);
+    };
+  const handleStateChange = makeFilterHandler(setStateFilter);
+  const handleRiskBandChange = makeFilterHandler(setRiskBandFilter);
+  const handleProviderTypeChange = makeFilterHandler(setProviderTypeFilter);
+
+  const clearAll = () => {
+    setQuery("");
+    setDebouncedQuery("");
+    setStateFilter("");
+    setRiskBandFilter("");
+    setProviderTypeFilter("");
+    setPage(1);
+  };
 
   const fetchProviders = useCallback(async () => {
     setLoading(true);
@@ -74,6 +185,9 @@ export default function ProvidersPage() {
       params.set("page", String(page));
       params.set("per_page", "20");
       if (debouncedQuery) params.set("q", debouncedQuery);
+      if (stateFilter) params.set("state", stateFilter);
+      if (riskBandFilter) params.set("risk_band", riskBandFilter);
+      if (providerTypeFilter) params.set("provider_type", providerTypeFilter);
 
       const res = await fetch(`${API_BASE}/api/providers?${params}`);
       if (!res.ok) throw new Error(`API error: ${res.status}`);
@@ -85,7 +199,7 @@ export default function ProvidersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedQuery]);
+  }, [page, debouncedQuery, stateFilter, riskBandFilter, providerTypeFilter]);
 
   useEffect(() => {
     fetchProviders();
@@ -100,14 +214,48 @@ export default function ProvidersPage() {
         </p>
       </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by NPI or provider name..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="pl-9"
+      {/* Search + filters row */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by NPI or provider name..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="pl-9 w-64"
+          />
+        </div>
+
+        <FilterSelect
+          value={stateFilter}
+          onChange={handleStateChange}
+          placeholder="All states"
+          options={US_STATES.map((s) => ({ value: s, label: s }))}
+          className="w-32"
         />
+
+        <FilterSelect
+          value={riskBandFilter}
+          onChange={handleRiskBandChange}
+          placeholder="All risk bands"
+          options={RISK_BAND_OPTIONS}
+          className="w-40"
+        />
+
+        <FilterSelect
+          value={providerTypeFilter}
+          onChange={handleProviderTypeChange}
+          placeholder="All provider types"
+          options={PROVIDER_TYPES.map((t) => ({ value: t, label: t }))}
+          className="w-52"
+        />
+
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={clearAll} className="gap-1">
+            <X className="h-3.5 w-3.5" />
+            Clear all
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -194,11 +342,8 @@ export default function ProvidersPage() {
           <p className="text-sm text-muted-foreground">
             Showing {providers.length} of{" "}
             {new Intl.NumberFormat("en-US").format(meta.total)} providers
-            {debouncedQuery && (
-              <>
-                {" "}
-                matching <span className="font-medium">{debouncedQuery}</span>
-              </>
+            {hasActiveFilters && (
+              <span className="text-muted-foreground"> (filtered)</span>
             )}
           </p>
           <div className="flex gap-2">
