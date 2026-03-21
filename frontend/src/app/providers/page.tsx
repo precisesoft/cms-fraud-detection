@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -115,7 +115,7 @@ function formatCurrency(value: number | null) {
   }).format(value);
 }
 
-export default function ProvidersPage() {
+function ProvidersPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -370,5 +370,24 @@ export default function ProvidersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ProvidersPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6 space-y-4">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-full max-w-md" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      }
+    >
+      <ProvidersPageInner />
+    </Suspense>
   );
 }

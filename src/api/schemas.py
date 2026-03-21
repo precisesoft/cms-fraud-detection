@@ -230,6 +230,21 @@ class Signal(BaseModel):
     description: str
 
 
+class RadarDimension(BaseModel):
+    """Single axis on the provider risk radar chart."""
+
+    dimension: str
+    provider: float = Field(ge=0, le=100, description="Provider value (0-100 scale)")
+    peer: float = Field(default=50, ge=0, le=100, description="Peer baseline (always 50)")
+
+
+class RadarResponse(BaseModel):
+    """Radar chart data for a provider's risk profile."""
+
+    npi: str
+    dimensions: list[RadarDimension]
+
+
 class ScoreRequest(BaseModel):
     """Input for on-the-fly scoring."""
 

@@ -16,6 +16,7 @@ import type {
   PendingCase,
   ProviderDetail,
   ProviderListResponse,
+  RadarResponse,
   ScoreResult,
   Signal,
 } from "@/types/api";
@@ -74,6 +75,9 @@ export const api = {
   signals: (npi: string) => fetchApi<Signal[]>(`/api/providers/${npi}/signals`),
 
   peers: (npi: string) => fetchApi<PeerResponse>(`/api/providers/${npi}/peers`),
+
+  radar: (npi: string) =>
+    fetchApi<RadarResponse>(`/api/providers/${npi}/radar`),
 
   claims: (params?: {
     page?: number;

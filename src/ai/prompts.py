@@ -86,6 +86,25 @@ Key columns:
 - top_code_share (FLOAT) — fraction of services from top code (0-1)
 - risk_legitimacy_gap (INT) — gap between risk and legitimacy scores
 
+### case_actions
+Analyst actions taken on cases (approve, flag, deny, escalate).
+
+Key columns:
+- id (SERIAL PK)
+- case_id (TEXT) — references a provider_service_cases case_id or a simulated case
+- npi (TEXT) — the provider NPI
+- action (TEXT) — 'APPROVED', 'FLAGGED', 'DENIED', 'ESCALATED'
+- notes (TEXT) — analyst notes
+- analyst (TEXT) — analyst who took the action (default 'demo-analyst')
+- created_at (TIMESTAMPTZ) — when the action was recorded
+
+## Data Characteristics
+- This is **annual aggregated** CMS Medicare billing data, NOT individual claims.
+- There are NO date columns, timestamps, or claim submission dates in the billing tables.
+- Each row in provider_service_cases is a provider's full-year summary for one procedure code.
+- The data shows WHAT providers billed and HOW MUCH, not WHEN individual claims were submitted.
+- The only timestamped data is case_actions (analyst investigation actions).
+
 ## Important Notes
 - Risk scores: 0-30 = stable, 31-50 = review, 51+ = high_risk
 - Z-scores: values > 2.0 indicate statistical outliers vs peers
@@ -202,6 +221,54 @@ FEW_SHOT_EXAMPLES = [
             "GROUP BY provider_type ORDER BY outlier_count DESC LIMIT 10;"
         ),
     },
+    {
+        "question": "Show me the timeline for provider 1821387911",
+        "sql": (
+            "SELECT hcpcs_cd, hcpcs_desc, tot_srvcs, tot_benes, "
+            "avg_submitted_charge, avg_medicare_payment_amt, "
+            "estimated_case_payment_amt, seed_risk_score, seed_case_label "
+            "FROM provider_service_cases WHERE npi = '1821387911' "
+            "ORDER BY estimated_case_payment_amt DESC;"
+        ),
+    },
+    {
+        "question": "What actions have been taken on this provider?",
+        "sql": (
+            "SELECT ca.case_id, ca.action, ca.notes, ca.analyst, ca.created_at "
+            "FROM case_actions ca WHERE ca.npi = '1821387911' "
+            "ORDER BY ca.created_at DESC;"
+        ),
+    },
+    {
+        "question": "Show me their billing breakdown",
+        "sql": (
+            "SELECT hcpcs_cd, hcpcs_desc, tot_srvcs, tot_benes, "
+            "services_per_bene, avg_submitted_charge, "
+            "submitted_to_allowed_ratio, seed_risk_score, seed_risk_reasons "
+            "FROM provider_service_cases WHERE npi = '1821387911' "
+            "ORDER BY seed_risk_score DESC;"
+        ),
+    },
+    {
+        "question": "Why was this provider flagged?",
+        "sql": (
+            "SELECT npi, provider_name, max_seed_risk_score, "
+            "n_high_risk_lines, service_line_count, "
+            "mean_volume_z, mean_charge_z, revoked_2026, revocation_reason "
+            "FROM provider_features WHERE npi = '1821387911';"
+        ),
+    },
+    {
+        "question": "Who are similar high-risk providers in the same state?",
+        "sql": (
+            "SELECT pf.npi, pf.provider_name, pf.provider_type, "
+            "pf.max_seed_risk_score, pf.total_estimated_payment "
+            "FROM provider_features pf "
+            "WHERE pf.state = (SELECT state FROM provider_features WHERE npi = '1821387911') "
+            "AND pf.max_seed_risk_score > 50 AND pf.npi != '1821387911' "
+            "ORDER BY pf.max_seed_risk_score DESC LIMIT 10;"
+        ),
+    },
 ]
 
 
@@ -221,9 +288,19 @@ def build_text_to_sql_system_prompt() -> str:
 - Never use INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, TRUNCATE, or GRANT.
 - Use LIMIT to cap results (default 20 unless the user specifies otherwise).
 - Use column aliases for readability.
-- If the question cannot be answered from these tables, respond with exactly: UNANSWERABLE
 - State abbreviations are 2 uppercase letters (e.g. 'FL', 'TX', 'CA').
 - NPI values are 10-digit strings stored as TEXT.
+- When the user references a provider from earlier in the conversation, use that NPI.
+
+## Handling Unanswerable Questions
+- If the question asks for data that truly does not exist (e.g. patient names, diagnoses,
+  individual claim dates, real-time data), respond with exactly: UNANSWERABLE
+- But if the question CAN be partially answered or redirected to available data, DO answer
+  with the closest useful query. For example:
+  - "Show me their timeline" → show their service lines ordered by volume (billing profile)
+  - "When did they submit claims?" → show their billing summary (no dates available)
+  - "Show me their history" → show case_actions history + billing profile
+  - "What happened with this provider?" → show risk signals and billing breakdown
 """
 
 

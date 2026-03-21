@@ -53,9 +53,13 @@ async def chat(
         if "UNANSWERABLE" in str(e):
             return ChatResponse(
                 answer=(
-                    "I can't answer that question from the available data. "
-                    "Try asking about providers, claims, risk scores, "
-                    "billing patterns, or peer comparisons."
+                    "I can't answer that from the available data. "
+                    "The dataset contains annual aggregated Medicare billing "
+                    "(total services, charges, payments, peer z-scores, risk scores) "
+                    "— not individual claim records or dates. "
+                    'Try: "What does this provider bill for?", '
+                    '"Which providers have the highest risk?", or '
+                    '"Compare charges for code 99213 by state."'
                 ),
             )
         logger.warning("SQL validation failed: %s", e)

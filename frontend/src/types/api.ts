@@ -55,6 +55,7 @@ export interface ScoreResult {
   risk_band: RiskBand;
   signals: Signal[];
   narrative: string | null;
+  anomaly_score: number | null;
 }
 
 export type Recommendation = "approve" | "review" | "deny";
@@ -287,4 +288,15 @@ export interface HealthResponse {
   database: string;
   graph: string;
   version: string;
+}
+
+export interface RadarDimension {
+  dimension: string;
+  provider: number;
+  peer: number;
+}
+
+export interface RadarResponse {
+  npi: string;
+  dimensions: RadarDimension[];
 }
