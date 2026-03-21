@@ -15,7 +15,7 @@ from typing import Any
 
 import boto3
 from botocore.config import Config
-from botocore.exceptions import ClientError
+from botocore.exceptions import BotoCoreError, ClientError
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ def _get_client():  # type: ignore[no-untyped-def]
     config = Config(
         region_name=region,
         retries={"max_attempts": 0},  # we handle retries ourselves
-        read_timeout=30,
+        read_timeout=60,
         connect_timeout=5,
     )
     return boto3.client("bedrock-runtime", config=config)
@@ -116,5 +116,17 @@ async def invoke(
                 await asyncio.sleep(delay)
             else:
                 raise RuntimeError(f"Bedrock error: {error_code} — {e}") from e
+        except BotoCoreError as e:
+            # ConnectionClosedError, EndpointConnectionError, etc.
+            last_error = e
+            delay = RETRY_BASE_DELAY * (2 ** (attempt - 1))
+            logger.warning(
+                "Bedrock connection error %s (attempt %d/%d), retrying in %.1fs",
+                type(e).__name__,
+                attempt,
+                MAX_RETRIES,
+                delay,
+            )
+            await asyncio.sleep(delay)
 
     raise RuntimeError(f"Bedrock invoke failed after {MAX_RETRIES} retries: {last_error}")
