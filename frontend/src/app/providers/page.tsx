@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -48,7 +49,12 @@ function formatCurrency(value: number | null) {
   }).format(value);
 }
 
-export default function ProvidersPage() {
+function ProvidersPageInner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const stateFilter = searchParams.get("state") ?? "";
+
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [providers, setProviders] = useState<ProviderSummary[]>([]);
@@ -56,6 +62,11 @@ export default function ProvidersPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Reset to page 1 when state filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [stateFilter]);
 
   // Debounce search input by 300ms
   useEffect(() => {
@@ -74,6 +85,7 @@ export default function ProvidersPage() {
       params.set("page", String(page));
       params.set("per_page", "20");
       if (debouncedQuery) params.set("q", debouncedQuery);
+      if (stateFilter) params.set("state", stateFilter);
 
       const res = await fetch(`${API_BASE}/api/providers?${params}`);
       if (!res.ok) throw new Error(`API error: ${res.status}`);
@@ -85,11 +97,15 @@ export default function ProvidersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedQuery]);
+  }, [page, debouncedQuery, stateFilter]);
 
   useEffect(() => {
     fetchProviders();
   }, [fetchProviders]);
+
+  function clearStateFilter() {
+    router.push("/providers");
+  }
 
   return (
     <div className="p-6 space-y-4">
@@ -100,14 +116,31 @@ export default function ProvidersPage() {
         </p>
       </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by NPI or provider name..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="pl-9"
-        />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative max-w-md flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by NPI or provider name..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        {stateFilter && (
+          <Badge
+            variant="secondary"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm"
+          >
+            Filtered: {stateFilter}
+            <button
+              onClick={clearStateFilter}
+              aria-label="Clear state filter"
+              className="ml-1 hover:text-destructive"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        )}
       </div>
 
       {error && (
@@ -225,5 +258,24 @@ export default function ProvidersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ProvidersPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6 space-y-4">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-full max-w-md" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      }
+    >
+      <ProvidersPageInner />
+    </Suspense>
   );
 }
