@@ -81,9 +81,9 @@ export function RiskRadar({ npi }: RiskRadarProps) {
                 strokeWidth={2}
               />
               <Tooltip
-                formatter={(value: number, name: string) => [
-                  value.toFixed(0),
-                  name,
+                formatter={(value, name) => [
+                  Number(value).toFixed(0),
+                  String(name),
                 ]}
                 contentStyle={{
                   fontSize: "12px",
