@@ -17,11 +17,15 @@ import { ProviderActions } from "@/components/provider-actions";
 import { RiskGauge } from "@/components/risk-gauge";
 import { GenerateBrief } from "@/components/generate-brief";
 import { CaseTimeline } from "@/components/case-timeline";
+import { RiskRadar } from "@/components/risk-radar";
 import type { ProviderDetail, Signal } from "@/types/api";
 
 const MAX_CLAIMS_FOR_CASES = 20;
 
-function riskBadge(band: ProviderDetail["risk_band"], size: "sm" | "lg" = "sm") {
+function riskBadge(
+  band: ProviderDetail["risk_band"],
+  size: "sm" | "lg" = "sm",
+) {
   const cls = size === "lg" ? "text-sm px-3 py-1" : "";
   switch (band) {
     case "high_risk":
@@ -32,7 +36,9 @@ function riskBadge(band: ProviderDetail["risk_band"], size: "sm" | "lg" = "sm") 
       );
     case "review":
       return (
-        <Badge className={`bg-amber-100 text-amber-800 border-amber-200 ${cls}`}>
+        <Badge
+          className={`bg-amber-100 text-amber-800 border-amber-200 ${cls}`}
+        >
           Review
         </Badge>
       );
@@ -122,7 +128,9 @@ export default async function InvestigatePage({
       api.provider(npi),
       api.signals(npi).catch(() => [] as Signal[]),
     ]);
-    const claims = await api.claims({ npi, per_page: MAX_CLAIMS_FOR_CASES }).catch(() => null);
+    const claims = await api
+      .claims({ npi, per_page: MAX_CLAIMS_FOR_CASES })
+      .catch(() => null);
     caseIds = claims?.data.map((c) => c.case_id) ?? [];
   } catch {
     notFound();
@@ -284,7 +292,9 @@ export default async function InvestigatePage({
           {/* Generate Brief + Export Evidence */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">AI Investigation Brief</CardTitle>
+              <CardTitle className="text-base">
+                AI Investigation Brief
+              </CardTitle>
               <p className="text-xs text-muted-foreground">
                 Generate a fresh risk assessment with AI narrative, or export
                 all evidence as a JSON package.
@@ -298,6 +308,9 @@ export default async function InvestigatePage({
               />
             </CardContent>
           </Card>
+
+          {/* Risk radar — spider chart of risk dimensions */}
+          <RiskRadar npi={npi} />
 
           {/* Evidence graph */}
           <EvidenceGraph npi={npi} />

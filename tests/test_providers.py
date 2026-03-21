@@ -325,3 +325,58 @@ class TestGetProvider:
             resp = await client.get("/api/providers/1234567890")
 
         assert resp.json()["risk_band"] == "stable"
+
+
+# ---------------------------------------------------------------------------
+# Tests — radar endpoint
+# ---------------------------------------------------------------------------
+
+
+class TestGetProviderRadar:
+    async def test_radar_returns_dimensions(self):
+        app = _make_app([SAMPLE_ROW], detail=True)
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/providers/1234567890/radar")
+
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["npi"] == "1234567890"
+        assert len(body["dimensions"]) == 8
+        names = [d["dimension"] for d in body["dimensions"]]
+        assert "Volume" in names
+        assert "Concentration" in names
+        assert "Enrollment" in names
+
+    async def test_radar_z_score_mapping(self):
+        """mean_volume_z=1.5 should map to 50 + 1.5*10 = 65."""
+        app = _make_app([SAMPLE_ROW], detail=True)
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/providers/1234567890/radar")
+
+        dims = {d["dimension"]: d for d in resp.json()["dimensions"]}
+        assert dims["Volume"]["provider"] == 65.0  # 50 + 1.5 * 10
+        assert dims["Volume"]["peer"] == 50.0
+
+    async def test_radar_enrollment_inverted(self):
+        """enrolled_2025=1 means low risk → provider=0.0 on Enrollment axis."""
+        app = _make_app([SAMPLE_ROW], detail=True)
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/providers/1234567890/radar")
+
+        dims = {d["dimension"]: d for d in resp.json()["dimensions"]}
+        assert dims["Enrollment"]["provider"] == 0.0  # enrolled = no risk
+
+    async def test_radar_not_found(self):
+        app = _make_app([], detail=True)
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/providers/0000000000/radar")
+
+        assert resp.status_code == 404
