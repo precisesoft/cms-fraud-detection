@@ -22,7 +22,7 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/investigate", label: "Inbox", icon: ClipboardList, badge: true },
   { href: "/simulate", label: "Simulate", icon: FlaskConical },
-  { href: "/providers", label: "Providers", icon: Search, altPrefixes: ["/investigate"] },
+  { href: "/providers", label: "Providers", icon: Search },
   { href: "/claims", label: "Claims", icon: FileText },
   { href: "/heatmap", label: "Risk Map", icon: Map },
   { href: "/fairness", label: "Fairness", icon: Shield },
