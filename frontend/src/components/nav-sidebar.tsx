@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Search,
@@ -11,11 +12,15 @@ import {
   FileText,
   FlaskConical,
   MessageSquare,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/investigate", label: "Inbox", icon: ClipboardList, badge: true },
   { href: "/simulate", label: "Simulate", icon: FlaskConical },
   { href: "/providers", label: "Providers", icon: Search },
   { href: "/claims", label: "Claims", icon: FileText },
@@ -30,6 +35,22 @@ interface NavSidebarProps {
 
 export function NavSidebar({ onChatToggle, chatOpen }: NavSidebarProps) {
   const pathname = usePathname();
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE}/api/cases/pending?limit=100`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data: unknown) => {
+        if (!cancelled && Array.isArray(data)) {
+          setPendingCount(data.length);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <aside className="w-56 shrink-0 flex flex-col neu-card border-r border-border/50 relative z-10">
@@ -73,7 +94,12 @@ export function NavSidebar({ onChatToggle, chatOpen }: NavSidebarProps) {
               )}
             >
               <item.icon className={cn("h-4 w-4", isActive && "text-accent")} />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.badge && pendingCount !== null && pendingCount > 0 && (
+                <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                  {pendingCount > 99 ? "99+" : pendingCount}
+                </span>
+              )}
             </Link>
           );
         })}
