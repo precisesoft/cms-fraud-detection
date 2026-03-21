@@ -221,6 +221,16 @@ export interface ChatRequest {
   history: ChatMessage[];
 }
 
+export interface ChartSpec {
+  type: "bar" | "line" | "pie";
+  title: string;
+  xKey?: string;
+  yKey?: string;
+  nameKey?: string;
+  valueKey?: string;
+  data: Record<string, unknown>[];
+}
+
 export interface ChatResponse {
   answer: string;
   sql: string | null;
@@ -228,6 +238,7 @@ export interface ChatResponse {
   rows: Record<string, unknown>[];
   row_count: number;
   duration_ms: number;
+  chart_spec: ChartSpec | null;
 }
 
 export type CaseAction = "APPROVED" | "FLAGGED" | "DENIED" | "ESCALATED";

@@ -8,6 +8,7 @@ import {
   Database,
   TrendingUp,
 } from "lucide-react";
+import { ChatChart } from "@/components/chat-chart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -18,7 +19,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import type { ChatMessage, ChatResponse } from "@/types/api";
+import type { ChatMessage, ChatResponse, ChartSpec } from "@/types/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -30,12 +31,13 @@ interface DisplayMessage {
   rows?: Record<string, unknown>[];
   row_count?: number;
   duration_ms?: number;
+  chart_spec?: ChartSpec | null;
 }
 
 const SUGGESTIONS = [
   "How many high-risk providers are there?",
-  "Top 5 providers by total payment",
   "Which states have the most flagged providers?",
+  "How many providers are in each risk band?",
 ];
 
 function formatCellValue(val: unknown): string {
@@ -162,7 +164,7 @@ function DataTable({
 }
 
 function QueryResults({ msg }: { msg: DisplayMessage }) {
-  const { columns, rows, row_count } = msg;
+  const { columns, rows, row_count, chart_spec } = msg;
   if (!columns?.length || !rows?.length) return null;
 
   if (rows.length === 1 && columns.length === 1) {
@@ -171,12 +173,16 @@ function QueryResults({ msg }: { msg: DisplayMessage }) {
   if (rows.length === 1) {
     return <SingleRowResult columns={columns} rows={rows} />;
   }
+
   return (
-    <DataTable
-      columns={columns}
-      rows={rows}
-      totalRows={row_count ?? rows.length}
-    />
+    <>
+      {chart_spec && <ChatChart spec={chart_spec} />}
+      <DataTable
+        columns={columns}
+        rows={rows}
+        totalRows={row_count ?? rows.length}
+      />
+    </>
   );
 }
 
@@ -229,6 +235,7 @@ export function ChatPanel() {
             rows: data.rows,
             row_count: data.row_count,
             duration_ms: data.duration_ms,
+            chart_spec: data.chart_spec,
           },
         ]);
       } catch (e) {

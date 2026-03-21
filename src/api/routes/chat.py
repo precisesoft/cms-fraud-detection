@@ -12,6 +12,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from psycopg import AsyncConnection
 
+from src.ai.chart_spec import generate_chart_spec
 from src.ai.text_to_sql import SQLValidationError, text_to_sql
 from src.api.deps import get_readonly_db
 from src.api.schemas import ChatRequest, ChatResponse
@@ -69,11 +70,15 @@ async def chat(
             detail="Failed to process your question. Please try rephrasing.",
         ) from None
 
+    serialized_rows = [_serialize_row(r) for r in result["rows"]]
+    chart = generate_chart_spec(result["columns"], serialized_rows)
+
     return ChatResponse(
         answer=result["answer"],
         sql=result["sql"],
         columns=result["columns"],
-        rows=[_serialize_row(r) for r in result["rows"]],
+        rows=serialized_rows,
         row_count=result["row_count"],
         duration_ms=result["duration_ms"],
+        chart_spec=chart,
     )

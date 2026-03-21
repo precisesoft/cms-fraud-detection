@@ -331,6 +331,10 @@ class ChatResponse(BaseModel):
     rows: list[dict[str, object]] = Field(default_factory=list)
     row_count: int = 0
     duration_ms: int = 0
+    chart_spec: dict[str, object] | None = Field(
+        default=None,
+        description="Recharts-compatible chart spec (bar/line/pie) when data is chart-worthy",
+    )
 
 
 # ---------------------------------------------------------------------------
