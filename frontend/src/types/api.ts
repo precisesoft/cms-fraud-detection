@@ -55,6 +55,7 @@ export interface ScoreResult {
   risk_band: RiskBand;
   signals: Signal[];
   narrative: string | null;
+  anomaly_score: number | null;
 }
 
 export type Recommendation = "approve" | "review" | "deny";
