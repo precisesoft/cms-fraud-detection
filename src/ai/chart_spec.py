@@ -10,9 +10,7 @@ import re
 from typing import Any
 
 # Column name patterns that indicate time-series data
-_TIME_PATTERNS = re.compile(
-    r"(year|month|quarter|date|week|period|time)", re.IGNORECASE
-)
+_TIME_PATTERNS = re.compile(r"(year|month|quarter|date|week|period|time)", re.IGNORECASE)
 
 # Column name patterns that indicate categorical data
 _CATEGORICAL_PATTERNS = re.compile(
@@ -22,9 +20,7 @@ _CATEGORICAL_PATTERNS = re.compile(
 )
 
 # Column name patterns for share/proportion data (good for pie charts)
-_SHARE_PATTERNS = re.compile(
-    r"(share|pct|percent|fraction|ratio|rate|proportion)", re.IGNORECASE
-)
+_SHARE_PATTERNS = re.compile(r"(share|pct|percent|fraction|ratio|rate|proportion)", re.IGNORECASE)
 
 # Minimum rows to warrant a chart
 MIN_CHART_ROWS = 2
@@ -101,9 +97,7 @@ def _is_count_column(col: str) -> bool:
     return bool(re.search(r"(count|total|num|n_|sum)", col, re.IGNORECASE))
 
 
-def _best_numeric(
-    num_cols: list[str], exclude: set[str] | None = None
-) -> str | None:
+def _best_numeric(num_cols: list[str], exclude: set[str] | None = None) -> str | None:
     """Pick the most interesting numeric column (prefer counts/scores/payments)."""
     exclude = exclude or set()
     candidates = [c for c in num_cols if c not in exclude]
@@ -125,9 +119,7 @@ def _format_title(x_key: str, y_key: str) -> str:
     return f"{y_label} by {x_label}"
 
 
-def _bar_spec(
-    x_key: str, y_key: str, rows: list[dict[str, Any]]
-) -> dict[str, Any]:
+def _bar_spec(x_key: str, y_key: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
     data = _prepare_data(rows, [x_key, y_key])
     return {
         "type": "bar",
@@ -138,9 +130,7 @@ def _bar_spec(
     }
 
 
-def _line_spec(
-    x_key: str, y_key: str, rows: list[dict[str, Any]]
-) -> dict[str, Any]:
+def _line_spec(x_key: str, y_key: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
     data = _prepare_data(rows, [x_key, y_key])
     return {
         "type": "line",
@@ -151,9 +141,7 @@ def _line_spec(
     }
 
 
-def _pie_spec(
-    name_key: str, value_key: str, rows: list[dict[str, Any]]
-) -> dict[str, Any]:
+def _pie_spec(name_key: str, value_key: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
     data = _prepare_data(rows, [name_key, value_key])
     return {
         "type": "pie",
@@ -164,9 +152,7 @@ def _pie_spec(
     }
 
 
-def _prepare_data(
-    rows: list[dict[str, Any]], keys: list[str]
-) -> list[dict[str, Any]]:
+def _prepare_data(rows: list[dict[str, Any]], keys: list[str]) -> list[dict[str, Any]]:
     """Extract only the needed keys from rows, limit to 20 data points."""
     out: list[dict[str, Any]] = []
     for row in rows[:20]:
