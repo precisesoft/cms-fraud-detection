@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Clock, CheckCircle, Flag, XCircle, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,42 +45,44 @@ interface CaseTimelineProps {
 
 export function CaseTimeline({ caseIds }: CaseTimelineProps) {
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const loadTimeline = useCallback(async () => {
-    if (caseIds.length === 0) {
-      setLoading(false);
-      return;
-    }
-
-    const results: TimelineEntry[] = [];
-    await Promise.all(
-      caseIds.slice(0, MAX_TIMELINE_CASES).map(async (caseId) => {
-        try {
-          const res = await fetch(`${API_BASE}/api/cases/${caseId}/actions`);
-          if (!res.ok) return;
-          const data = await res.json();
-          for (const action of data.actions ?? []) {
-            results.push({ ...action, case_id: caseId });
-          }
-        } catch {
-          // silently skip failed case fetches
-        }
-      }),
-    );
-
-    // Sort by created_at descending (most recent first)
-    results.sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    );
-    setEntries(results);
-    setLoading(false);
-  }, [caseIds]);
+  const [loading, setLoading] = useState(caseIds.length > 0);
 
   useEffect(() => {
-    loadTimeline();
-  }, [loadTimeline]);
+    if (caseIds.length === 0) return;
+
+    let cancelled = false;
+
+    (async () => {
+      const results: TimelineEntry[] = [];
+      await Promise.all(
+        caseIds.slice(0, MAX_TIMELINE_CASES).map(async (caseId) => {
+          try {
+            const res = await fetch(`${API_BASE}/api/cases/${caseId}/actions`);
+            if (!res.ok) return;
+            const data = await res.json();
+            for (const action of data.actions ?? []) {
+              results.push({ ...action, case_id: caseId });
+            }
+          } catch {
+            // silently skip failed case fetches
+          }
+        }),
+      );
+
+      if (cancelled) return;
+
+      results.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+      setEntries(results);
+      setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [caseIds]);
 
   if (caseIds.length === 0) return null;
 
