@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/simulate", label: "Simulate", icon: FlaskConical },
-  { href: "/providers", label: "Providers", icon: Search },
+  { href: "/providers", label: "Providers", icon: Search, altPrefixes: ["/investigate"] },
   { href: "/claims", label: "Claims", icon: FileText },
   { href: "/heatmap", label: "Risk Map", icon: Map },
   { href: "/fairness", label: "Fairness", icon: Shield },
@@ -60,7 +60,9 @@ export function NavSidebar({ onChatToggle, chatOpen }: NavSidebarProps) {
           const isActive =
             item.href === "/"
               ? pathname === "/"
-              : pathname.startsWith(item.href);
+              : pathname.startsWith(item.href) ||
+                (item.altPrefixes?.some((p) => pathname.startsWith(p)) ??
+                  false);
           return (
             <Link
               key={item.href}

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, MapPin, AlertTriangle, ShieldCheck } from "lucide-react";
+import { ArrowLeft, MapPin, AlertTriangle, ShieldCheck, Microscope } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -163,6 +163,13 @@ export default async function ProviderDetailPage({
         <div className="flex items-center gap-3">
           <RiskGauge score={provider.max_seed_risk_score} />
           {riskBadge(provider.risk_band, "lg")}
+          <Link
+            href={`/investigate/${npi}`}
+            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            <Microscope className="h-3.5 w-3.5" />
+            Investigate
+          </Link>
         </div>
       </div>
 
