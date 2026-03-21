@@ -289,3 +289,14 @@ export interface HealthResponse {
   graph: string;
   version: string;
 }
+
+export interface RadarDimension {
+  dimension: string;
+  provider: number;
+  peer: number;
+}
+
+export interface RadarResponse {
+  npi: string;
+  dimensions: RadarDimension[];
+}

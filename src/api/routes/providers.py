@@ -14,6 +14,8 @@ from src.api.schemas import (
     ProviderDetail,
     ProviderListResponse,
     ProviderSummary,
+    RadarDimension,
+    RadarResponse,
     RiskBand,
     risk_band_from_score,
 )
@@ -99,3 +101,69 @@ async def get_provider(
         raise HTTPException(status_code=404, detail=f"Provider {npi} not found")
 
     return ProviderDetail(**row, risk_band=risk_band_from_score(row["max_seed_risk_score"]))
+
+
+# Columns for the radar chart — z-scores and provider-level metrics
+_RADAR_COLS = (
+    "mean_volume_z, mean_intensity_z, mean_charge_z, mean_payment_z, "
+    "service_hhi, top_code_share, provider_total_benes, "
+    "enrolled_2025, revoked_2026"
+)
+
+
+def _z_to_scale(z: float | None) -> float:
+    """Map a z-score to 0–100 scale where 50 = peer average.
+
+    z=0 → 50 (peer mean), z=3 → 80, z=5 → 100, negative z → <50.
+    """
+    if z is None:
+        return 50.0
+    return max(0.0, min(100.0, 50.0 + z * 10.0))
+
+
+def _ratio_to_scale(ratio: float | None, *, cap: float = 1.0) -> float:
+    """Map a 0-to-cap ratio to 0–100 scale."""
+    if ratio is None:
+        return 0.0
+    return max(0.0, min(100.0, (ratio / cap) * 100.0))
+
+
+@router.get("/{npi}/radar", response_model=RadarResponse)
+async def get_provider_radar(
+    npi: str,
+    conn: AsyncConnection = Depends(get_db),
+) -> RadarResponse:
+    """Return radar chart dimensions for a provider's risk profile."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"SELECT {_RADAR_COLS} FROM provider_features WHERE npi = %s",
+            [npi],
+        )
+        row = await cur.fetchone()
+
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Provider {npi} not found")
+
+    dims = [
+        RadarDimension(dimension="Volume", provider=_z_to_scale(row["mean_volume_z"])),
+        RadarDimension(dimension="Intensity", provider=_z_to_scale(row["mean_intensity_z"])),
+        RadarDimension(dimension="Charges", provider=_z_to_scale(row["mean_charge_z"])),
+        RadarDimension(dimension="Payment", provider=_z_to_scale(row["mean_payment_z"])),
+        RadarDimension(
+            dimension="Concentration",
+            provider=_ratio_to_scale(row["service_hhi"]),
+        ),
+        RadarDimension(
+            dimension="Top Code",
+            provider=_ratio_to_scale(row["top_code_share"]),
+        ),
+        RadarDimension(
+            dimension="Panel Size",
+            provider=_ratio_to_scale(row["provider_total_benes"], cap=500.0),
+        ),
+        RadarDimension(
+            dimension="Enrollment",
+            provider=100.0 if not row["enrolled_2025"] else 0.0,
+        ),
+    ]
+    return RadarResponse(npi=npi, dimensions=dims)
