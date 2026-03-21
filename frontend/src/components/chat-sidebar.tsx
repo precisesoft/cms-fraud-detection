@@ -3,22 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Loader2,
-  MessageSquare,
   SendHorizonal,
   Database,
   TrendingUp,
+  X,
+  Sparkles,
 } from "lucide-react";
-import { ChatChart } from "@/components/chat-chart";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { ChatChart } from "@/components/chat-chart";
 import type { ChatMessage, ChatResponse, ChartSpec } from "@/types/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -73,12 +65,12 @@ function ScalarResult({
   const col = columns[0];
   const val = rows[0][col];
   return (
-    <div className="my-2 rounded-lg border bg-gradient-to-br from-primary/5 to-primary/10 p-4 text-center">
-      <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground mb-1">
+    <div className="my-2 rounded-xl neu-card p-4 text-center">
+      <div className="flex items-center justify-center gap-1.5 label-stamped mb-1">
         <TrendingUp className="h-3 w-3" />
         {formatColumnName(col)}
       </div>
-      <div className="text-2xl font-bold tracking-tight text-primary">
+      <div className="text-3xl font-extrabold tracking-tight text-accent font-mono">
         {formatCellValue(val)}
       </div>
     </div>
@@ -94,16 +86,16 @@ function SingleRowResult({
 }) {
   const row = rows[0];
   return (
-    <div className="my-2 rounded-lg border bg-muted/30 p-3 space-y-1.5">
+    <div className="my-2 rounded-xl neu-recessed p-3 space-y-1.5">
       {columns.map((col) => (
         <div
           key={col}
           className="flex justify-between items-baseline text-sm gap-3"
         >
-          <span className="text-muted-foreground text-xs shrink-0">
+          <span className="label-stamped text-[10px] shrink-0">
             {formatColumnName(col)}
           </span>
-          <span className="font-medium text-right truncate">
+          <span className="font-semibold text-right truncate font-mono text-sm">
             {formatCellValue(row[col])}
           </span>
         </div>
@@ -123,15 +115,15 @@ function DataTable({
 }) {
   const displayRows = rows.slice(0, 10);
   return (
-    <div className="my-2 rounded-lg border overflow-hidden">
+    <div className="my-2 rounded-xl neu-recessed overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="bg-muted/50 border-b">
+            <tr className="border-b border-border/50">
               {columns.map((col) => (
                 <th
                   key={col}
-                  className="px-2 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap"
+                  className="px-2 py-1.5 text-left font-mono text-[10px] uppercase tracking-wider text-muted-foreground whitespace-nowrap"
                 >
                   {formatColumnName(col)}
                 </th>
@@ -140,12 +132,12 @@ function DataTable({
           </thead>
           <tbody>
             {displayRows.map((row, i) => (
-              <tr
-                key={i}
-                className="border-b last:border-0 hover:bg-muted/30 transition-colors"
-              >
+              <tr key={i} className="border-b border-border/30 last:border-0">
                 {columns.map((col) => (
-                  <td key={col} className="px-2 py-1.5 whitespace-nowrap">
+                  <td
+                    key={col}
+                    className="px-2 py-1.5 whitespace-nowrap font-mono text-xs"
+                  >
                     {formatCellValue(row[col])}
                   </td>
                 ))}
@@ -155,7 +147,7 @@ function DataTable({
         </table>
       </div>
       {totalRows > 10 && (
-        <div className="px-2 py-1 text-xs text-muted-foreground bg-muted/30 border-t text-center">
+        <div className="px-2 py-1 label-stamped text-center border-t border-border/30">
           Showing 10 of {totalRows.toLocaleString()} rows
         </div>
       )}
@@ -186,8 +178,11 @@ function QueryResults({ msg }: { msg: DisplayMessage }) {
   );
 }
 
-export function ChatPanel() {
-  const [open, setOpen] = useState(false);
+interface ChatSidebarProps {
+  onClose: () => void;
+}
+
+export function ChatSidebar({ onClose }: ChatSidebarProps) {
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -206,7 +201,6 @@ export function ChatPanel() {
       setInput("");
       setLoading(true);
 
-      // Build history from previous messages (role + content only)
       const history: ChatMessage[] = messages.map((m) => ({
         role: m.role,
         content: m.content,
@@ -262,111 +256,121 @@ export function ChatPanel() {
   }
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start gap-2 text-muted-foreground"
-          />
-        }
-      >
-        <MessageSquare className="h-4 w-4" />
-        Ask AI
-      </SheetTrigger>
+    <aside className="w-[420px] shrink-0 flex flex-col neu-card border-l border-border/50 relative z-10">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full neu-float">
+            <Sparkles className="h-3.5 w-3.5 text-accent" />
+          </div>
+          <div>
+            <span className="font-bold text-sm">Ask Argus</span>
+            <span className="label-stamped block text-[9px] leading-none mt-0.5">
+              AI ANALYST
+            </span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:neu-subtle transition-all duration-200"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
 
-      <SheetContent side="right" className="flex flex-col sm:max-w-md">
-        <SheetHeader className="border-b pb-3">
-          <SheetTitle>Ask Argus AI</SheetTitle>
-          <p className="text-xs text-muted-foreground">
-            Ask questions about providers, claims, risk scores, and billing
-            patterns.
-          </p>
-        </SheetHeader>
-
-        {/* Messages */}
-        <ScrollArea className="flex-1 min-h-0">
-          <div className="space-y-3 p-4">
-            {messages.length === 0 && (
-              <div className="space-y-2 pt-8">
-                <p className="text-sm text-muted-foreground text-center">
-                  Try a question:
+      {/* Messages */}
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="space-y-3 p-4">
+          {messages.length === 0 && (
+            <div className="space-y-3 pt-6">
+              <div className="text-center">
+                <div className="flex h-12 w-12 mx-auto items-center justify-center rounded-full neu-float mb-3">
+                  <Sparkles className="h-6 w-6 text-accent" />
+                </div>
+                <p className="text-sm font-semibold mb-1">Ask anything</p>
+                <p className="label-stamped text-[10px]">
+                  Providers, claims, risk scores, billing patterns
                 </p>
+              </div>
+              <div className="space-y-2 pt-2">
                 {SUGGESTIONS.map((s) => (
                   <button
                     key={s}
                     type="button"
-                    className="block w-full text-left text-sm px-3 py-2 rounded-md border hover:bg-muted transition-colors"
+                    className="block w-full text-left text-sm px-3 py-2.5 rounded-lg neu-subtle hover:neu-pressed transition-all duration-200 active:translate-y-px"
                     onClick={() => sendMessage(s)}
                   >
                     {s}
                   </button>
                 ))}
               </div>
-            )}
+            </div>
+          )}
 
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                {msg.role === "user" ? (
-                  <div className="max-w-[85%] rounded-lg px-3 py-2 text-sm bg-primary text-primary-foreground">
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                  </div>
-                ) : (
-                  <div className="max-w-[95%] w-full text-sm space-y-1">
-                    <p className="whitespace-pre-wrap text-foreground leading-relaxed">
-                      {msg.content}
-                    </p>
-                    <QueryResults msg={msg} />
-                    {msg.sql && (
-                      <details className="mt-1">
-                        <summary className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1 hover:text-foreground transition-colors">
-                          <Database className="h-3 w-3" />
-                          SQL &middot; {msg.row_count} rows &middot;{" "}
-                          {msg.duration_ms}ms
-                        </summary>
-                        <pre className="mt-1 text-xs bg-muted rounded-md p-2 overflow-x-auto border">
-                          {msg.sql}
-                        </pre>
-                      </details>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {loading && (
-              <div className="flex justify-start">
-                <div className="bg-muted rounded-lg px-3 py-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          {messages.map((msg, i) => (
+            <div
+              key={i}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              {msg.role === "user" ? (
+                <div className="max-w-[85%] rounded-xl px-3 py-2 text-sm bg-accent text-accent-foreground font-medium neu-subtle">
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
                 </div>
+              ) : (
+                <div className="max-w-[95%] w-full text-sm space-y-1">
+                  <p className="whitespace-pre-wrap text-foreground leading-relaxed">
+                    {msg.content}
+                  </p>
+                  <QueryResults msg={msg} />
+                  {msg.sql && (
+                    <details className="mt-1">
+                      <summary className="label-stamped text-[10px] cursor-pointer flex items-center gap-1 hover:text-foreground transition-colors">
+                        <Database className="h-3 w-3" />
+                        SQL · {msg.row_count} rows · {msg.duration_ms}ms
+                      </summary>
+                      <pre className="mt-1 text-xs font-mono rounded-lg p-2 overflow-x-auto neu-recessed">
+                        {msg.sql}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+
+          {loading && (
+            <div className="flex justify-start">
+              <div className="rounded-xl px-3 py-2 neu-recessed">
+                <Loader2 className="h-4 w-4 animate-spin text-accent" />
               </div>
-            )}
+            </div>
+          )}
 
-            <div ref={bottomRef} />
-          </div>
-        </ScrollArea>
+          <div ref={bottomRef} />
+        </div>
+      </ScrollArea>
 
-        {/* Input */}
-        <form
-          onSubmit={handleSubmit}
-          className="border-t p-3 flex items-center gap-2"
+      {/* Input */}
+      <form
+        onSubmit={handleSubmit}
+        className="border-t border-border/50 p-3 flex items-center gap-2"
+      >
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask about providers, claims, risk..."
+          disabled={loading}
+          className="flex-1 h-10 rounded-lg px-3 text-sm neu-recessed border-none outline-none bg-transparent disabled:opacity-50 font-mono placeholder:font-sans placeholder:text-muted-foreground"
+        />
+        <button
+          type="submit"
+          disabled={loading || !input.trim()}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground neu-subtle transition-all duration-150 hover:brightness-110 active:translate-y-px active:neu-pressed disabled:opacity-50 disabled:pointer-events-none"
         >
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about providers, claims, risk..."
-            disabled={loading}
-            className="flex-1"
-          />
-          <Button type="submit" size="icon" disabled={loading || !input.trim()}>
-            <SendHorizonal className="h-4 w-4" />
-          </Button>
-        </form>
-      </SheetContent>
-    </Sheet>
+          <SendHorizonal className="h-4 w-4" />
+        </button>
+      </form>
+    </aside>
   );
 }
