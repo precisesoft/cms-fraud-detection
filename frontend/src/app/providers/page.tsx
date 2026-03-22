@@ -59,17 +59,20 @@ function FilterSelect({
   placeholder,
   options,
   className,
+  "aria-label": ariaLabel,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder: string;
   options: { value: string; label: string }[];
   className?: string;
+  "aria-label"?: string;
 }) {
   return (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      aria-label={ariaLabel ?? placeholder}
       className={cn(
         "h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm",
         "focus:outline-none focus:ring-1 focus:ring-ring",
@@ -216,13 +219,17 @@ function ProvidersPageInner() {
 
       {/* Search + filters row */}
       <div className="flex flex-wrap gap-2 items-center">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative w-full sm:w-64">
+          <Search
+            aria-hidden="true"
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+          />
           <Input
+            aria-label="Search providers"
             placeholder="Search by NPI or provider name..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-9 w-64"
+            className="pl-9 w-full"
           />
         </div>
 
@@ -230,6 +237,7 @@ function ProvidersPageInner() {
           value={stateFilter}
           onChange={handleStateChange}
           placeholder="All states"
+          aria-label="Filter by state"
           options={US_STATES.map((s) => ({ value: s, label: s }))}
           className="w-32"
         />
@@ -238,6 +246,7 @@ function ProvidersPageInner() {
           value={riskBandFilter}
           onChange={handleRiskBandChange}
           placeholder="All risk bands"
+          aria-label="Filter by risk band"
           options={RISK_BAND_OPTIONS}
           className="w-40"
         />
@@ -246,6 +255,7 @@ function ProvidersPageInner() {
           value={providerTypeFilter}
           onChange={handleProviderTypeChange}
           placeholder="All provider types"
+          aria-label="Filter by provider type"
           options={PROVIDER_TYPES.map((t) => ({ value: t, label: t }))}
           className="w-52"
         />
