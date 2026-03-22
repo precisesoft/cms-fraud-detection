@@ -17,9 +17,78 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import type { ProviderSummary, PaginationMeta } from "@/types/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+const US_STATES = [
+  "AK","AL","AR","AZ","CA","CO","CT","DC","DE","FL","GA","HI","IA","ID","IL",
+  "IN","KS","KY","LA","MA","MD","ME","MI","MN","MO","MS","MT","NC","ND","NE",
+  "NH","NJ","NM","NV","NY","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT",
+  "VA","VT","WA","WI","WV","WY",
+];
+
+const PROVIDER_TYPES = [
+  "Internal Medicine",
+  "Family Practice",
+  "Cardiology",
+  "Orthopedic Surgery",
+  "Ophthalmology",
+  "Dermatology",
+  "Psychiatry",
+  "Neurology",
+  "Gastroenterology",
+  "General Surgery",
+  "Urology",
+  "Pulmonary Disease",
+  "Nephrology",
+  "Hematology/Oncology",
+  "Anesthesiology",
+];
+
+const RISK_BAND_OPTIONS = [
+  { value: "high_risk", label: "High Risk" },
+  { value: "review", label: "Review" },
+  { value: "stable", label: "Stable" },
+];
+
+function FilterSelect({
+  value,
+  onChange,
+  placeholder,
+  options,
+  className,
+  "aria-label": ariaLabel,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  options: { value: string; label: string }[];
+  className?: string;
+  "aria-label"?: string;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label={ariaLabel ?? placeholder}
+      className={cn(
+        "h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm",
+        "focus:outline-none focus:ring-1 focus:ring-ring",
+        "text-foreground disabled:cursor-not-allowed disabled:opacity-50",
+        className,
+      )}
+    >
+      <option value="">{placeholder}</option>
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 function riskBadge(band: ProviderSummary["risk_band"]) {
   switch (band) {
@@ -50,25 +119,40 @@ function formatCurrency(value: number | null) {
 }
 
 function ProvidersPageInner() {
-  const searchParams = useSearchParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const stateFilter = searchParams.get("state") ?? "";
+  // Initialize from URL params
+  const [query, setQuery] = useState(searchParams.get("q") ?? "");
+  const [debouncedQuery, setDebouncedQuery] = useState(searchParams.get("q") ?? "");
+  const [stateFilter, setStateFilter] = useState(searchParams.get("state") ?? "");
+  const [riskBandFilter, setRiskBandFilter] = useState(searchParams.get("risk_band") ?? "");
+  const [providerTypeFilter, setProviderTypeFilter] = useState(
+    searchParams.get("provider_type") ?? "",
+  );
+  const [page, setPage] = useState(Number(searchParams.get("page") ?? "1"));
 
-  const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [providers, setProviders] = useState<ProviderSummary[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
-  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Reset to page 1 when state filter changes
-  useEffect(() => {
-    setPage(1);
-  }, [stateFilter]);
+  const hasActiveFilters =
+    !!debouncedQuery || !!stateFilter || !!riskBandFilter || !!providerTypeFilter;
 
-  // Debounce search input by 300ms
+  // Sync URL when filter/page state changes
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (debouncedQuery) params.set("q", debouncedQuery);
+    if (stateFilter) params.set("state", stateFilter);
+    if (riskBandFilter) params.set("risk_band", riskBandFilter);
+    if (providerTypeFilter) params.set("provider_type", providerTypeFilter);
+    if (page > 1) params.set("page", String(page));
+    const qs = params.toString();
+    router.replace(qs ? `/providers?${qs}` : "/providers", { scroll: false });
+  }, [debouncedQuery, stateFilter, riskBandFilter, providerTypeFilter, page, router]);
+
+  // Debounce text search; reset page on new query
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(query);
@@ -76,6 +160,25 @@ function ProvidersPageInner() {
     }, 300);
     return () => clearTimeout(timer);
   }, [query]);
+
+  // Reset page when dropdown filters change
+  const makeFilterHandler =
+    (setFilter: (v: string) => void) => (v: string) => {
+      setFilter(v);
+      setPage(1);
+    };
+  const handleStateChange = makeFilterHandler(setStateFilter);
+  const handleRiskBandChange = makeFilterHandler(setRiskBandFilter);
+  const handleProviderTypeChange = makeFilterHandler(setProviderTypeFilter);
+
+  const clearAll = () => {
+    setQuery("");
+    setDebouncedQuery("");
+    setStateFilter("");
+    setRiskBandFilter("");
+    setProviderTypeFilter("");
+    setPage(1);
+  };
 
   const fetchProviders = useCallback(async () => {
     setLoading(true);
@@ -86,6 +189,8 @@ function ProvidersPageInner() {
       params.set("per_page", "20");
       if (debouncedQuery) params.set("q", debouncedQuery);
       if (stateFilter) params.set("state", stateFilter);
+      if (riskBandFilter) params.set("risk_band", riskBandFilter);
+      if (providerTypeFilter) params.set("provider_type", providerTypeFilter);
 
       const res = await fetch(`${API_BASE}/api/providers?${params}`);
       if (!res.ok) throw new Error(`API error: ${res.status}`);
@@ -97,15 +202,11 @@ function ProvidersPageInner() {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedQuery, stateFilter]);
+  }, [page, debouncedQuery, stateFilter, riskBandFilter, providerTypeFilter]);
 
   useEffect(() => {
     fetchProviders();
   }, [fetchProviders]);
-
-  function clearStateFilter() {
-    router.push("/providers");
-  }
 
   return (
     <div className="p-6 space-y-4">
@@ -116,30 +217,54 @@ function ProvidersPageInner() {
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative max-w-md flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      {/* Search + filters row */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="relative w-full sm:w-64">
+          <Search
+            aria-hidden="true"
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+          />
           <Input
+            aria-label="Search providers"
             placeholder="Search by NPI or provider name..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-9"
+            className="pl-9 w-full"
           />
         </div>
-        {stateFilter && (
-          <Badge
-            variant="secondary"
-            className="flex items-center gap-1 px-3 py-1.5 text-sm"
-          >
-            Filtered: {stateFilter}
-            <button
-              onClick={clearStateFilter}
-              aria-label="Clear state filter"
-              className="ml-1 hover:text-destructive"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </Badge>
+
+        <FilterSelect
+          value={stateFilter}
+          onChange={handleStateChange}
+          placeholder="All states"
+          aria-label="Filter by state"
+          options={US_STATES.map((s) => ({ value: s, label: s }))}
+          className="w-32"
+        />
+
+        <FilterSelect
+          value={riskBandFilter}
+          onChange={handleRiskBandChange}
+          placeholder="All risk bands"
+          aria-label="Filter by risk band"
+          options={RISK_BAND_OPTIONS}
+          className="w-40"
+        />
+
+        <FilterSelect
+          value={providerTypeFilter}
+          onChange={handleProviderTypeChange}
+          placeholder="All provider types"
+          aria-label="Filter by provider type"
+          options={PROVIDER_TYPES.map((t) => ({ value: t, label: t }))}
+          className="w-52"
+        />
+
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={clearAll} className="gap-1">
+            <X className="h-3.5 w-3.5" />
+            Clear all
+          </Button>
         )}
       </div>
 
@@ -227,11 +352,8 @@ function ProvidersPageInner() {
           <p className="text-sm text-muted-foreground">
             Showing {providers.length} of{" "}
             {new Intl.NumberFormat("en-US").format(meta.total)} providers
-            {debouncedQuery && (
-              <>
-                {" "}
-                matching <span className="font-medium">{debouncedQuery}</span>
-              </>
+            {hasActiveFilters && (
+              <span className="text-muted-foreground"> (filtered)</span>
             )}
           </p>
           <div className="flex gap-2">
