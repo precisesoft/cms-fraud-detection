@@ -280,7 +280,7 @@ function ProvidersPageInner() {
       {!error && (
         <Card>
           <CardContent className="p-0">
-            <Table>
+            <Table className="min-w-[800px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Provider</TableHead>

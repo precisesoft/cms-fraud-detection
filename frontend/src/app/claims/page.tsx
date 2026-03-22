@@ -104,7 +104,7 @@ export default function ClaimsPage() {
       {!error && (
         <Card>
           <CardContent className="p-0">
-            <Table>
+            <Table className="min-w-[900px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>NPI</TableHead>
