@@ -44,9 +44,9 @@ function ParityBadge({
   );
 }
 
-function truncateLabel(value: unknown, maxLen = 20): string {
+function truncateLabel(value: unknown): string {
   const s = String(value);
-  return s.length > maxLen ? `${s.slice(0, maxLen)}…` : s;
+  return s.length > 20 ? `${s.slice(0, 20)}…` : s;
 }
 
 function CohortChart({
