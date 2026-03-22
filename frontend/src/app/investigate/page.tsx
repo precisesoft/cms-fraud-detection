@@ -219,7 +219,7 @@ export default function InvestigatePage() {
       {/* Table */}
       {!error && (
         <Card>
-          <CardContent className="p-0">
+          <CardContent className="p-0 overflow-x-auto">
             <Table className="min-w-[900px]">
               <TableHeader>
                 <TableRow>

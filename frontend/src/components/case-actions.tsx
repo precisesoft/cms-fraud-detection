@@ -7,10 +7,13 @@ import {
   XCircle,
   AlertTriangle,
   Loader2,
+  MoreHorizontal,
 } from "lucide-react";
+import { Menu } from "@base-ui/react/menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import type { CaseAction } from "@/types/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -104,38 +107,95 @@ export function CaseActions({
     }
   }
 
+  const actionButtons = (Object.entries(ACTION_CONFIG) as [
+    CaseAction,
+    (typeof ACTION_CONFIG)[CaseAction],
+  ][]).map(([action, config]) => {
+    const Icon = config.icon;
+    const isActive = status === action;
+    return (
+      <Button
+        key={action}
+        variant={isActive ? "default" : config.variant}
+        size={compact ? "xs" : "sm"}
+        disabled={loading !== null}
+        onClick={() => handleClick(action)}
+        className={isActive ? "" : config.color}
+      >
+        {loading === action ? (
+          <Loader2 className="h-3 w-3 animate-spin" />
+        ) : (
+          <Icon className="h-3 w-3" />
+        )}
+        {!compact && config.label}
+      </Button>
+    );
+  });
+
   return (
     <div className="space-y-2">
       {status && <CaseStatusBadge status={status} />}
 
-      <div className={`flex flex-wrap ${compact ? "gap-1" : "gap-2"}`}>
-        {(
-          Object.entries(ACTION_CONFIG) as [
-            CaseAction,
-            (typeof ACTION_CONFIG)[CaseAction],
-          ][]
-        ).map(([action, config]) => {
-          const Icon = config.icon;
-          const isActive = status === action;
-          return (
-            <Button
-              key={action}
-              variant={isActive ? "default" : config.variant}
-              size={compact ? "xs" : "sm"}
-              disabled={loading !== null}
-              onClick={() => handleClick(action)}
-              className={isActive ? "" : config.color}
-            >
-              {loading === action ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Icon className="h-3 w-3" />
-              )}
-              {!compact && config.label}
-            </Button>
-          );
-        })}
-      </div>
+      {compact ? (
+        <>
+          {/* Mobile: overflow "…" menu — hidden on sm+ */}
+          <div className="sm:hidden">
+            <Menu.Root>
+              <Menu.Trigger
+                aria-label="Case actions"
+                disabled={loading !== null}
+                className={cn(
+                  "flex h-11 w-11 items-center justify-center rounded-lg border border-border/50 bg-card text-foreground",
+                  "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50",
+                  "disabled:pointer-events-none disabled:opacity-50",
+                )}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Menu.Trigger>
+              <Menu.Portal>
+                <Menu.Positioner sideOffset={4} align="end">
+                  <Menu.Popup className="z-50 min-w-[160px] rounded-lg border border-border/50 bg-card py-1 shadow-md">
+                    {(
+                      Object.entries(ACTION_CONFIG) as [
+                        CaseAction,
+                        (typeof ACTION_CONFIG)[CaseAction],
+                      ][]
+                    ).map(([action, config]) => {
+                      const Icon = config.icon;
+                      const isActive = status === action;
+                      return (
+                        <Menu.Item
+                          key={action}
+                          disabled={loading !== null}
+                          onClick={() => handleClick(action)}
+                          className={cn(
+                            "flex min-h-[44px] w-full cursor-default items-center gap-2 px-3 py-2 text-sm font-medium outline-none hover:bg-muted focus-visible:bg-muted",
+                            isActive ? "text-foreground" : config.color,
+                          )}
+                        >
+                          {loading === action ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Icon className="h-4 w-4" />
+                          )}
+                          {config.label}
+                        </Menu.Item>
+                      );
+                    })}
+                  </Menu.Popup>
+                </Menu.Positioner>
+              </Menu.Portal>
+            </Menu.Root>
+          </div>
+
+          {/* Desktop: inline icon buttons — hidden below sm */}
+          <div className="hidden sm:flex sm:flex-wrap sm:gap-1">
+            {actionButtons}
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-wrap gap-2">{actionButtons}</div>
+      )}
 
       {showNotes && pendingAction && (
         <div className="flex gap-2">
