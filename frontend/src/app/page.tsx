@@ -98,7 +98,7 @@ export default async function DashboardPage() {
         <StatCard
           label="Under Review"
           value={formatNumber(risk_distribution.review)}
-          subtitle="Score 31\u201350"
+          subtitle="Score 31–50"
           icon={<Eye className="h-4 w-4 text-amber-500" />}
           valueClass="text-amber-500"
           led="amber"
