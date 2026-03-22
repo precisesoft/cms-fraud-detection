@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
   Search,
@@ -13,6 +13,7 @@ import {
   FlaskConical,
   MessageSquare,
   ClipboardList,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,11 +32,35 @@ const navItems = [
 interface NavSidebarProps {
   onChatToggle: () => void;
   chatOpen: boolean;
+  sidebarOpen: boolean;
+  onSidebarClose: () => void;
 }
 
-export function NavSidebar({ onChatToggle, chatOpen }: NavSidebarProps) {
+export function NavSidebar({
+  onChatToggle,
+  chatOpen,
+  sidebarOpen,
+  onSidebarClose,
+}: NavSidebarProps) {
   const pathname = usePathname();
   const [pendingCount, setPendingCount] = useState<number | null>(null);
+  const asideRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const el = asideRef.current;
+    if (!el) return;
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const update = () => {
+      if (mq.matches || sidebarOpen) {
+        el.removeAttribute("inert");
+      } else {
+        el.setAttribute("inert", "");
+      }
+    };
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, [sidebarOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,18 +78,37 @@ export function NavSidebar({ onChatToggle, chatOpen }: NavSidebarProps) {
   }, []);
 
   return (
-    <aside className="w-56 shrink-0 flex flex-col neu-card border-r border-border/50 relative z-10">
+    <aside
+      ref={asideRef}
+      className={cn(
+        "w-56 shrink-0 flex-col neu-card border-r border-border/50",
+        "fixed inset-y-0 left-0 flex z-40 transition-transform duration-300",
+        "lg:relative lg:inset-auto lg:z-10 lg:translate-x-0",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full",
+      )}
+      {...(sidebarOpen
+        ? { role: "dialog", "aria-modal": true, "aria-label": "Navigation menu" }
+        : {})}
+    >
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-4 py-4 border-b border-border/50">
         <div className="flex h-8 w-8 items-center justify-center rounded-full neu-float">
           <Activity className="h-4 w-4 text-accent" />
         </div>
-        <div>
+        <div className="flex-1">
           <span className="font-bold text-sm tracking-tight">ARGUS</span>
           <span className="label-stamped block text-[9px] leading-none mt-0.5">
             FRAUD DETECTION
           </span>
         </div>
+        <button
+          type="button"
+          aria-label="Close navigation"
+          onClick={onSidebarClose}
+          className="lg:hidden rounded-lg p-1 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
 
       {/* Status indicator */}
@@ -86,6 +130,7 @@ export function NavSidebar({ onChatToggle, chatOpen }: NavSidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onSidebarClose}
               className={cn(
                 "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-all duration-200",
                 isActive
