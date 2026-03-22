@@ -140,18 +140,18 @@ export default async function ProviderDetailPage({
       </Link>
 
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-y-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             {provider.provider_name ?? "Unknown Provider"}
           </h1>
-          <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-muted-foreground">
             <span className="font-mono">{provider.npi}</span>
-            <Separator orientation="vertical" className="h-4" />
+            <Separator orientation="vertical" className="hidden sm:block h-4" />
             <span>{provider.provider_type}</span>
             {provider.city && (
               <>
-                <Separator orientation="vertical" className="h-4" />
+                <Separator orientation="vertical" className="hidden sm:block h-4" />
                 <span className="flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
                   {provider.city}, {provider.state}
@@ -160,7 +160,7 @@ export default async function ProviderDetailPage({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <RiskGauge score={provider.max_seed_risk_score} />
           {riskBadge(provider.risk_band, "lg")}
           <Link
