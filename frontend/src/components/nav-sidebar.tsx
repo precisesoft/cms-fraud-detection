@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
   Search,
@@ -44,6 +44,23 @@ export function NavSidebar({
 }: NavSidebarProps) {
   const pathname = usePathname();
   const [pendingCount, setPendingCount] = useState<number | null>(null);
+  const asideRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const el = asideRef.current;
+    if (!el) return;
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const update = () => {
+      if (mq.matches || sidebarOpen) {
+        el.removeAttribute("inert");
+      } else {
+        el.setAttribute("inert", "");
+      }
+    };
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, [sidebarOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,6 +79,7 @@ export function NavSidebar({
 
   return (
     <aside
+      ref={asideRef}
       className={cn(
         "w-56 shrink-0 flex-col neu-card border-r border-border/50",
         "fixed inset-y-0 left-0 flex z-40 transition-transform duration-300",
