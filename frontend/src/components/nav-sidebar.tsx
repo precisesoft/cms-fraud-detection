@@ -63,10 +63,10 @@ export function NavSidebar({
   return (
     <aside
       className={cn(
-        "w-56 shrink-0 flex-col neu-card border-r border-border/50 relative z-10",
-        "hidden lg:flex",
-        sidebarOpen &&
-          "fixed inset-y-0 left-0 flex z-40 lg:relative transition-transform duration-300",
+        "w-56 shrink-0 flex-col neu-card border-r border-border/50",
+        "fixed inset-y-0 left-0 flex z-40 transition-transform duration-300",
+        "lg:relative lg:inset-auto lg:z-10 lg:translate-x-0",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full",
       )}
       {...(sidebarOpen
         ? { role: "dialog", "aria-modal": true, "aria-label": "Navigation menu" }
