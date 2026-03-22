@@ -44,6 +44,11 @@ function ParityBadge({
   );
 }
 
+function truncateLabel(value: unknown, maxLen = 20): string {
+  const s = String(value);
+  return s.length > maxLen ? `${s.slice(0, maxLen)}…` : s;
+}
+
 function CohortChart({
   title,
   data,
@@ -74,7 +79,7 @@ function CohortChart({
         <ResponsiveContainer width="100%" height={350}>
           <BarChart
             data={chartData}
-            margin={{ top: 5, right: 20, left: 0, bottom: 60 }}
+            margin={{ top: 5, right: 20, left: 20, bottom: 60 }}
           >
             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
             <XAxis
@@ -82,6 +87,7 @@ function CohortChart({
               tick={{ fontSize: 10 }}
               angle={-45}
               textAnchor="end"
+              tickFormatter={truncateLabel}
               className="fill-muted-foreground"
             />
             <YAxis
