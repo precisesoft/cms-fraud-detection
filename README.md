@@ -46,7 +46,7 @@
 | Phase 0: Project Spine   | Mar 14 | **Done**        | Monorepo, CI/CD, Dockerfiles, branch protection        |
 | Phase 1: Data Foundation | Mar 18 | **Done**        | 19GB ETL, 13K cases + 10K providers, Neo4j graph       |
 | Phase 2: Scoring + API   | Mar 20 | **Done**        | Scoring engine, all REST endpoints, peer baselines     |
-| Phase 3: AI Intelligence | Mar 22 | **In Progress** | Text-to-SQL, risk narratives, chat with charts         |
+| Phase 3: Ai Signal(Revisit) | Mar 22 | **In Progress** | Text-to-SQL, risk narratives, chat with charts         |
 | Phase 4: User Interface  | Mar 24 | **In Progress** | Claims simulator, investigation workflow, chat sidebar |
 | Phase 5: Ship            | Mar 26 | Pending         | Demo script, AI/OSS disclosure, judge access           |
 
