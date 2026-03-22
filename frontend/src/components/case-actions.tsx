@@ -108,7 +108,7 @@ export function CaseActions({
     <div className="space-y-2">
       {status && <CaseStatusBadge status={status} />}
 
-      <div className={`flex ${compact ? "gap-1" : "gap-2"}`}>
+      <div className={`flex flex-wrap ${compact ? "gap-1" : "gap-2"}`}>
         {(
           Object.entries(ACTION_CONFIG) as [
             CaseAction,
