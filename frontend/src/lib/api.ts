@@ -3,20 +3,50 @@
  * All calls target the deployed backend at VITE_API_BASE_URL.
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
-type JsonInit = Omit<RequestInit, 'body'> & { body?: unknown };
+/* ── Auth token management ─────────────────────────────────── */
+
+const TOKEN_KEY = "argus_token";
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+/* ── Core request helper ───────────────────────────────────── */
+
+type JsonInit = Omit<RequestInit, "body"> & { body?: unknown };
 
 async function request<T>(path: string, init?: JsonInit): Promise<T> {
   const url = `${API_BASE}${path}`;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...((init?.headers as Record<string, string>) ?? {}),
+  };
+  const token = getToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const response = await fetch(url, {
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers ?? {}),
-    },
+    headers,
     body: init?.body === undefined ? undefined : JSON.stringify(init.body),
   });
+
+  if (response.status === 401) {
+    clearToken();
+    window.location.href = "/login";
+    throw new Error("Session expired");
+  }
 
   if (!response.ok) {
     const text = await response.text();
@@ -28,9 +58,9 @@ async function request<T>(path: string, init?: JsonInit): Promise<T> {
 
 /* ── Types matching OpenAPI schema ──────────────────────────── */
 
-export type RiskBand = 'stable' | 'review' | 'high_risk';
-export type CaseAction = 'APPROVED' | 'FLAGGED' | 'DENIED' | 'ESCALATED';
-export type Recommendation = 'approve' | 'review' | 'deny';
+export type RiskBand = "stable" | "review" | "high_risk";
+export type CaseAction = "APPROVED" | "FLAGGED" | "DENIED" | "ESCALATED";
+export type Recommendation = "approve" | "review" | "deny";
 
 export interface PaginationMeta {
   total: number;
@@ -289,7 +319,7 @@ export interface NetworkRiskResponse {
 }
 
 export interface ChatMessage {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
 }
 
@@ -304,7 +334,7 @@ export interface ChatResponse {
 }
 
 export interface ChartSpec {
-  type: 'bar' | 'line' | 'pie';
+  type: "bar" | "line" | "pie";
   title: string;
   xKey?: string;
   yKey?: string;
@@ -389,15 +419,15 @@ export interface ValidationReport {
 /* ── API functions ──────────────────────────────────────────── */
 
 export function getHealth() {
-  return request<HealthResponse>('/health');
+  return request<HealthResponse>("/health");
 }
 
 export function getDashboard() {
-  return request<DashboardStats>('/api/dashboard');
+  return request<DashboardStats>("/api/dashboard");
 }
 
 export function getHeatmap() {
-  return request<HeatmapResponse>('/api/dashboard/heatmap');
+  return request<HeatmapResponse>("/api/dashboard/heatmap");
 }
 
 export function getProviders(params?: {
@@ -409,13 +439,13 @@ export function getProviders(params?: {
   risk_band?: string;
 }) {
   const search = new URLSearchParams();
-  if (params?.page) search.set('page', String(params.page));
-  if (params?.per_page) search.set('per_page', String(params.per_page));
-  if (params?.q) search.set('q', params.q);
-  if (params?.state) search.set('state', params.state);
-  if (params?.provider_type) search.set('provider_type', params.provider_type);
-  if (params?.risk_band) search.set('risk_band', params.risk_band);
-  const suffix = search.toString() ? `?${search.toString()}` : '';
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.per_page) search.set("per_page", String(params.per_page));
+  if (params?.q) search.set("q", params.q);
+  if (params?.state) search.set("state", params.state);
+  if (params?.provider_type) search.set("provider_type", params.provider_type);
+  if (params?.risk_band) search.set("risk_band", params.risk_band);
+  const suffix = search.toString() ? `?${search.toString()}` : "";
   return request<ProviderListResponse>(`/api/providers${suffix}`);
 }
 
@@ -454,15 +484,15 @@ export function getClaims(params?: {
   risk_max?: number;
 }) {
   const search = new URLSearchParams();
-  if (params?.page) search.set('page', String(params.page));
-  if (params?.per_page) search.set('per_page', String(params.per_page));
-  if (params?.npi) search.set('npi', params.npi);
-  if (params?.case_label) search.set('case_label', params.case_label);
-  if (params?.state) search.set('state', params.state);
-  if (params?.provider_type) search.set('provider_type', params.provider_type);
-  if (params?.risk_min != null) search.set('risk_min', String(params.risk_min));
-  if (params?.risk_max != null) search.set('risk_max', String(params.risk_max));
-  const suffix = search.toString() ? `?${search.toString()}` : '';
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.per_page) search.set("per_page", String(params.per_page));
+  if (params?.npi) search.set("npi", params.npi);
+  if (params?.case_label) search.set("case_label", params.case_label);
+  if (params?.state) search.set("state", params.state);
+  if (params?.provider_type) search.set("provider_type", params.provider_type);
+  if (params?.risk_min != null) search.set("risk_min", String(params.risk_min));
+  if (params?.risk_max != null) search.set("risk_max", String(params.risk_max));
+  const suffix = search.toString() ? `?${search.toString()}` : "";
   return request<ClaimListResponse>(`/api/claims${suffix}`);
 }
 
@@ -471,37 +501,43 @@ export function getClaim(caseId: string) {
 }
 
 export function simulateClaim(payload: ClaimSimulationRequest) {
-  return request<ClaimSimulationResult>('/api/claims/simulate', {
-    method: 'POST',
+  return request<ClaimSimulationResult>("/api/claims/simulate", {
+    method: "POST",
     body: payload,
   });
 }
 
-export function scoreClaim(payload: { npi: string; hcpcs_cd?: string; tot_srvcs?: number; avg_submitted_charge?: number }) {
-  return request<ScoreResult>('/api/score', {
-    method: 'POST',
+export function scoreClaim(payload: {
+  npi: string;
+  hcpcs_cd?: string;
+  tot_srvcs?: number;
+  avg_submitted_charge?: number;
+}) {
+  return request<ScoreResult>("/api/score", {
+    method: "POST",
     body: payload,
   });
 }
 
 export function getFairness(params?: { threshold?: number; blind?: boolean }) {
   const search = new URLSearchParams();
-  if (params?.threshold != null) search.set('threshold', String(params.threshold));
-  if (params?.blind != null) search.set('blind', String(params.blind));
-  const suffix = search.toString() ? `?${search.toString()}` : '';
+  if (params?.threshold != null)
+    search.set("threshold", String(params.threshold));
+  if (params?.blind != null) search.set("blind", String(params.blind));
+  const suffix = search.toString() ? `?${search.toString()}` : "";
   return request<FairnessReport>(`/api/fairness${suffix}`);
 }
 
 export function chat(message: string, history: ChatMessage[] = []) {
-  return request<ChatResponse>('/api/chat', {
-    method: 'POST',
+  return request<ChatResponse>("/api/chat", {
+    method: "POST",
     body: { message, history },
   });
 }
 
 export function caseAction(caseId: string, action: CaseAction, notes?: string) {
   return request<CaseActionResponse>(`/api/cases/${caseId}/action`, {
-    method: 'POST',
+    method: "POST",
     body: { action, notes },
   });
 }
@@ -515,5 +551,31 @@ export function getPendingCases(limit = 50) {
 }
 
 export function getValidation() {
-  return request<ValidationReport>('/api/validation');
+  return request<ValidationReport>("/api/validation");
+}
+
+/* ── Auth ──────────────────────────────────────────────────── */
+
+export interface AuthUser {
+  id: number;
+  username: string;
+  role: string;
+  full_name: string | null;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
+  user: AuthUser;
+}
+
+export function login(username: string, password: string) {
+  return request<TokenResponse>("/api/auth/login", {
+    method: "POST",
+    body: { username, password },
+  });
+}
+
+export function getMe() {
+  return request<AuthUser>("/api/auth/me");
 }
