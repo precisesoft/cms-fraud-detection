@@ -11,14 +11,14 @@ Proactive CMS provider fraud detection with explainable AI. Identifies anomalous
 - **AI Layer**: AWS Bedrock Claude for text-to-SQL and risk narratives (`src/ai/`)
 - **DB**: PostgreSQL 16 (provider_features: 63 columns, provider_service_cases: case-level)
 - **Graph**: Neo4j 5 for network risk signals
-- **Frontend**: Next.js 16 + Tailwind v4 + shadcn/ui + Recharts
+- **Frontend**: Vite + React 19 + React Router + Tailwind v4 + Recharts
 - **Python**: 3.12+, type-checked with mypy, linted with ruff
 
 ## Conventions
 
 - **Commits**: `type(scope): description (#N)` — conventional commits, present tense. `#N` MUST be the real GitHub issue number, never a placeholder like `#issue`. Example: `docs: update README (#42)`
 - **Branches**: `<type>/<issue-number>-<description>`
-- **PRs**: Title must follow the same commit format: `type(scope): description (#N)`. Body must include `Closes #N`. Do not use redundant scopes (e.g., use `docs:` not `docs(docs):`).
+- **PRs**: Title MUST follow conventional commit format from the very first push: `type(scope): description (#N)`. Body must include `Closes #N`. Do not use redundant scopes (e.g., use `docs:` not `docs(docs):`). NEVER use `[WIP]` prefix — it fails the CI Gate check.
 - **Risk bands**: 0-30 stable, 31-50 review, 51+ high_risk (use StrEnum `RiskBand`)
 - **Naming**: kebab-case dirs/files, PascalCase classes, snake_case functions
 - **Tests**: pytest + pytest-asyncio, `asyncio_mode = "auto"`
