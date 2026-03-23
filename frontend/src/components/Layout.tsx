@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -102,7 +102,15 @@ export function Layout() {
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto bg-slate-50/50 p-6 md:p-8">
           <div className="max-w-7xl mx-auto">
-            <Outlet />
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center h-64">
+                  <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+              }
+            >
+              <Outlet />
+            </Suspense>
           </div>
         </main>
       </div>
