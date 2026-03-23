@@ -71,7 +71,6 @@ jobs:
           REPO: ${{ env.ECR_REGISTRY }}/cms-fraud-detection-frontend
         run: |
           docker build \
-            --build-arg NEXT_PUBLIC_API_URL=https://argus.precise-lab.com \
             -t $REPO:$IMAGE_TAG -t $REPO:latest \
             ./frontend
           docker push $REPO:$IMAGE_TAG
