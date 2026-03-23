@@ -1,5 +1,5 @@
-import React, { Suspense } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import React, { Suspense } from "react";
+import { NavLink, Outlet } from "react-router-dom";
 import {
   LayoutDashboard,
   PlayCircle,
@@ -13,22 +13,25 @@ import {
   Menu,
   X,
   CheckCircle2,
-} from 'lucide-react';
-import { cn } from '../lib/utils';
+  LogOut,
+} from "lucide-react";
+import { cn } from "../lib/utils";
+import { useAuth } from "../contexts/AuthContext";
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Simulate', href: '/simulate', icon: PlayCircle },
-  { name: 'Providers', href: '/providers', icon: Users },
-  { name: 'Claims', href: '/claims', icon: FileText },
-  { name: 'Investigations', href: '/investigations', icon: BriefcaseBusiness },
-  { name: 'Risk Map', href: '/risk-map', icon: MapIcon },
-  { name: 'Fairness', href: '/fairness', icon: ShieldCheck },
-  { name: 'Analytics', href: '/analytics', icon: Database },
-  { name: 'Validation', href: '/validation', icon: CheckCircle2 },
+  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Simulate", href: "/simulate", icon: PlayCircle },
+  { name: "Providers", href: "/providers", icon: Users },
+  { name: "Claims", href: "/claims", icon: FileText },
+  { name: "Investigations", href: "/investigations", icon: BriefcaseBusiness },
+  { name: "Risk Map", href: "/risk-map", icon: MapIcon },
+  { name: "Fairness", href: "/fairness", icon: ShieldCheck },
+  { name: "Analytics", href: "/analytics", icon: Database },
+  { name: "Validation", href: "/validation", icon: CheckCircle2 },
 ];
 
 export function Layout() {
+  const { user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   return (
@@ -37,7 +40,9 @@ export function Layout() {
       <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white font-bold text-lg">A</div>
+            <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white font-bold text-lg">
+              A
+            </div>
             <span className="font-semibold text-lg tracking-tight text-slate-800">
               Argus <span className="text-indigo-600 font-bold">V2</span>
             </span>
@@ -54,8 +59,32 @@ export function Layout() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="md:hidden p-2 text-slate-500" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {user && (
+            <div className="hidden md:flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-sm font-medium text-slate-700">
+                  {user.full_name ?? user.username}
+                </p>
+                <p className="text-xs text-slate-400 capitalize">{user.role}</p>
+              </div>
+              <button
+                onClick={logout}
+                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                title="Sign out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+          <button
+            className="md:hidden p-2 text-slate-500"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Menu className="w-6 h-6" />
+            )}
           </button>
         </div>
       </header>
@@ -64,8 +93,8 @@ export function Layout() {
         {/* Sidebar Navigation */}
         <aside
           className={cn(
-            'fixed inset-y-14 left-0 z-40 w-64 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static',
-            isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full',
+            "fixed inset-y-14 left-0 z-40 w-64 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static",
+            isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
           )}
         >
           <nav className="p-4 space-y-1">
@@ -75,27 +104,45 @@ export function Layout() {
                 to={item.href}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group',
-                    isActive ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group",
+                    isActive
+                      ? "bg-indigo-50 text-indigo-700 shadow-sm"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
                   )
                 }
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <item.icon className={cn('w-5 h-5 transition-colors', 'group-hover:text-indigo-600')} />
+                <item.icon
+                  className={cn(
+                    "w-5 h-5 transition-colors",
+                    "group-hover:text-indigo-600",
+                  )}
+                />
                 {item.name}
               </NavLink>
             ))}
           </nav>
 
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-100">
+          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-100 space-y-3">
             <div className="bg-slate-50 rounded-lg p-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Current Program</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Current Program
+              </p>
               <select className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-indigo-500 outline-none">
                 <option>Medicare Part B</option>
                 <option>Medicaid State - NY</option>
                 <option>Medicaid State - CA</option>
               </select>
             </div>
+            {user && (
+              <button
+                onClick={logout}
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors md:hidden"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign out ({user.username})
+              </button>
+            )}
           </div>
         </aside>
 
