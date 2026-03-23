@@ -17,6 +17,9 @@ concurrency:
   group: pipeline-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  ECR_REGISTRY: 376567172837.dkr.ecr.us-east-1.amazonaws.com
+
 permissions:
   contents: read
 
@@ -321,3 +324,75 @@ jobs:
             trivy-api-report.txt
             trivy-frontend-report.txt
           retention-days: 14
+
+  release:
+    name: Release
+    needs: [scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push API image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          REPO: ${{ env.ECR_REGISTRY }}/cms-fraud-detection-api
+        run: |
+          docker build --platform linux/amd64 -t $REPO:$IMAGE_TAG -t $REPO:latest .
+          docker push $REPO:$IMAGE_TAG
+          docker push $REPO:latest
+
+      - name: Build and push Frontend image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          REPO: ${{ env.ECR_REGISTRY }}/cms-fraud-detection-frontend
+        run: |
+          docker build --platform linux/amd64 -t $REPO:$IMAGE_TAG -t $REPO:latest ./frontend
+          docker push $REPO:$IMAGE_TAG
+          docker push $REPO:latest
+
+  deploy:
+    name: Deploy
+    needs: [release]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name 508aas-platform-dev-cluster --region us-east-1
+
+      - name: Update manifest image tags
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          git clone https://x-access-token:${{ secrets.MANIFEST_REPO_TOKEN }}@github.com/precisesoft/precise-manifests.git /tmp/manifests
+          cd /tmp/manifests/k8s/cms-fraud
+          sed -i "s|cms-fraud-detection-api:.*|cms-fraud-detection-api:${SHA}|" api.yaml
+          sed -i "s|cms-fraud-detection-frontend:.*|cms-fraud-detection-frontend:${SHA}|" frontend.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "deploy: update images to ${SHA}" || echo "No changes"
+          git push
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/api -n cms-fraud --timeout=120s
+          kubectl rollout status deployment/frontend -n cms-fraud --timeout=120s
