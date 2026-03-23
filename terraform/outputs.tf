@@ -3,6 +3,11 @@ output "ecr_repository_url" {
   value       = aws_ecr_repository.api.repository_url
 }
 
+output "ecr_frontend_repository_url" {
+  description = "ECR repository URL for frontend image"
+  value       = aws_ecr_repository.frontend.repository_url
+}
+
 output "ci_user_arn" {
   description = "ARN of the CI/CD IAM user"
   value       = aws_iam_user.ci.arn
