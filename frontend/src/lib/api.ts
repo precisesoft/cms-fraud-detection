@@ -466,6 +466,10 @@ export function getClaims(params?: {
   return request<ClaimListResponse>(`/api/claims${suffix}`);
 }
 
+export function getClaim(caseId: string) {
+  return request<Claim>(`/api/claims/${encodeURIComponent(caseId)}`);
+}
+
 export function simulateClaim(payload: ClaimSimulationRequest) {
   return request<ClaimSimulationResult>('/api/claims/simulate', {
     method: 'POST',
