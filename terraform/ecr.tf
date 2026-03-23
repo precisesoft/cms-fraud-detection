@@ -49,7 +49,7 @@ resource "aws_ecr_lifecycle_policy" "api" {
 
 resource "aws_ecr_repository" "frontend" {
   name                 = "${var.project_name}-frontend"
-  image_tag_mutability = "IMMUTABLE"
+  image_tag_mutability = "MUTABLE"
   force_delete         = false
 
   image_scanning_configuration {
