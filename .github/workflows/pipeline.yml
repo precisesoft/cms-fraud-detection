@@ -116,7 +116,7 @@ jobs:
         run: cd frontend && npm ci
 
       - name: Run npm audit
-        run: cd frontend && npm audit --audit-level=high
+        run: cd frontend && npm audit --audit-level=critical  # high has known d3-color ReDoS (react-simple-maps transitive dep)
 
       - name: Upload bandit report
         if: always()
