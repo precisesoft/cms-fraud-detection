@@ -125,6 +125,24 @@ CREATE TABLE IF NOT EXISTS provider_features (
     charge_cv                   DOUBLE PRECISION
 );
 
+-- Application users (authentication)
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    hashed_password TEXT NOT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'analyst',
+    full_name VARCHAR(100),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Seed demo users (bcrypt-hashed passwords — for hackathon/demo only)
+INSERT INTO users (username, hashed_password, role, full_name) VALUES
+    ('admin',   '$2b$12$wk6qRpFS1wvj3n/cPAMjbOvGxSKOcEkUUWP3mNzCaLNQUVYvM/ma6', 'admin',   'Admin User'),
+    ('analyst', '$2b$12$9prGNwBSgoM4n7BECLTmf.vNfrOTm6KUScPvAvtM63TDPadioQ9UC', 'analyst', 'Demo Analyst'),
+    ('judge',   '$2b$12$VTHDf5zzI2LDRfqmoh2Stez7QlVvfH0lWSJw5lYZl.poxEDQHMOoG', 'judge',   'Hackathon Judge')
+ON CONFLICT (username) DO NOTHING;
+
 -- Indexes for common query patterns
 CREATE INDEX IF NOT EXISTS idx_cases_npi ON provider_service_cases (npi);
 CREATE INDEX IF NOT EXISTS idx_cases_label ON provider_service_cases (seed_case_label);
