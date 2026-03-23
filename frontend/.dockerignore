@@ -1,6 +1,7 @@
 node_modules
-.next
+dist
+.env
+.env.*
+*.log
 .git
-*.md
-CLAUDE.md
-AGENTS.md
+.vscode

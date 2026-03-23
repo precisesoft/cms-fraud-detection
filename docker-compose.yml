@@ -48,6 +48,19 @@ services:
       neo4j:
         condition: service_healthy
 
+  frontend:
+    build: ./frontend
+    container_name: cms-fraud-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
 volumes:
   pgdata:
   neo4jdata:
