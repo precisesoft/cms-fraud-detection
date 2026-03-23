@@ -201,3 +201,123 @@ jobs:
 
       - name: Build
         run: cd frontend && npm run build
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [security, quality-backend, quality-frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build API image
+        run: docker build --platform linux/amd64 -t cms-fraud-api:ci .
+
+      - name: Save API image
+        run: docker save cms-fraud-api:ci -o api-image.tar
+
+      - name: Upload API image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-image
+          path: api-image.tar
+          retention-days: 1
+
+      - name: Build frontend image
+        run: docker build --platform linux/amd64 -t cms-fraud-frontend:ci ./frontend
+
+      - name: Save frontend image
+        run: docker save cms-fraud-frontend:ci -o frontend-image.tar
+
+      - name: Upload frontend image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-image
+          path: frontend-image.tar
+          retention-days: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install production deps + cyclonedx-bom
+        run: pip install . "cyclonedx-bom>=4.0"
+
+      - name: Generate backend SBOM
+        run: |
+          cyclonedx-py environment \
+            --pyproject pyproject.toml \
+            --of json \
+            --output-reproducible \
+            -o sbom-backend.cdx.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+
+      - name: Generate frontend SBOM
+        run: cd frontend && npx @cyclonedx/cyclonedx-npm --output-file ../sbom-frontend.cdx.json
+
+      - name: Upload SBOMs
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: |
+            sbom-backend.cdx.json
+            sbom-frontend.cdx.json
+          retention-days: 14
+
+  scan:
+    name: Scan
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - name: Download API image
+        uses: actions/download-artifact@v4
+        with:
+          name: api-image
+
+      - name: Download frontend image
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-image
+
+      - name: Load Docker images
+        run: |
+          docker load < api-image.tar
+          docker load < frontend-image.tar
+
+      - name: Scan API image with Trivy
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: cms-fraud-api:ci
+          format: table
+          exit-code: "1"
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          output: trivy-api-report.txt
+
+      - name: Scan frontend image with Trivy
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: cms-fraud-frontend:ci
+          format: table
+          exit-code: "1"
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          output: trivy-frontend-report.txt
+
+      - name: Upload Trivy reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-reports
+          path: |
+            trivy-api-report.txt
+            trivy-frontend-report.txt
+          retention-days: 14
