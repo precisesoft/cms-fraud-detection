@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '../lib/utils';
-import { Search, Download, MapPin, Stethoscope, ExternalLink, MoreHorizontal } from 'lucide-react';
+import { Search, Download, MapPin, Stethoscope, ExternalLink } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getProviders } from '../lib/api';
 import type { ProviderSummary, PaginationMeta } from '../lib/api';

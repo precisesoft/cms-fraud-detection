@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, FilterIcon, ChevronLeft, ChevronRight, ExternalLink, FileText, DollarSign, Stethoscope } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, ExternalLink, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getClaims } from '../lib/api';
 import type { Claim, PaginationMeta } from '../lib/api';

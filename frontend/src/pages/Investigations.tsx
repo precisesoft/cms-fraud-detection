@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ClipboardList, AlertTriangle, ChevronRight, Clock, ExternalLink } from 'lucide-react';
-import { getPendingCases, getCaseActions } from '../lib/api';
-import type { PendingCase, CaseActionsListResponse } from '../lib/api';
+import { ClipboardList, AlertTriangle, ChevronRight } from 'lucide-react';
+import { getPendingCases } from '../lib/api';
+import type { PendingCase } from '../lib/api';
 import { cn } from '../lib/utils';
 import { scoreColor, formatUSD } from '../lib/helpers';
 

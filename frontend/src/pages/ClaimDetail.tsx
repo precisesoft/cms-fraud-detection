@@ -1,12 +1,12 @@
 import React from 'react';
-import { ArrowLeft, ClipboardCheck, ClipboardX, AlertTriangle, ArrowUpRight, FileText, DollarSign, Stethoscope, Users, MessageSquareMore } from 'lucide-react';
+import { ArrowLeft, ClipboardCheck, ClipboardX, AlertTriangle, ArrowUpRight, FileText, Stethoscope, MessageSquareMore } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { getClaims, getCaseActions, caseAction } from '../lib/api';
 import type { Claim, CaseActionRecord } from '../lib/api';
 import { cn } from '../lib/utils';
 import { formatUSD, scoreColor } from '../lib/helpers';
 import { Timeline } from '../components/Timeline';
-import { MockedBadge } from '../components/MockedBadge';
+
 import { AssistantDrawer } from '../components/AssistantDrawer';
 
 export function ClaimDetail() {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, MapPin, Stethoscope, AlertCircle, CheckCircle2, Activity, DollarSign, Users as UsersIcon, ShieldAlert, FileText, MessageSquareMore, Network } from 'lucide-react';
+import { ArrowLeft, MapPin, Stethoscope, AlertCircle, CheckCircle2, Activity, DollarSign, Users as UsersIcon, ShieldAlert, MessageSquareMore, Network } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { cn } from '../lib/utils';

@@ -1,8 +1,8 @@
 import React from 'react';
-import { Scale, AlertTriangle, CheckCircle, BarChart3, Info } from 'lucide-react';
+import { AlertTriangle, CheckCircle, BarChart3, Info } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { getFairness } from '../lib/api';
-import type { FairnessReport, CohortFairness } from '../lib/api';
+import type { FairnessReport } from '../lib/api';
 import { cn } from '../lib/utils';
 
 export function Fairness() {

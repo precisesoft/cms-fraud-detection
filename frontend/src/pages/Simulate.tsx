@@ -1,9 +1,9 @@
 import React from 'react';
-import { Zap, AlertTriangle, CheckCircle, Info, DollarSign, Stethoscope, Hash, MapPin, Users } from 'lucide-react';
+import { Zap, AlertTriangle, DollarSign, Stethoscope, Hash, MapPin, Users } from 'lucide-react';
 import { simulateClaim } from '../lib/api';
 import type { ClaimSimulationResult, ClaimSimulationRequest } from '../lib/api';
 import { cn } from '../lib/utils';
-import { formatUSD, scoreColor, riskBandLabel, riskBandColor } from '../lib/helpers';
+import { scoreColor, riskBandLabel, riskBandColor } from '../lib/helpers';
 
 export function Simulate() {
   const [form, setForm] = React.useState<ClaimSimulationRequest>({
