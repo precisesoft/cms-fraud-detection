@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 
@@ -88,3 +88,19 @@ async def list_claims(
         pages=math.ceil(total / per_page) if total else 0,
     )
     return ClaimListResponse(data=data, meta=meta)
+
+
+@router.get("/{case_id}", response_model=Claim)
+async def get_claim(
+    case_id: str,
+    conn: AsyncConnection = Depends(get_db),
+) -> Claim:
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"SELECT {_COLS} FROM provider_service_cases WHERE case_id = %s",
+            (case_id,),
+        )
+        row = await cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    return Claim(**row)

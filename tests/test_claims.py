@@ -76,6 +76,33 @@ class _ListCursor:
         pass
 
 
+class _SingleCursor:
+    """Cursor for single-row lookup (get_claim endpoint)."""
+
+    def __init__(self, row: dict | None):
+        self._row = row
+
+    async def execute(self, sql: str, params: tuple | None = None):
+        pass
+
+    async def fetchone(self) -> dict | None:
+        return self._row
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        pass
+
+
+class _SingleConn:
+    def __init__(self, row: dict | None):
+        self._row = row
+
+    def cursor(self, row_factory=None):
+        return _SingleCursor(self._row)
+
+
 class _FakeConn:
     def __init__(self, rows: list[dict], count: int | None = None):
         self._rows = rows
@@ -94,6 +121,23 @@ def _make_app(rows: list[dict], count: int | None = None) -> FastAPI:
     test_app.include_router(router, prefix="/api")
 
     conn = _FakeConn(rows, count)
+
+    async def fake_db():
+        yield conn
+
+    test_app.dependency_overrides[get_db] = fake_db
+    return test_app
+
+
+def _make_single_app(row: dict | None) -> FastAPI:
+    @asynccontextmanager
+    async def _noop_lifespan(app: FastAPI):
+        yield
+
+    test_app = FastAPI(lifespan=_noop_lifespan)
+    test_app.include_router(router, prefix="/api")
+
+    conn = _SingleConn(row)
 
     async def fake_db():
         yield conn
@@ -242,3 +286,47 @@ class TestClaimValidation:
         assert "seed_risk_score" in claim
         assert "seed_case_label" in claim
         assert "peer_case_count" in claim
+
+
+# ---------------------------------------------------------------------------
+# Tests — get single claim
+# ---------------------------------------------------------------------------
+
+
+class TestGetClaim:
+    async def test_returns_claim(self):
+        app = _make_single_app(SAMPLE_CASE)
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/claims/1234567890-99213")
+
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["case_id"] == "1234567890-99213"
+        assert body["npi"] == "1234567890"
+        assert body["seed_case_label"] == "review"
+
+    async def test_not_found(self):
+        app = _make_single_app(None)
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/claims/nonexistent-case")
+
+        assert resp.status_code == 404
+        assert resp.json()["detail"] == "Claim not found"
+
+    async def test_response_structure(self):
+        app = _make_single_app(SAMPLE_CASE)
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/claims/1234567890-99213")
+
+        body = resp.json()
+        assert "case_id" in body
+        assert "npi" in body
+        assert "hcpcs_cd" in body
+        assert "seed_risk_score" in body
+        assert "seed_case_label" in body

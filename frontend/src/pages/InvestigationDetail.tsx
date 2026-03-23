@@ -1,8 +1,8 @@
 import React from 'react';
 import { ArrowLeft, ClipboardCheck, ClipboardX, AlertTriangle, ArrowUpRight, MessageSquareMore } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import { getPendingCases, getCaseActions, caseAction } from '../lib/api';
-import type { PendingCase, CaseActionRecord } from '../lib/api';
+import { getClaim, getCaseActions, caseAction } from '../lib/api';
+import type { Claim, CaseActionRecord } from '../lib/api';
 import { cn } from '../lib/utils';
 import { scoreColor, formatUSD } from '../lib/helpers';
 import { Timeline } from '../components/Timeline';
@@ -10,7 +10,7 @@ import { AssistantDrawer } from '../components/AssistantDrawer';
 
 export function InvestigationDetail() {
   const { caseId } = useParams();
-  const [caseData, setCaseData] = React.useState<PendingCase | null>(null);
+  const [caseData, setCaseData] = React.useState<Claim | null>(null);
   const [actions, setActions] = React.useState<CaseActionRecord[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [actionLoading, setActionLoading] = React.useState<string | null>(null);
@@ -21,12 +21,7 @@ export function InvestigationDetail() {
     let active = true;
     setLoading(true);
     Promise.all([
-      getPendingCases(200).then((all) => {
-        if (active) {
-          const found = all.find((c) => c.case_id === caseId);
-          if (found) setCaseData(found);
-        }
-      }),
+      getClaim(caseId).then((c) => { if (active) setCaseData(c); }).catch(() => {}),
       getCaseActions(caseId).then((r) => { if (active) setActions(r.actions); }).catch(() => {}),
     ]).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -52,6 +47,15 @@ export function InvestigationDetail() {
       <div className="space-y-4">
         <Link to="/investigations" className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 text-sm font-medium"><ArrowLeft className="w-4 h-4" />Back to Investigations</Link>
         <p className="text-sm text-slate-400">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!caseData) {
+    return (
+      <div className="space-y-4">
+        <Link to="/investigations" className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 text-sm font-medium"><ArrowLeft className="w-4 h-4" />Back to Investigations</Link>
+        <p className="text-sm text-slate-400">Investigation not found.</p>
       </div>
     );
   }

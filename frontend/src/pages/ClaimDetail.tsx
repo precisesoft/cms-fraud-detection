@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowLeft, ClipboardCheck, ClipboardX, AlertTriangle, ArrowUpRight, FileText, Stethoscope, MessageSquareMore } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import { getClaims, getCaseActions, caseAction } from '../lib/api';
+import { getClaim, getCaseActions, caseAction } from '../lib/api';
 import type { Claim, CaseActionRecord } from '../lib/api';
 import { cn } from '../lib/utils';
 import { formatUSD, scoreColor } from '../lib/helpers';
@@ -22,12 +22,7 @@ export function ClaimDetail() {
     let active = true;
     setLoading(true);
     Promise.all([
-      getClaims({ per_page: 100 }).then((r) => {
-        if (active) {
-          const found = r.data.find((c) => c.case_id === caseId);
-          if (found) setClaim(found);
-        }
-      }),
+      getClaim(caseId).then((c) => { if (active) setClaim(c); }).catch(() => {}),
       getCaseActions(caseId).then((r) => { if (active) setActions(r.actions); }).catch(() => {}),
     ]).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
