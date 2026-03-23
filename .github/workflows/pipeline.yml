@@ -296,7 +296,7 @@ jobs:
           docker load < frontend-image.tar
 
       - name: Scan API image with Trivy
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: cms-fraud-api:ci
           format: table
@@ -306,7 +306,7 @@ jobs:
           output: trivy-api-report.txt
 
       - name: Scan frontend image with Trivy
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: cms-fraud-frontend:ci
           format: table
