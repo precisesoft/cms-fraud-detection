@@ -1,17 +1,21 @@
+import { lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
-import { Dashboard } from './pages/Dashboard';
-import { Simulate } from './pages/Simulate';
-import { Providers } from './pages/Providers';
-import { ProviderDetail } from './pages/ProviderDetail';
-import { Claims } from './pages/Claims';
-import { ClaimDetail } from './pages/ClaimDetail';
-import { RiskMap } from './pages/RiskMap';
-import { Fairness } from './pages/Fairness';
-import { Analytics } from './pages/Analytics';
-import { Investigations } from './pages/Investigations';
-import { InvestigationDetail } from './pages/InvestigationDetail';
-import { Validation } from './pages/Validation';
+
+const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })));
+const Simulate = lazy(() => import('./pages/Simulate').then((m) => ({ default: m.Simulate })));
+const Providers = lazy(() => import('./pages/Providers').then((m) => ({ default: m.Providers })));
+const ProviderDetail = lazy(() => import('./pages/ProviderDetail').then((m) => ({ default: m.ProviderDetail })));
+const Claims = lazy(() => import('./pages/Claims').then((m) => ({ default: m.Claims })));
+const ClaimDetail = lazy(() => import('./pages/ClaimDetail').then((m) => ({ default: m.ClaimDetail })));
+const Investigations = lazy(() => import('./pages/Investigations').then((m) => ({ default: m.Investigations })));
+const InvestigationDetail = lazy(() =>
+  import('./pages/InvestigationDetail').then((m) => ({ default: m.InvestigationDetail })),
+);
+const RiskMap = lazy(() => import('./pages/RiskMap').then((m) => ({ default: m.RiskMap })));
+const Fairness = lazy(() => import('./pages/Fairness').then((m) => ({ default: m.Fairness })));
+const Analytics = lazy(() => import('./pages/Analytics').then((m) => ({ default: m.Analytics })));
+const Validation = lazy(() => import('./pages/Validation').then((m) => ({ default: m.Validation })));
 
 export default function App() {
   return (
