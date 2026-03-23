@@ -6,16 +6,16 @@ import os
 from datetime import UTC, datetime, timedelta
 
 import bcrypt
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
 from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 
 from src.api.deps import get_db
 from src.api.schemas import UserResponse
 
-JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "argus-dev-secret-change-in-prod")
+JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "argus-dev-secret-change-in-prod!")
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 480  # 8 hours
 
@@ -46,7 +46,7 @@ async def get_current_user(
         username: str | None = payload.get("sub")
         if username is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    except JWTError:
+    except jwt.PyJWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
     async with conn.cursor(row_factory=dict_row) as cur:
