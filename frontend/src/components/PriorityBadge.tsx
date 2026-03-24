@@ -14,7 +14,7 @@ export function PriorityBadge({ label, size = 'md' }: { label: string | null | u
       className={cn(
         'inline-flex items-center rounded-full font-bold uppercase tracking-wider',
         color,
-        size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-[11px]',
+        size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-[11px]',
       )}
     >
       {display}

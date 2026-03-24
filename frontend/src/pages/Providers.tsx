@@ -84,14 +84,14 @@ export function Providers() {
       {/* Summary */}
       <div className="bg-indigo-900 text-white rounded-xl p-4 flex flex-wrap items-center gap-8 shadow-lg shadow-indigo-200">
         <div>
-          <p className="text-indigo-300 text-[10px] font-bold uppercase tracking-wider">
+          <p className="text-indigo-300 text-xs font-bold uppercase tracking-wider">
             Total Results
           </p>
           <p className="text-xl font-bold">{meta.total.toLocaleString()}</p>
         </div>
         <div className="w-px h-8 bg-indigo-800 hidden sm:block" />
         <div>
-          <p className="text-indigo-300 text-[10px] font-bold uppercase tracking-wider">
+          <p className="text-indigo-300 text-xs font-bold uppercase tracking-wider">
             Page
           </p>
           <p className="text-xl font-bold">
@@ -139,25 +139,43 @@ export function Providers() {
           <table className="w-full text-sm text-left">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="px-6 py-4 font-semibold text-slate-600 uppercase text-[10px] tracking-wider">
+                <th
+                  scope="col"
+                  className="px-5 py-3.5 font-semibold text-slate-600 uppercase text-xs tracking-wider"
+                >
                   Provider
                 </th>
-                <th className="px-6 py-4 font-semibold text-slate-600 uppercase text-[10px] tracking-wider">
+                <th
+                  scope="col"
+                  className="px-5 py-3.5 font-semibold text-slate-600 uppercase text-xs tracking-wider"
+                >
                   Type
                 </th>
-                <th className="px-6 py-4 font-semibold text-slate-600 uppercase text-[10px] tracking-wider">
+                <th
+                  scope="col"
+                  className="px-5 py-3.5 font-semibold text-slate-600 uppercase text-xs tracking-wider"
+                >
                   Location
                 </th>
-                <th className="px-6 py-4 font-semibold text-slate-600 uppercase text-[10px] tracking-wider">
+                <th
+                  scope="col"
+                  className="px-5 py-3.5 font-semibold text-slate-600 uppercase text-xs tracking-wider"
+                >
                   Est. Payment
                 </th>
-                <th className="px-6 py-4 font-semibold text-slate-600 uppercase text-[10px] tracking-wider">
+                <th
+                  scope="col"
+                  className="px-5 py-3.5 font-semibold text-slate-600 uppercase text-xs tracking-wider"
+                >
                   Risk Band
                 </th>
-                <th className="px-6 py-4 font-semibold text-slate-600 uppercase text-[10px] tracking-wider text-right">
+                <th
+                  scope="col"
+                  className="px-5 py-3.5 font-semibold text-slate-600 uppercase text-xs tracking-wider text-right"
+                >
                   Score
                 </th>
-                <th className="px-6 py-4"></th>
+                <th scope="col" className="px-5 py-3.5"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">

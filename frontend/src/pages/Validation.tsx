@@ -135,7 +135,7 @@ export function Validation() {
           >
             {(report.overall_detection_rate * 100).toFixed(1)}%
           </p>
-          <p className="text-[10px] text-slate-400 mt-1 font-medium">
+          <p className="text-xs text-slate-400 mt-1 font-medium">
             Revoked providers flagged blind
           </p>
         </div>
@@ -152,7 +152,7 @@ export function Validation() {
           <p className="text-4xl font-black text-slate-900">
             {report.total_revoked_providers}
           </p>
-          <p className="text-[10px] text-slate-400 mt-1 font-medium">
+          <p className="text-xs text-slate-400 mt-1 font-medium">
             Providers in evaluation set
           </p>
         </div>
@@ -169,7 +169,7 @@ export function Validation() {
           <p className="text-4xl font-black text-indigo-600">
             {report.detection_lift ?? "—"}x
           </p>
-          <p className="text-[10px] text-slate-400 mt-1 font-medium">
+          <p className="text-xs text-slate-400 mt-1 font-medium">
             vs. non-revoked flagging rate
           </p>
         </div>
@@ -186,7 +186,7 @@ export function Validation() {
           <p className="text-4xl font-black text-slate-900">
             {(report.baseline_flagging_rate * 100).toFixed(1)}%
           </p>
-          <p className="text-[10px] text-slate-400 mt-1 font-medium">
+          <p className="text-xs text-slate-400 mt-1 font-medium">
             Non-revoked providers flagged
           </p>
         </div>
@@ -397,19 +397,19 @@ export function Validation() {
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50/80">
               <tr>
-                <th className="px-5 py-3.5 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <th scope="col" className="px-5 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Revocation Reason
                 </th>
-                <th className="px-5 py-3.5 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <th scope="col" className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Total
                 </th>
-                <th className="px-5 py-3.5 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <th scope="col" className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Detected
                 </th>
-                <th className="px-5 py-3.5 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <th scope="col" className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Rate
                 </th>
-                <th className="px-5 py-3.5 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <th scope="col" className="px-5 py-3.5 text-center text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Status
                 </th>
               </tr>

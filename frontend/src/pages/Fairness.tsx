@@ -63,23 +63,23 @@ export function Fairness() {
           {/* KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Overall Flagging Rate</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Overall Flagging Rate</p>
               <p className="text-3xl font-black text-slate-900">{(report.overall_flagging_rate * 100).toFixed(1)}%</p>
             </div>
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Statistical Parity Diff</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Statistical Parity Diff</p>
               <p className={cn('text-3xl font-black', report.statistical_parity_diff != null && Math.abs(report.statistical_parity_diff) > 0.1 ? 'text-rose-600' : 'text-emerald-600')}>
                 {report.statistical_parity_diff != null ? report.statistical_parity_diff.toFixed(3) : '—'}
               </p>
             </div>
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Disparate Impact Ratio</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Disparate Impact Ratio</p>
               <p className={cn('text-3xl font-black', report.disparate_impact_ratio != null && report.disparate_impact_ratio < 0.8 ? 'text-rose-600' : 'text-emerald-600')}>
                 {report.disparate_impact_ratio != null ? report.disparate_impact_ratio.toFixed(3) : '—'}
               </p>
             </div>
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Outlier Cohorts</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Outlier Cohorts</p>
               <p className="text-3xl font-black text-amber-600">{cohorts.filter((c) => c.is_outlier).length}</p>
             </div>
           </div>
@@ -107,19 +107,19 @@ export function Fairness() {
               <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Info className="w-4 h-4 text-sky-500" /> Revocation Impact Analysis</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">With Revocation</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">With Revocation</p>
                   <p className="text-lg font-bold text-slate-900">{(report.revocation_impact.overall_flagging_rate_with * 100).toFixed(1)}%</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Without Revocation</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Without Revocation</p>
                   <p className="text-lg font-bold text-slate-900">{(report.revocation_impact.overall_flagging_rate_without * 100).toFixed(1)}%</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Rate Delta</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Rate Delta</p>
                   <p className="text-lg font-bold text-amber-600">{(report.revocation_impact.flagging_rate_delta * 100).toFixed(2)}%</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">DI Ratio (With)</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">DI Ratio (With)</p>
                   <p className="text-lg font-bold text-slate-900">{report.revocation_impact.disparate_impact_with?.toFixed(3) ?? '—'}</p>
                 </div>
               </div>
@@ -132,11 +132,11 @@ export function Fairness() {
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50/80">
                   <tr>
-                    <th className="px-5 py-3.5 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Cohort</th>
-                    <th className="px-5 py-3.5 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Providers</th>
-                    <th className="px-5 py-3.5 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Flagged</th>
-                    <th className="px-5 py-3.5 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Rate</th>
-                    <th className="px-5 py-3.5 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">Outlier</th>
+                    <th scope="col" className="px-5 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Cohort</th>
+                    <th scope="col" className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">Providers</th>
+                    <th scope="col" className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">Flagged</th>
+                    <th scope="col" className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">Rate</th>
+                    <th scope="col" className="px-5 py-3.5 text-center text-xs font-bold text-slate-500 uppercase tracking-widest">Outlier</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">

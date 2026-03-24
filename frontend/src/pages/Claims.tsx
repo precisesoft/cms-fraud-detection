@@ -114,31 +114,31 @@ export function Claims() {
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50/80">
               <tr>
-                <th className="px-5 py-3.5 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <th scope="col" className="px-5 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Case ID
                 </th>
-                <th className="px-5 py-3.5 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <th scope="col" className="px-5 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">
                   NPI
                 </th>
-                <th className="px-5 py-3.5 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <th scope="col" className="px-5 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">
                   HCPCS
                 </th>
-                <th className="px-5 py-3.5 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <th scope="col" className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Services
                 </th>
-                <th className="px-5 py-3.5 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <th scope="col" className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Benes
                 </th>
-                <th className="px-5 py-3.5 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <th scope="col" className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Charges
                 </th>
-                <th className="px-5 py-3.5 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <th scope="col" className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Risk
                 </th>
-                <th className="px-5 py-3.5 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <th scope="col" className="px-5 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Label
                 </th>
-                <th className="px-5 py-3.5 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest" />
+                <th scope="col" className="px-5 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-widest" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">

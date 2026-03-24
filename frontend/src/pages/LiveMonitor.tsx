@@ -413,7 +413,7 @@ export function LiveMonitor() {
           </ComposableMap>
 
           {/* Legend */}
-          <div className="flex items-center gap-4 mt-1 text-[10px] font-bold text-slate-500">
+          <div className="flex items-center gap-4 mt-1 text-xs font-bold text-slate-500">
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 rounded-full bg-emerald-500" /> Stable
             </div>
@@ -430,7 +430,7 @@ export function LiveMonitor() {
         <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col max-h-[600px]">
           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-800">Live Feed</h3>
-            <span className="text-[10px] font-mono text-slate-400">
+            <span className="text-xs font-mono text-slate-400">
               {events.length} events
             </span>
           </div>
@@ -463,10 +463,10 @@ export function LiveMonitor() {
                     <span className="text-xs text-slate-700 truncate flex-1 min-w-0">
                       {evt.provider_name}
                     </span>
-                    <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                    <span className="text-xs font-mono text-slate-400 shrink-0">
                       {evt.hcpcs_code}
                     </span>
-                    <span className="text-[10px] text-slate-500 shrink-0 w-14 text-right">
+                    <span className="text-xs text-slate-500 shrink-0 w-14 text-right">
                       {formatUSD(evt.submitted_charge)}
                     </span>
                     <span
@@ -481,7 +481,7 @@ export function LiveMonitor() {
                     >
                       {evt.risk_score}
                     </span>
-                    <span className="text-[10px] font-mono text-slate-300 shrink-0 w-10 text-right">
+                    <span className="text-xs font-mono text-slate-300 shrink-0 w-10 text-right">
                       {evt.scoring_latency_ms.toFixed(1)}ms
                     </span>
                   </motion.button>
@@ -512,7 +512,7 @@ function StatCard({
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex items-center gap-3">
       <div className="p-2 rounded-lg bg-slate-50">{icon}</div>
       <div>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
           {label}
         </p>
         <p className={cn("text-lg font-bold", color)}>{value}</p>

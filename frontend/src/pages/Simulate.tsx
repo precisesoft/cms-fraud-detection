@@ -117,7 +117,7 @@ export function Simulate() {
             <>
               {/* Score Header */}
               <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Risk Score</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Risk Score</p>
                 <p className={cn('text-6xl font-black leading-none', scoreColor(result.risk_score))}>{result.risk_score}</p>
                 <div className="mt-3 flex items-center justify-center gap-3">
                   <span className={cn('px-3 py-1 rounded-full text-xs font-bold uppercase', riskBandColor(result.risk_band))}>
