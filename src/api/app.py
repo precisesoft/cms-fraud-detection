@@ -75,6 +75,11 @@ def create_app() -> FastAPI:
     app.include_router(chat_router, prefix="/api", dependencies=_auth)
     app.include_router(validation_router, prefix="/api", dependencies=_auth)
 
+    # --- Live stream (public — SSE cannot send auth headers) ---
+    from src.api.routes.live import router as live_router
+
+    app.include_router(live_router, prefix="/api")
+
     # --- Health endpoint (no router needed) ---
     from src.api.schemas import HealthResponse
 
