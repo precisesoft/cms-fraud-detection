@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from psycopg import AsyncConnection
@@ -15,12 +16,14 @@ from src.api.schemas import (
     PaginationMeta,
     ProviderDetail,
     ProviderListResponse,
+    ProviderScoreDetails,
     ProviderSummary,
     RadarDimension,
     RadarResponse,
     RiskBand,
     risk_band_from_score,
 )
+from src.models.anomaly_scorer import score_provider
 
 router = APIRouter(prefix="/providers", tags=["providers"])
 
@@ -130,6 +133,20 @@ def _ratio_to_scale(ratio: float | None, *, cap: float = 1.0) -> float:
     return max(0.0, min(100.0, (ratio / cap) * 100.0))
 
 
+def _hybrid_label_from_score(
+    score: float | None,
+) -> Literal["low", "medium", "high", "critical"] | None:
+    if score is None:
+        return None
+    if score >= 90.0:
+        return "critical"
+    if score >= 70.0:
+        return "high"
+    if score >= 40.0:
+        return "medium"
+    return "low"
+
+
 @router.get("/{npi}/radar", response_model=RadarResponse)
 async def get_provider_radar(
     npi: str,
@@ -169,6 +186,69 @@ async def get_provider_radar(
         ),
     ]
     return RadarResponse(npi=npi, dimensions=dims)
+
+
+@router.get("/{npi}/score-details", response_model=ProviderScoreDetails)
+async def get_provider_score_details(
+    npi: str,
+    conn: AsyncConnection = Depends(get_db),
+) -> ProviderScoreDetails:
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute("SELECT * FROM provider_features WHERE npi = %s", [npi])
+        provider_row = await cur.fetchone()
+
+    if not provider_row:
+        raise HTTPException(status_code=404, detail=f"Provider {npi} not found")
+
+    anomaly_score = score_provider(provider_row)
+
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            """
+            SELECT model_name, model_version
+            FROM trained_models
+            ORDER BY trained_at DESC NULLS LAST, id DESC
+            LIMIT 1
+            """
+        )
+        latest_model = await cur.fetchone()
+
+    aggregate_row: dict | None = None
+    if latest_model:
+        async with conn.cursor(row_factory=dict_row) as cur:
+            await cur.execute(
+                """
+                SELECT COUNT(*) AS service_line_scored_count,
+                       MAX(predicted_probability) AS ml_suspicion_max,
+                       AVG(predicted_probability) AS ml_suspicion_avg,
+                       MAX(composite_score) AS hybrid_composite_max,
+                       AVG(composite_score) AS hybrid_composite_avg
+                FROM observation_model_scores
+                WHERE npi = %s
+                  AND model_name = %s
+                  AND model_version = %s
+                """,
+                [npi, latest_model["model_name"], latest_model["model_version"]],
+            )
+            aggregate_row = await cur.fetchone()
+
+    hybrid_composite_max = aggregate_row["hybrid_composite_max"] if aggregate_row else None
+    return ProviderScoreDetails(
+        npi=npi,
+        explainable_risk_score=provider_row.get("max_seed_risk_score"),
+        explainable_risk_band=risk_band_from_score(provider_row.get("max_seed_risk_score")),
+        anomaly_score=anomaly_score,
+        ml_suspicion_max=aggregate_row["ml_suspicion_max"] if aggregate_row else None,
+        ml_suspicion_avg=aggregate_row["ml_suspicion_avg"] if aggregate_row else None,
+        hybrid_composite_max=hybrid_composite_max,
+        hybrid_composite_avg=aggregate_row["hybrid_composite_avg"] if aggregate_row else None,
+        hybrid_risk_label=_hybrid_label_from_score(hybrid_composite_max),
+        service_line_scored_count=int(aggregate_row["service_line_scored_count"] or 0)
+        if aggregate_row
+        else 0,
+        model_name=latest_model["model_name"] if latest_model else None,
+        model_version=latest_model["model_version"] if latest_model else None,
+    )
 
 
 @router.get("/{npi}/explain", response_model=ExplainResponse)

@@ -54,7 +54,8 @@ const mockResult = {
   provider_type: "Internal Medicine",
   state: "FL",
   narrative: "This provider shows anomalous billing patterns.",
-  anomaly_score: 0.85,
+  anomaly_score: 0.9,
+  ml_predicted_probability: 64.2,
 };
 
 function renderSimulate() {
@@ -164,6 +165,21 @@ describe("Simulate", () => {
       ).toBeInTheDocument();
     });
     expect(screen.getByText("High Volume")).toBeInTheDocument();
+  });
+
+  it("displays anomaly and ml scoring cards after successful simulation", async () => {
+    const user = userEvent.setup();
+    renderSimulate();
+
+    await user.type(screen.getByPlaceholderText("1234567890"), "1234567890");
+    await user.type(screen.getByPlaceholderText("99213"), "99213");
+    await user.click(screen.getByRole("button", { name: /Run Simulation/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Anomaly Score")).toBeInTheDocument();
+    });
+    expect(screen.getByText("0.9")).toBeInTheDocument();
+    expect(screen.getByText("64.2%")).toBeInTheDocument();
   });
 
   it("displays recommendation after successful simulation", async () => {

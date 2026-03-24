@@ -1,8 +1,8 @@
 import React from 'react';
 import { ArrowLeft, ClipboardCheck, ClipboardX, AlertTriangle, ArrowUpRight, MessageSquareMore } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import { getClaim, getCaseActions, caseAction } from '../lib/api';
-import type { Claim, CaseActionRecord } from '../lib/api';
+import { getClaim, getCaseActions, caseAction, getClaimScoreDetails } from '../lib/api';
+import type { Claim, CaseActionRecord, ClaimScoreDetails } from '../lib/api';
 import { cn } from '../lib/utils';
 import { scoreColor, formatUSD } from '../lib/helpers';
 import { Timeline } from '../components/Timeline';
@@ -12,6 +12,7 @@ export function InvestigationDetail() {
   const { caseId } = useParams();
   const [caseData, setCaseData] = React.useState<Claim | null>(null);
   const [actions, setActions] = React.useState<CaseActionRecord[]>([]);
+  const [scoreDetails, setScoreDetails] = React.useState<ClaimScoreDetails | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [actionLoading, setActionLoading] = React.useState<string | null>(null);
   const [chatOpen, setChatOpen] = React.useState(false);
@@ -23,6 +24,7 @@ export function InvestigationDetail() {
     Promise.all([
       getClaim(caseId).then((c) => { if (active) setCaseData(c); }).catch(() => {}),
       getCaseActions(caseId).then((r) => { if (active) setActions(r.actions); }).catch(() => {}),
+      getClaimScoreDetails(caseId).then((d) => { if (active) setScoreDetails(d); }).catch(() => {}),
     ]).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [caseId]);
@@ -111,6 +113,39 @@ export function InvestigationDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            {[
+              {
+                name: 'Explainable Risk',
+                value: scoreDetails?.explainable_risk_score ?? caseData.seed_risk_score,
+                sub: 'Primary transparent score',
+              },
+              {
+                name: 'Claim Anomaly',
+                value: scoreDetails?.anomaly_score,
+                sub: 'Case-level anomaly signal',
+              },
+              {
+                name: 'ML Suspicion',
+                value: scoreDetails?.ml_predicted_probability,
+                sub: 'Weakly supervised probability',
+              },
+              {
+                name: 'Hybrid Composite',
+                value: scoreDetails?.hybrid_composite_score,
+                sub: scoreDetails?.hybrid_risk_label ? `Assistive layer · ${scoreDetails.hybrid_risk_label}` : 'Assistive hybrid layer',
+              },
+            ].map((card) => (
+              <div key={card.name} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{card.name}</p>
+                <p className={cn('text-3xl font-black leading-none', scoreColor(typeof card.value === 'number' ? card.value : null))}>
+                  {typeof card.value === 'number' ? card.value.toFixed(1).replace(/\.0$/, '') : '—'}
+                </p>
+                <p className="text-[10px] text-slate-500 mt-2 font-medium">{card.sub}</p>
+              </div>
+            ))}
+          </div>
+
           {/* Case Details */}
           {caseData && (
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">

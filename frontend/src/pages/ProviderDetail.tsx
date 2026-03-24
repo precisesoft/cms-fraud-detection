@@ -29,6 +29,7 @@ import {
   getProviderRadar,
   getProviderGraph,
   getProviderExplain,
+  getProviderScoreDetails,
 } from "../lib/api";
 import type {
   ProviderDetail as ProviderDetailType,
@@ -38,6 +39,7 @@ import type {
   NetworkRiskResponse,
   GraphResponse,
   ExplainResponse,
+  ProviderScoreDetails,
 } from "../lib/api";
 import { StatusBadge } from "../components/StatusBadge";
 import { AssistantDrawer } from "../components/AssistantDrawer";
@@ -56,6 +58,7 @@ export function ProviderDetail() {
   );
   const [graph, setGraph] = React.useState<GraphResponse | null>(null);
   const [explain, setExplain] = React.useState<ExplainResponse | null>(null);
+  const [scoreDetails, setScoreDetails] = React.useState<ProviderScoreDetails | null>(null);
 
   React.useEffect(() => {
     if (!npi) return;
@@ -80,6 +83,9 @@ export function ProviderDetail() {
       .catch(() => {});
     getProviderExplain(npi)
       .then((d) => active && setExplain(d))
+      .catch(() => {});
+    getProviderScoreDetails(npi)
+      .then((d) => active && setScoreDetails(d))
       .catch(() => {});
     return () => {
       active = false;
@@ -200,6 +206,39 @@ export function ProviderDetail() {
       </div>
 
       {/* KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {[
+          {
+            name: 'Explainable Risk',
+            value: scoreDetails?.explainable_risk_score ?? detail.max_seed_risk_score,
+            sub: 'Primary transparent score',
+          },
+          {
+            name: 'Provider Anomaly',
+            value: scoreDetails?.anomaly_score,
+            sub: 'Isolation-forest provider anomaly',
+          },
+          {
+            name: 'ML Suspicion Max',
+            value: scoreDetails?.ml_suspicion_max,
+            sub: scoreDetails?.service_line_scored_count ? `${scoreDetails.service_line_scored_count} scored service lines` : 'Latest model not available',
+          },
+          {
+            name: 'Hybrid Composite Max',
+            value: scoreDetails?.hybrid_composite_max,
+            sub: scoreDetails?.hybrid_risk_label ? `Latest model · ${scoreDetails.hybrid_risk_label}` : 'Assistive hybrid layer',
+          },
+        ].map((card) => (
+          <div key={card.name} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{card.name}</p>
+            <p className={cn('text-3xl font-black leading-none', scoreColor(typeof card.value === 'number' ? card.value : null))}>
+              {typeof card.value === 'number' ? card.value.toFixed(1).replace(/\.0$/, '') : '—'}
+            </p>
+            <p className="text-[10px] text-slate-500 mt-2 font-medium">{card.sub}</p>
+          </div>
+        ))}
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {

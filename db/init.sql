@@ -149,3 +149,201 @@ CREATE INDEX IF NOT EXISTS idx_cases_label ON provider_service_cases (seed_case_
 CREATE INDEX IF NOT EXISTS idx_features_state ON provider_features (state);
 CREATE INDEX IF NOT EXISTS idx_features_risk ON provider_features (max_seed_risk_score DESC);
 CREATE INDEX IF NOT EXISTS idx_features_type ON provider_features (provider_type);
+
+-- Metadata for trained ML models (additive only)
+CREATE TABLE IF NOT EXISTS trained_models (
+    id                  BIGSERIAL PRIMARY KEY,
+    model_name          TEXT NOT NULL,
+    model_version       TEXT NOT NULL,
+    model_type          TEXT NOT NULL,
+    feature_columns     JSONB NOT NULL DEFAULT '[]'::jsonb,
+    training_metrics    JSONB NOT NULL DEFAULT '{}'::jsonb,
+    artifact_path       TEXT,
+    trained_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (model_name, model_version)
+);
+
+-- Optional persistence for per-observation ML scores (additive only)
+CREATE TABLE IF NOT EXISTS observation_model_scores (
+    id                      BIGSERIAL PRIMARY KEY,
+    case_id                 TEXT NOT NULL,
+    npi                     TEXT NOT NULL,
+    model_name              TEXT NOT NULL,
+    model_version           TEXT NOT NULL,
+    predicted_probability   DOUBLE PRECISION,
+    composite_score         DOUBLE PRECISION,
+    risk_label              TEXT,
+    score_metadata          JSONB NOT NULL DEFAULT '{}'::jsonb,
+    scored_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_obs_model_scores_case_id
+    ON observation_model_scores (case_id);
+CREATE INDEX IF NOT EXISTS idx_obs_model_scores_npi
+    ON observation_model_scores (npi);
+CREATE INDEX IF NOT EXISTS idx_obs_model_scores_model
+    ON observation_model_scores (model_name, model_version);
+
+CREATE OR REPLACE VIEW bridge_provider_context_v AS
+SELECT
+    pf.npi,
+    pf.provider_type,
+    COALESCE(pf.provider_total_payment_amt, 0.0) AS total_payment,
+    COALESCE(pf.unique_hcpcs_codes, 0)::DOUBLE PRECISION AS drug_count,
+    (
+        COALESCE(pf.unique_hcpcs_codes, 0)
+        + COALESCE(pf.unique_place_of_service, 0)
+    )::DOUBLE PRECISION AS graph_node_degree,
+    COALESCE(pf.unique_hcpcs_codes, 0)::DOUBLE PRECISION AS graph_hcpcs_count,
+    0.0::DOUBLE PRECISION AS graph_drug_count,
+    GREATEST(
+        COUNT(*) OVER (PARTITION BY pf.provider_type) - 1,
+        0
+    )::DOUBLE PRECISION AS graph_shared_specialty_count,
+    (
+        LEAST(GREATEST(COALESCE(pf.provider_total_payment_amt, 0.0) / 100000.0, 0.0), 5.0)
+        + LEAST(GREATEST(COALESCE(pf.unique_hcpcs_codes, 0)::DOUBLE PRECISION / 5.0, 0.0), 5.0)
+        + LEAST(
+            GREATEST(
+                (
+                    COALESCE(pf.unique_hcpcs_codes, 0)
+                    + COALESCE(pf.unique_place_of_service, 0)
+                )::DOUBLE PRECISION / 10.0,
+                0.0
+            ),
+            5.0
+        )
+    )::DOUBLE PRECISION AS provider_context_score
+FROM provider_features pf;
+
+CREATE OR REPLACE VIEW bridge_observation_peer_metrics_v AS
+SELECT
+    psc.case_id,
+    psc.npi,
+    psc.provider_type,
+    psc.hcpcs_cd,
+    COALESCE(psc.services_per_bene, 0.0) AS services_per_bene,
+    AVG(psc.services_per_bene) OVER (PARTITION BY psc.provider_type, psc.hcpcs_cd)
+        AS peer_avg_spb,
+    AVG(psc.submitted_to_allowed_ratio) OVER (PARTITION BY psc.provider_type, psc.hcpcs_cd)
+        AS peer_avg_charge_ratio,
+    AVG(psc.avg_medicare_payment_amt) OVER (PARTITION BY psc.provider_type, psc.hcpcs_cd)
+        AS peer_avg_payment_amt
+FROM provider_service_cases psc;
+
+CREATE OR REPLACE VIEW bridge_observation_base_v AS
+SELECT
+    psc.case_id,
+    psc.npi,
+    psc.hcpcs_cd,
+    psc.provider_type,
+    psc.avg_submitted_charge,
+    psc.avg_medicare_allowed_amt AS avg_allowed_amount,
+    psc.avg_medicare_payment_amt AS avg_payment_amount,
+    psc.tot_srvcs AS total_services,
+    psc.tot_benes AS total_beneficiaries,
+    psc.present_in_2025_enrollment_file,
+    psc.present_in_2026_revocation_file,
+    psc.submitted_to_allowed_ratio,
+    psc.submitted_to_allowed_peer_z,
+    psc.services_per_bene_peer_z,
+    pm.services_per_bene,
+    pm.peer_avg_spb,
+    pf.mean_submitted_charge AS charge_per_service,
+    pf.avg_services_per_bene AS provider_avg_services_per_bene,
+    pf.mean_payment_ratio,
+    pf.provider_total_payment_amt,
+    pf.unique_hcpcs_codes,
+    pf.unique_place_of_service,
+    pf.revoked_2026 AS is_revoked,
+    0::INTEGER AS is_excluded,
+    pc.graph_node_degree,
+    pc.graph_hcpcs_count,
+    pc.graph_drug_count,
+    pc.graph_shared_specialty_count,
+    pc.provider_context_score,
+    psc.seed_risk_score AS hybrid_risk_score
+FROM provider_service_cases psc
+JOIN provider_features pf
+    ON pf.npi = psc.npi
+JOIN bridge_provider_context_v pc
+    ON pc.npi = psc.npi
+JOIN bridge_observation_peer_metrics_v pm
+    ON pm.case_id = psc.case_id;
+
+CREATE OR REPLACE VIEW bridge_observation_scores_v AS
+SELECT
+    ob.*,
+    (
+        CASE WHEN COALESCE(ob.present_in_2026_revocation_file, 0) = 1 THEN 25 ELSE 0 END
+        + CASE WHEN COALESCE(ob.present_in_2025_enrollment_file, 0) = 0 THEN 10 ELSE 0 END
+    )::DOUBLE PRECISION AS rule_score,
+    (
+        LEAST(
+            GREATEST(COALESCE(ob.submitted_to_allowed_peer_z, 0.0) * 15.0, 0.0),
+            45.0
+        )
+        + LEAST(
+            GREATEST(
+                (
+                    COALESCE(
+                        ob.services_per_bene / NULLIF(ob.peer_avg_spb, 0.0),
+                        1.0
+                    ) - 1.0
+                ) * 10.0,
+                0.0
+            ),
+            20.0
+        )
+    )::DOUBLE PRECISION AS anomaly_score
+FROM bridge_observation_base_v ob;
+
+CREATE OR REPLACE VIEW bridge_observation_labels_v AS
+SELECT
+    os.*,
+    CASE
+        WHEN COALESCE(os.is_revoked, 0) = 1
+            OR COALESCE(os.is_excluded, 0) = 1
+            OR COALESCE(os.hybrid_risk_score, 0) >= 92
+            OR (
+                COALESCE(os.rule_score, 0.0) >= 35.0
+                AND COALESCE(os.anomaly_score, 0.0) >= 15.0
+            )
+            THEN 1
+        WHEN COALESCE(os.hybrid_risk_score, 0) <= 30
+            AND COALESCE(os.is_revoked, 0) = 0
+            AND COALESCE(os.is_excluded, 0) = 0
+            AND COALESCE(os.rule_score, 0.0) <= 5.0
+            AND COALESCE(os.anomaly_score, 0.0) <= 8.0
+            THEN 0
+        ELSE NULL
+    END AS weak_label
+FROM bridge_observation_scores_v os;
+
+CREATE OR REPLACE VIEW bridge_training_examples_v AS
+SELECT
+    ol.case_id AS observation_id,
+    ol.npi,
+    COALESCE(ol.avg_submitted_charge, 0.0) AS avg_submitted_charge,
+    COALESCE(ol.avg_allowed_amount, 0.0) AS avg_allowed_amount,
+    COALESCE(ol.avg_payment_amount, 0.0) AS avg_payment_amount,
+    COALESCE(ol.total_services, 0.0) AS total_services,
+    COALESCE(ol.total_beneficiaries, 0.0) AS total_beneficiaries,
+    COALESCE(ol.rule_score, 0.0) AS rule_score,
+    COALESCE(ol.anomaly_score, 0.0) AS anomaly_score,
+    COALESCE(ol.provider_context_score, 0.0) AS provider_context_score,
+    COALESCE(ol.hybrid_risk_score, 0.0) AS hybrid_risk_score,
+    COALESCE(ol.submitted_to_allowed_peer_z, 0.0) * 100.0 AS charge_delta_pct,
+    COALESCE(ol.services_per_bene_peer_z, 0.0) * 100.0 AS utilization_delta_pct,
+    COALESCE(ol.charge_per_service, 0.0) AS charge_per_service,
+    COALESCE(ol.provider_avg_services_per_bene, 0.0) AS services_per_bene,
+    COALESCE(ol.mean_payment_ratio, 0.0) AS payment_to_charge_ratio,
+    COALESCE(ol.is_revoked, 0)::DOUBLE PRECISION AS is_revoked,
+    COALESCE(ol.is_excluded, 0)::DOUBLE PRECISION AS is_excluded,
+    COALESCE(ol.graph_node_degree, 0.0) AS graph_node_degree,
+    COALESCE(ol.graph_hcpcs_count, 0.0) AS graph_hcpcs_count,
+    COALESCE(ol.graph_drug_count, 0.0) AS graph_drug_count,
+    COALESCE(ol.graph_shared_specialty_count, 0.0) AS graph_shared_specialty_count,
+    ol.weak_label
+FROM bridge_observation_labels_v ol
+WHERE ol.weak_label IS NOT NULL;
