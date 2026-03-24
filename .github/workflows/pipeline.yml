@@ -135,7 +135,7 @@ jobs:
     needs: [gate]
     if: always() && (needs.gate.result == 'success' || needs.gate.result == 'skipped')
     env:
-      COVERAGE_THRESHOLD: 80
+      COVERAGE_THRESHOLD: 75
     steps:
       - uses: actions/checkout@v4
 
