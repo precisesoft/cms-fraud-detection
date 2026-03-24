@@ -439,12 +439,22 @@ export interface DetectionByReason {
   rate: number;
 }
 
+export interface ProviderLevelBreakdown {
+  high_risk: number;
+  review: number;
+  stable: number;
+}
+
 export interface ValidationReport {
   overall_detection_rate: number;
   total_revoked_providers: number;
   total_revoked_cases: number;
   detection_by_reason: DetectionByReason[];
   baseline_flagging_rate: number;
+  avg_blind_risk_revoked: number;
+  avg_risk_non_revoked: number;
+  detection_lift: number;
+  provider_level: ProviderLevelBreakdown;
   methodology: string;
 }
 
@@ -554,7 +564,9 @@ export function getClaim(caseId: string) {
 }
 
 export function getClaimScoreDetails(caseId: string) {
-  return request<ClaimScoreDetails>(`/api/claims/${encodeURIComponent(caseId)}/score-details`);
+  return request<ClaimScoreDetails>(
+    `/api/claims/${encodeURIComponent(caseId)}/score-details`,
+  );
 }
 
 export function simulateClaim(payload: ClaimSimulationRequest) {
