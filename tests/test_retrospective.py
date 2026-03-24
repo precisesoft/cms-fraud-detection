@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
-from unittest.mock import MagicMock, call, mock_open, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 import polars as pl
-import pytest
 
 from src.scoring.score import ScoreCard
 from src.scoring.taxonomy import CaseLabel
@@ -86,6 +84,7 @@ class TestBlindScoring:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_scorecard(risk: int = 30, legitimacy: int = 60, label: str = "stable") -> ScoreCard:
     """Build a minimal ScoreCard suitable for mocking score_case returns."""
     return ScoreCard(
@@ -141,15 +140,13 @@ def _make_dataframe(
 # TestLoadCases
 # ---------------------------------------------------------------------------
 
+
 class TestLoadCases:
     def test_load_cases_calls_polars_read_csv(self, tmp_path: Path):
         """load_cases delegates to pl.read_csv with the supplied path."""
         # Write a minimal CSV that polars can actually parse
         csv = tmp_path / "cases.csv"
-        csv.write_text(
-            "npi,present_in_2026_revocation_file\n"
-            "1234567890,1\n"
-        )
+        csv.write_text("npi,present_in_2026_revocation_file\n1234567890,1\n")
         df = load_cases(csv)
         assert isinstance(df, pl.DataFrame)
         assert df.shape[0] == 1
@@ -172,17 +169,14 @@ class TestLoadCases:
 # TestRunValidation
 # ---------------------------------------------------------------------------
 
+
 class TestRunValidation:
     """Tests for run_validation() end-to-end pipeline."""
 
     def _patch_load_and_score(self, fake_df: pl.DataFrame, score_returns: list[ScoreCard]):
         """Return a context-manager tuple: patch load_cases + patch score_case."""
-        load_patch = patch(
-            "src.validation.retrospective.load_cases", return_value=fake_df
-        )
-        score_patch = patch(
-            "src.validation.retrospective.score_case", side_effect=score_returns
-        )
+        load_patch = patch("src.validation.retrospective.load_cases", return_value=fake_df)
+        score_patch = patch("src.validation.retrospective.score_case", side_effect=score_returns)
         return load_patch, score_patch
 
     def test_returns_dict_with_expected_keys(self):
@@ -312,9 +306,7 @@ class TestRunValidation:
         score_returns = [sc_stable, sc_high, sc_high, sc_high]
 
         load_p = patch("src.validation.retrospective.load_cases", return_value=df)
-        score_p = patch(
-            "src.validation.retrospective.score_case", side_effect=score_returns
-        )
+        score_p = patch("src.validation.retrospective.score_case", side_effect=score_returns)
         with load_p, score_p:
             result = run_validation(Path("/fake/demo.csv"))
 
@@ -360,9 +352,7 @@ class TestRunValidation:
         score_returns = [sc_high] * 10
 
         load_p = patch("src.validation.retrospective.load_cases", return_value=df)
-        score_p = patch(
-            "src.validation.retrospective.score_case", side_effect=score_returns
-        )
+        score_p = patch("src.validation.retrospective.score_case", side_effect=score_returns)
         with load_p, score_p:
             result = run_validation(Path("/fake/demo.csv"))
 
@@ -428,7 +418,6 @@ class TestRunValidation:
         sc_high = _make_scorecard(risk=75, legitimacy=10, label="high_risk")
         sc_stable = _make_scorecard(risk=10, legitimacy=80, label="stable")
 
-        call_count_tracker = {"n": 0}
         original_side_effects = (
             [sc_high, sc_stable]  # blind + original for the 1 revoked row
             + [sc_stable] * 2001  # non-revoked label pass
@@ -450,6 +439,7 @@ class TestRunValidation:
 # ---------------------------------------------------------------------------
 # TestMain
 # ---------------------------------------------------------------------------
+
 
 class TestMain:
     """Tests for the main() entry point."""
@@ -558,7 +548,10 @@ class TestMain:
             patch("src.validation.retrospective.OUTPUT_DIR") as mock_dir,
             patch("builtins.open", mock_open()),
             patch("json.dump"),
-            patch("builtins.print", side_effect=lambda *a, **k: printed.append(str(a[0]) if a else "")),
+            patch(
+                "builtins.print",
+                side_effect=lambda *a, **k: printed.append(str(a[0]) if a else ""),
+            ),
         ):
             mock_dir.mkdir = MagicMock()
             mock_dir.__truediv__ = MagicMock(return_value=Path("/fake/out.json"))
@@ -582,7 +575,10 @@ class TestMain:
             patch("src.validation.retrospective.OUTPUT_DIR") as mock_dir,
             patch("builtins.open", mock_open()),
             patch("json.dump"),
-            patch("builtins.print", side_effect=lambda *a, **k: printed.append(str(a[0]) if a else "")),
+            patch(
+                "builtins.print",
+                side_effect=lambda *a, **k: printed.append(str(a[0]) if a else ""),
+            ),
         ):
             mock_dir.mkdir = MagicMock()
             mock_dir.__truediv__ = MagicMock(return_value=Path("/fake/out.json"))

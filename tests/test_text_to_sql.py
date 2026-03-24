@@ -397,9 +397,7 @@ async def test_text_to_sql_markdown_fences_stripped():
         patch(
             "src.ai.text_to_sql.invoke",
             new_callable=AsyncMock,
-            return_value={
-                "text": "```sql\nSELECT npi FROM provider_features LIMIT 1\n```"
-            },
+            return_value={"text": "```sql\nSELECT npi FROM provider_features LIMIT 1\n```"},
         ),
     ):
         result = await text_to_sql("Give me an NPI", conn)
@@ -425,8 +423,7 @@ async def test_text_to_sql_multi_row_triggers_synthesis():
             side_effect=[
                 {
                     "text": (
-                        "SELECT state, count(*) FROM provider_features "
-                        "GROUP BY state LIMIT 500"
+                        "SELECT state, count(*) FROM provider_features GROUP BY state LIMIT 500"
                     )
                 },
                 {"text": synthesis_text},
@@ -521,9 +518,7 @@ async def test_text_to_sql_no_rows_returns_no_results():
         patch(
             "src.ai.text_to_sql.invoke",
             new_callable=AsyncMock,
-            return_value={
-                "text": "SELECT npi FROM provider_features WHERE state = 'ZZ' LIMIT 500"
-            },
+            return_value={"text": "SELECT npi FROM provider_features WHERE state = 'ZZ' LIMIT 500"},
         ),
     ):
         result = await text_to_sql("Providers in ZZ?", conn)
@@ -546,7 +541,10 @@ async def test_text_to_sql_synthesis_none_keeps_format_answer():
             "src.ai.text_to_sql.invoke",
             new_callable=AsyncMock,
             side_effect=[
-                {"text": "SELECT state, count(*) AS cnt FROM provider_features GROUP BY state LIMIT 500"},
+                {
+                    "text": "SELECT state, count(*) AS cnt"
+                    " FROM provider_features GROUP BY state LIMIT 500"
+                },
                 RuntimeError("synthesis failed"),
             ],
         ),

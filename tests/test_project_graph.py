@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -13,7 +13,6 @@ from src.data.project_graph import (
     _risk_band,
 )
 from src.scoring.taxonomy import ALL_SIGNALS
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -329,8 +328,8 @@ class TestProjectProviders:
 
         rows = [
             ("A", "Name", "MD", "CA", "City", "90001", None, False, False),  # stable
-            ("B", "Name", "MD", "CA", "City", "90001", 40, True, False),     # review
-            ("C", "Name", "MD", "CA", "City", "90001", 75, True, True),      # high_risk
+            ("B", "Name", "MD", "CA", "City", "90001", 40, True, False),  # review
+            ("C", "Name", "MD", "CA", "City", "90001", 75, True, True),  # high_risk
         ]
         mock_cur = _make_async_cursor_iter(rows)
         mock_aconn = _make_pg_conn(mock_cur)
@@ -471,10 +470,10 @@ class TestProjectCasesAndSignals:
     async def test_batch_with_peer_and_signals_at_overflow(self):
         """At BATCH_SIZE boundary with peers and signals, all three queries fire."""
         from src.data.project_graph import (
-            BATCH_SIZE,
             _MERGE_CASE_SIGNALS,
             _MERGE_CASES,
             _MERGE_PEER_GROUP,
+            BATCH_SIZE,
             _project_cases_and_signals,
         )
 
@@ -523,9 +522,7 @@ class TestProjectCasesAndSignals:
             await _project_cases_and_signals(driver, "postgresql://fake/db")
 
         # Find the _MERGE_CASES call (not the last call, which may be signals)
-        cases_call = next(
-            c for c in session.run.call_args_list if c.args[0] == _MERGE_CASES
-        )
+        cases_call = next(c for c in session.run.call_args_list if c.args[0] == _MERGE_CASES)
         case_rows = cases_call.kwargs["rows"]
         assert len(case_rows) == 1
         cr = case_rows[0]
