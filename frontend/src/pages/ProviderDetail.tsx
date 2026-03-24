@@ -34,6 +34,7 @@ import {
 import type {
   ProviderDetail as ProviderDetailType,
   PeerLine,
+  RiskBand,
   Signal,
   RadarDimension,
   NetworkRiskResponse,
@@ -425,7 +426,7 @@ export function ProviderDetail() {
                       <th className="px-4 py-3 text-right font-bold text-slate-500 uppercase tracking-wider">
                         Risk Score
                       </th>
-                      <th className="px-4 py-3 text-left font-bold text-slate-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
                         Label
                       </th>
                     </tr>
@@ -464,18 +465,7 @@ export function ProviderDetail() {
                           {line.seed_risk_score ?? "—"}
                         </td>
                         <td className="px-4 py-3">
-                          <span
-                            className={cn(
-                              "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
-                              line.seed_case_label?.includes("high")
-                                ? "bg-rose-100 text-rose-700"
-                                : line.seed_case_label?.includes("review")
-                                  ? "bg-amber-100 text-amber-700"
-                                  : "bg-emerald-100 text-emerald-700",
-                            )}
-                          >
-                            {line.seed_case_label ?? "—"}
-                          </span>
+                          <StatusBadge band={line.seed_case_label as RiskBand | null} size="sm" />
                         </td>
                       </tr>
                     ))}
