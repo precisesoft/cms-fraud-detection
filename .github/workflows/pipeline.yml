@@ -403,13 +403,39 @@ jobs:
       - name: Update manifest repo for ArgoCD
         env:
           SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ secrets.MANIFEST_REPO_TOKEN }}
+          MANIFEST_REPO: ${{ vars.MANIFEST_REPO }}
+          ECR: ${{ env.ECR_REGISTRY }}
         run: |
-          git clone https://x-access-token:${{ secrets.MANIFEST_REPO_TOKEN }}@github.com/${{ vars.MANIFEST_REPO }}.git /tmp/manifests
-          cd /tmp/manifests/k8s/cms-fraud
-          sed -i "s|cms-fraud-detection-api:.*|cms-fraud-detection-api:${SHA}|" api.yaml
-          sed -i "s|cms-fraud-detection-frontend:.*|cms-fraud-detection-frontend:${SHA}|" frontend.yaml
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --quiet && echo "No changes to deploy" || \
-            (git commit -m "deploy: update cms-fraud images to ${SHA}" && git push)
+          update_file() {
+            local file_path="k8s/cms-fraud/$1"
+            local image_name="$2"
+
+            # Get current content + blob SHA
+            local response
+            response=$(gh api "repos/${MANIFEST_REPO}/contents/${file_path}" --jq '{sha: .sha, content: .content}')
+            local file_sha=$(echo "$response" | jq -r '.sha')
+            local current=$(echo "$response" | jq -r '.content' | base64 -d)
+
+            # Replace image tag
+            local updated=$(echo "$current" | sed "s|${image_name}:.*|${image_name}:${SHA}|")
+
+            # Skip if no change
+            if [ "$current" = "$updated" ]; then
+              echo "No change needed for $1"
+              return
+            fi
+
+            # Push update via Contents API
+            local new_content=$(echo "$updated" | base64 -w 0)
+            gh api "repos/${MANIFEST_REPO}/contents/${file_path}" \
+              -X PUT \
+              -f message="deploy: update ${1} image to ${SHA:0:7}" \
+              -f content="$new_content" \
+              -f sha="$file_sha" \
+              --silent
+            echo "Updated $1 → ${SHA:0:7}"
+          }
+
+          update_file "api.yaml" "${ECR}/cms-fraud-detection-api"
+          update_file "frontend.yaml" "${ECR}/cms-fraud-detection-frontend"
