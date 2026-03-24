@@ -147,7 +147,44 @@ The scoring engine is deterministic: the same input always produces the same out
 - The maximum legitimacy score (89) is lower than the theoretical risk maximum (100), which slightly favors risk in extreme cases
 - This is an intentional design choice: a provider exhibiting extreme anomalies across all metrics should not be fully offset by standard legitimacy indicators
 
-## 7. AI Disclosure
+## 7. Temporal Analysis — Current Limitations
+
+### Single-Year Cross-Sectional Data
+
+The current system scores providers using **CMS Medicare Part B data from a single year (2022)**. This data is annual aggregated — there are no claim-level timestamps, no quarterly breakdowns, and no multi-year history.
+
+This means the system **cannot currently detect**:
+
+- **Abnormal billing growth** (e.g., a provider whose volume doubled year-over-year)
+- **Seasonal anomalies** (e.g., unusually high billing in specific months)
+- **Trending behavior** (e.g., a provider gradually shifting toward higher-cost codes)
+
+The CMS challenge brief explicitly identifies "abnormal growth" and "time-series trends" as detection targets. We acknowledge this gap transparently.
+
+### How the System Compensates
+
+The current scoring engine uses **cross-sectional peer comparison** as a proxy for temporal analysis:
+
+- A provider billing 5x the specialty peer average is statistically anomalous regardless of whether the volume grew gradually or appeared suddenly
+- Z-score outlier detection identifies the same extreme providers that year-over-year growth analysis would flag
+- Peer baselines represent normal practice patterns — providers far outside these norms warrant review
+
+This approach catches the **outcome** of abnormal growth (the resulting anomalous volume) even without capturing the **trajectory**.
+
+### Path to Full Temporal Analysis
+
+With multi-year CMS Part B data (2020-2024), the system would add:
+
+| Signal                  | Description                                                 | Data Required   |
+| ----------------------- | ----------------------------------------------------------- | --------------- |
+| `year_over_year_growth` | Services or charges grew > 2σ from prior year               | 2+ years Part B |
+| `billing_acceleration`  | Growth rate itself is increasing                            | 3+ years Part B |
+| `code_mix_shift`        | Provider's HCPCS code distribution changed significantly    | 2+ years Part B |
+| `new_high_cost_codes`   | Provider began billing high-cost codes not in prior history | 2+ years Part B |
+
+These signals integrate directly into the existing taxonomy — same tier-based scoring, same dual risk/legitimacy framework. Connecting multi-year data is a pilot phase enhancement (see [Path to CMS Pilot](./path-to-cms-pilot.md)).
+
+## 8. AI Disclosure
 
 ### Scoring Remains Rule-Based
 
@@ -164,11 +201,11 @@ Generative AI does **not**:
 
 AWS Bedrock Claude is live in three endpoints, each serving an **advisory and investigation-support** role only:
 
-| Endpoint | Model | Purpose |
-|---|---|---|
-| `POST /api/chat` | Claude Haiku 4.5 (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) | Translates analyst natural-language questions into SQL and returns query results |
-| `POST /api/score` | Claude Sonnet 4.6 (`us.anthropic.claude-sonnet-4-6`) | Generates a plain-language narrative summarizing the scored provider's risk signals |
-| `POST /api/claims/simulate` | Claude Sonnet 4.6 (`us.anthropic.claude-sonnet-4-6`) | Generates a plain-language narrative for a simulated claims scenario |
+| Endpoint                    | Model                                                            | Purpose                                                                             |
+| --------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `POST /api/chat`            | Claude Haiku 4.5 (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) | Translates analyst natural-language questions into SQL and returns query results    |
+| `POST /api/score`           | Claude Sonnet 4.6 (`us.anthropic.claude-sonnet-4-6`)             | Generates a plain-language narrative summarizing the scored provider's risk signals |
+| `POST /api/claims/simulate` | Claude Sonnet 4.6 (`us.anthropic.claude-sonnet-4-6`)             | Generates a plain-language narrative for a simulated claims scenario                |
 
 All AI-generated text is surfaced in the UI and clearly presented as supplementary context for human reviewers.
 
@@ -178,15 +215,15 @@ Model IDs are configurable via the `BEDROCK_CHAT_MODEL` and `BEDROCK_NARRATIVE_M
 
 The text-to-SQL pipeline includes multiple layers of defense to prevent data exfiltration or unintended database mutations:
 
-| Safeguard | Detail |
-|---|---|
-| **Read-only database user** | The `/api/chat` endpoint connects through a dedicated read-only PostgreSQL user (`get_readonly_db` dependency); the DB user cannot execute DML or DDL regardless of the SQL generated |
-| **Regex keyword blocklist** | Generated SQL is scanned for `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `CREATE`, `TRUNCATE`, `GRANT`, `REVOKE`, `UNION`, `COPY`, `pg_sleep`, `dblink`, privilege-escalation patterns, and others before execution |
-| **SQL comment rejection** | `--` and `/* */` comment syntax is blocked to prevent keyword obfuscation |
-| **SELECT/WITH-only enforcement** | Any query that does not start with `SELECT` or `WITH` is rejected |
-| **LIMIT 500 enforcement** | A `LIMIT 500` clause is automatically appended if absent, capping data returned per query |
-| **5-second statement timeout** | `SET statement_timeout = 5000` is applied to every AI-generated query; long-running queries are cancelled |
-| **Conversation history cap** | At most the last 3 turns (6 messages) of conversation history are sent to the model, limiting context accumulation |
+| Safeguard                        | Detail                                                                                                                                                                                                                 |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Read-only database user**      | The `/api/chat` endpoint connects through a dedicated read-only PostgreSQL user (`get_readonly_db` dependency); the DB user cannot execute DML or DDL regardless of the SQL generated                                  |
+| **Regex keyword blocklist**      | Generated SQL is scanned for `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `CREATE`, `TRUNCATE`, `GRANT`, `REVOKE`, `UNION`, `COPY`, `pg_sleep`, `dblink`, privilege-escalation patterns, and others before execution |
+| **SQL comment rejection**        | `--` and `/* */` comment syntax is blocked to prevent keyword obfuscation                                                                                                                                              |
+| **SELECT/WITH-only enforcement** | Any query that does not start with `SELECT` or `WITH` is rejected                                                                                                                                                      |
+| **LIMIT 500 enforcement**        | A `LIMIT 500` clause is automatically appended if absent, capping data returned per query                                                                                                                              |
+| **5-second statement timeout**   | `SET statement_timeout = 5000` is applied to every AI-generated query; long-running queries are cancelled                                                                                                              |
+| **Conversation history cap**     | At most the last 3 turns (6 messages) of conversation history are sent to the model, limiting context accumulation                                                                                                     |
 
 ### Human-in-the-Loop
 
@@ -203,7 +240,7 @@ No automated action is taken based on AI output.
 
 See also [AI & Open-Source Disclosure](./ai-oss-disclosure.md) for the full inventory of AI tools and open-source libraries used in this system.
 
-## 8. Continuous Improvement
+## 9. Continuous Improvement
 
 ### Monitoring Plan
 

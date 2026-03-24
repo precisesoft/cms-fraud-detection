@@ -161,3 +161,9 @@ The Provider Detail page displays a **Score Agreement** indicator comparing the 
 | Mixed        | Both in the 31-50 range, or one moderate | Moderate range — routine review           |
 
 This dual-signal design adds investigative depth: corroborated cases are highest priority, while divergent cases surface patterns that one method alone would miss.
+
+## Limitations
+
+### Single-Year Data
+
+The current scoring engine operates on CMS Part B data from a single year (2022). It detects **cross-sectional anomalies** (providers who are outliers relative to peers) but cannot detect **temporal anomalies** (providers whose billing is growing abnormally over time). Multi-year data (2020-2024) would enable year-over-year growth signals that integrate directly into the existing taxonomy framework. See [Responsible AI Considerations — Temporal Analysis](./responsible-ai-considerations.md#7-temporal-analysis--current-limitations) for the full analysis and proposed signal definitions.
