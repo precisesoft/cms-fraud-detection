@@ -101,7 +101,7 @@ def app():
 
 @pytest.fixture(autouse=True)
 def _mock_pool():
-    with patch("src.api.routes.live._pool", FakePool()):
+    with patch("src.api.deps.pool", FakePool()):
         yield
 
 

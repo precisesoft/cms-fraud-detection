@@ -18,7 +18,7 @@ from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 from psycopg.rows import dict_row
 
-from src.api.deps import pool as _pool
+from src.api import deps as _deps
 from src.models.anomaly_scorer import score_provider
 from src.scoring.score import score_case
 from src.scoring.taxonomy import SignalDirection
@@ -68,9 +68,9 @@ async def stream_claims(
     """
 
     async def event_generator():
-        if _pool is None:
+        if _deps.pool is None:
             return
-        async with _pool.connection() as conn:
+        async with _deps.pool.connection() as conn:
             count = 0
             while limit == 0 or count < limit:
                 try:
