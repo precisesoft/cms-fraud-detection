@@ -112,7 +112,7 @@ All jobs run in a single unified workflow (`pipeline.yml`) on every PR:
 | ---------------- | -------------------------------------------------- | ------------- |
 | Gate             | Conventional commit PR title check                 | Yes           |
 | Security         | gitleaks + bandit + pip-audit + npm audit          | Yes           |
-| Quality Backend  | ruff lint + mypy + pytest (80% coverage threshold) | Yes           |
+| Quality Backend  | ruff lint + mypy + pytest (95% coverage threshold) | Yes           |
 | Quality Frontend | eslint + tsc + vitest (80% lines) + vite build     | Yes           |
 | Build            | Docker images (amd64) + CycloneDX SBOMs            | Yes           |
 | Scan             | Trivy on both images (informational)               | No            |
