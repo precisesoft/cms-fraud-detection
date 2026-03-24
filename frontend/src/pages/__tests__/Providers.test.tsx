@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Providers } from "../Providers";
 import { getProviders } from "../../lib/api";
 
@@ -289,6 +289,38 @@ describe("Providers", () => {
     await waitFor(() => {
       const calls = vi.mocked(getProviders).mock.calls.slice(callsBefore);
       expect(calls.some((c) => c[0]?.page === 1)).toBe(true);
+    });
+  });
+
+  it("clicking a table row navigates to the provider detail page", async () => {
+    const user = userEvent.setup();
+
+    const CaptureLocation = () => {
+      const location = useLocation();
+      return <div data-testid="location">{location.pathname}</div>;
+    };
+
+    render(
+      <MemoryRouter initialEntries={["/providers"]}>
+        <Routes>
+          <Route path="/providers" element={<Providers />} />
+          <Route path="/providers/:npi" element={<CaptureLocation />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Acme Clinic")).toBeInTheDocument();
+    });
+
+    // Click on a cell that has no Link of its own (e.g. the Type cell)
+    const typeCell = screen.getByText("Internal Medicine");
+    await user.click(typeCell);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("location")).toHaveTextContent(
+        "/providers/1111111111",
+      );
     });
   });
 });

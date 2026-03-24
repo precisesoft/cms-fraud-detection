@@ -1,13 +1,14 @@
 import React from 'react';
 import { cn } from '../lib/utils';
 import { Search, Download, MapPin, Stethoscope, ExternalLink } from 'lucide-react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getProviders } from '../lib/api';
 import type { ProviderSummary, PaginationMeta } from '../lib/api';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatCompactUSD, scoreColor, providerDisplayName } from '../lib/helpers';
 
 export function Providers() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialState = searchParams.get('state') || '';
   const initialRiskBand = searchParams.get('risk_band') || '';
@@ -120,8 +121,13 @@ export function Providers() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {providers.map((p) => (
-                <tr key={p.npi} className="group hover:bg-slate-50 transition-colors cursor-pointer">
-                  <td className="px-6 py-4">
+                <tr
+                  key={p.npi}
+                  className="group hover:bg-slate-50 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/providers/${p.npi}`)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate(`/providers/${p.npi}`); }}
+                  tabIndex={0}
+                >                  <td className="px-6 py-4">
                     <Link to={`/providers/${p.npi}`} className="block">
                       <div className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{providerDisplayName(p)}</div>
                       <div className="text-xs text-slate-400 font-mono">NPI: {p.npi}</div>
