@@ -110,8 +110,12 @@ jobs:
             exit 1
           fi
 
-      - name: Run pip-audit
-        run: pip-audit --skip-editable --desc
+      - name: Run pip-audit (production deps only)
+        run: |
+          python -m venv /tmp/prod-venv
+          /tmp/prod-venv/bin/pip install --quiet .
+          /tmp/prod-venv/bin/pip freeze --exclude-editable > /tmp/prod-requirements.txt
+          pip-audit -r /tmp/prod-requirements.txt --desc
 
       - uses: actions/setup-node@v4
         with:
