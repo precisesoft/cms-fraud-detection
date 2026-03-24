@@ -9,10 +9,12 @@ import {
 } from "react-simple-maps";
 import {
   Activity,
+  Expand,
   Pause,
   Play,
   RotateCcw,
   ShieldAlert,
+  X,
   Zap,
   TrendingUp,
 } from "lucide-react";
@@ -188,6 +190,7 @@ export function LiveMonitor() {
   const [stateDots, setStateDots] = useState<Map<string, LiveClaimEvent>>(
     new Map(),
   );
+  const [feedExpanded, setFeedExpanded] = useState(false);
 
   const handleEvent = useCallback((evt: LiveClaimEvent) => {
     setEvents((prev) => [evt, ...prev].slice(0, 50));
@@ -245,6 +248,16 @@ export function LiveMonitor() {
       esRef.current?.close();
     };
   }, []);
+
+  // Close modal on Escape
+  useEffect(() => {
+    if (!feedExpanded) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFeedExpanded(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [feedExpanded]);
 
   const flagRate = stats.total > 0 ? (stats.flagged / stats.total) * 100 : 0;
   const avgLatency = stats.total > 0 ? stats.totalLatency / stats.total : 0;
@@ -346,71 +359,75 @@ export function LiveMonitor() {
       </div>
 
       {/* Map + Feed */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
         {/* US Map */}
-        <div className="lg:col-span-3 bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-          <ComposableMap
-            projection="geoAlbersUsa"
-            projectionConfig={{ scale: 1000 }}
-            width={800}
-            height={500}
-            style={{ width: "100%", height: "auto" }}
-          >
-            <Geographies geography={GEO_URL}>
-              {({ geographies }) =>
-                geographies.map((geo) => {
-                  const abbr = FIPS_TO_ABBR[geo.id as string];
-                  const dot = abbr ? stateDots.get(abbr) : undefined;
-                  return (
-                    <Geography
-                      key={geo.rsmKey}
-                      geography={geo}
-                      fill={dot ? `${labelColor(dot.case_label)}22` : "#e2e8f0"}
-                      stroke="#fff"
-                      strokeWidth={0.5}
-                      style={{
-                        default: { outline: "none", transition: "fill 0.3s" },
-                        hover: { outline: "none" },
-                        pressed: { outline: "none" },
-                      }}
-                    />
-                  );
-                })
-              }
-            </Geographies>
+        <div className="lg:col-span-3 bg-white rounded-xl border border-slate-200 shadow-sm p-4 overflow-hidden">
+          <div className="aspect-[8/5]">
+            <ComposableMap
+              projection="geoAlbersUsa"
+              projectionConfig={{ scale: 1000 }}
+              width={800}
+              height={500}
+              style={{ width: "100%", height: "100%" }}
+            >
+              <Geographies geography={GEO_URL}>
+                {({ geographies }) =>
+                  geographies.map((geo) => {
+                    const abbr = FIPS_TO_ABBR[geo.id as string];
+                    const dot = abbr ? stateDots.get(abbr) : undefined;
+                    return (
+                      <Geography
+                        key={geo.rsmKey}
+                        geography={geo}
+                        fill={
+                          dot ? `${labelColor(dot.case_label)}22` : "#e2e8f0"
+                        }
+                        stroke="#fff"
+                        strokeWidth={0.5}
+                        style={{
+                          default: { outline: "none", transition: "fill 0.3s" },
+                          hover: { outline: "none" },
+                          pressed: { outline: "none" },
+                        }}
+                      />
+                    );
+                  })
+                }
+              </Geographies>
 
-            {/* Pulsing dots */}
-            <AnimatePresence>
-              {Array.from(stateDots.entries()).map(([st, evt]) => {
-                const coords = STATE_CENTROIDS[st];
-                if (!coords) return null;
-                return (
-                  <Marker key={`${st}-${evt.event_id}`} coordinates={coords}>
-                    <motion.circle
-                      r={6}
-                      fill={labelColor(evt.case_label)}
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: [0, 1.6, 1], opacity: [0, 1, 0.9] }}
-                      transition={{ duration: 0.6, ease: "easeOut" }}
-                    />
-                    <motion.circle
-                      r={8}
-                      fill="none"
-                      stroke={labelColor(evt.case_label)}
-                      strokeWidth={1.5}
-                      initial={{ scale: 1, opacity: 0.6 }}
-                      animate={{ scale: [1, 2.5], opacity: [0.6, 0] }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeOut",
-                      }}
-                    />
-                  </Marker>
-                );
-              })}
-            </AnimatePresence>
-          </ComposableMap>
+              {/* Pulsing dots */}
+              <AnimatePresence>
+                {Array.from(stateDots.entries()).map(([st, evt]) => {
+                  const coords = STATE_CENTROIDS[st];
+                  if (!coords) return null;
+                  return (
+                    <Marker key={`${st}-${evt.event_id}`} coordinates={coords}>
+                      <motion.circle
+                        r={6}
+                        fill={labelColor(evt.case_label)}
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: [0, 1.6, 1], opacity: [0, 1, 0.9] }}
+                        transition={{ duration: 0.6, ease: "easeOut" }}
+                      />
+                      <motion.circle
+                        r={8}
+                        fill="none"
+                        stroke={labelColor(evt.case_label)}
+                        strokeWidth={1.5}
+                        initial={{ scale: 1, opacity: 0.6 }}
+                        animate={{ scale: [1, 2.5], opacity: [0.6, 0] }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: "easeOut",
+                        }}
+                      />
+                    </Marker>
+                  );
+                })}
+              </AnimatePresence>
+            </ComposableMap>
+          </div>
 
           {/* Legend */}
           <div className="flex items-center gap-4 mt-1 text-xs font-bold text-slate-500">
@@ -427,75 +444,142 @@ export function LiveMonitor() {
         </div>
 
         {/* Live Feed */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col max-h-[600px]">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-[500px]">
           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-800">Live Feed</h3>
-            <span className="text-xs font-mono text-slate-400">
-              {events.length} events
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono text-slate-400">
+                {events.length} events
+              </span>
+              <button
+                onClick={() => setFeedExpanded(true)}
+                className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                title="Expand feed"
+              >
+                <Expand className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
-            {events.length === 0 ? (
-              <div className="flex items-center justify-center h-40 text-sm text-slate-400">
-                {running ? "Waiting for events..." : 'Press "Start" to begin'}
-              </div>
-            ) : (
-              <AnimatePresence initial={false}>
-                {events.slice(0, 20).map((evt) => (
-                  <motion.button
-                    key={evt.event_id}
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.25 }}
-                    onClick={() => navigate(`/providers/${evt.npi}`)}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-slate-50 transition-colors"
-                  >
-                    <span
-                      className={cn(
-                        "w-2 h-2 rounded-full shrink-0",
-                        labelDot(evt.case_label),
-                      )}
-                    />
-                    <span className="text-xs font-bold text-slate-500 w-6">
-                      {evt.state}
-                    </span>
-                    <span className="text-xs text-slate-700 truncate flex-1 min-w-0">
-                      {evt.provider_name}
-                    </span>
-                    <span className="text-xs font-mono text-slate-400 shrink-0">
-                      {evt.hcpcs_code}
-                    </span>
-                    <span className="text-xs text-slate-500 shrink-0 w-14 text-right">
-                      {formatUSD(evt.submitted_charge)}
-                    </span>
-                    <span
-                      className={cn(
-                        "text-xs font-bold shrink-0 w-6 text-right",
-                        evt.risk_score >= 51
-                          ? "text-rose-600"
-                          : evt.risk_score >= 31
-                            ? "text-amber-600"
-                            : "text-emerald-600",
-                      )}
-                    >
-                      {evt.risk_score}
-                    </span>
-                    <span className="text-xs font-mono text-slate-300 shrink-0 w-10 text-right">
-                      {evt.scoring_latency_ms.toFixed(1)}ms
-                    </span>
-                  </motion.button>
-                ))}
-              </AnimatePresence>
-            )}
-          </div>
+          <FeedList
+            events={events}
+            running={running}
+            maxItems={20}
+            navigate={navigate}
+          />
         </div>
       </div>
+
+      {/* Expanded Feed Modal */}
+      {feedExpanded && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          onClick={() => setFeedExpanded(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Expanded live feed"
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-3xl mx-4 flex flex-col max-h-[85vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-base font-bold text-slate-800">Live Feed</h3>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono text-slate-400">
+                  {events.length} events
+                </span>
+                <button
+                  onClick={() => setFeedExpanded(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <FeedList
+              events={events}
+              running={running}
+              maxItems={50}
+              navigate={navigate}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 /* ── Sub-components ──────────────────────────────────────────── */
+
+function FeedList({
+  events,
+  running,
+  maxItems,
+  navigate,
+}: {
+  events: LiveClaimEvent[];
+  running: boolean;
+  maxItems: number;
+  navigate: (path: string) => void;
+}) {
+  return (
+    <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
+      {events.length === 0 ? (
+        <div className="flex items-center justify-center h-40 text-sm text-slate-400">
+          {running ? "Waiting for events..." : 'Press "Start" to begin'}
+        </div>
+      ) : (
+        <AnimatePresence initial={false}>
+          {events.slice(0, maxItems).map((evt) => (
+            <motion.button
+              key={evt.event_id}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              onClick={() => navigate(`/providers/${evt.npi}`)}
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-slate-50 transition-colors"
+            >
+              <span
+                className={cn(
+                  "w-2 h-2 rounded-full shrink-0",
+                  labelDot(evt.case_label),
+                )}
+              />
+              <span className="text-xs font-bold text-slate-500 w-6">
+                {evt.state}
+              </span>
+              <span className="text-xs text-slate-700 truncate flex-1 min-w-0">
+                {evt.provider_name}
+              </span>
+              <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                {evt.hcpcs_code}
+              </span>
+              <span className="text-[10px] text-slate-500 shrink-0 w-14 text-right">
+                {formatUSD(evt.submitted_charge)}
+              </span>
+              <span
+                className={cn(
+                  "text-xs font-bold shrink-0 w-6 text-right",
+                  evt.risk_score >= 51
+                    ? "text-rose-600"
+                    : evt.risk_score >= 31
+                      ? "text-amber-600"
+                      : "text-emerald-600",
+                )}
+              >
+                {evt.risk_score}
+              </span>
+              <span className="text-[10px] font-mono text-slate-300 shrink-0 w-10 text-right">
+                {evt.scoring_latency_ms.toFixed(1)}ms
+              </span>
+            </motion.button>
+          ))}
+        </AnimatePresence>
+      )}
+    </div>
+  );
+}
 
 function StatCard({
   label,
