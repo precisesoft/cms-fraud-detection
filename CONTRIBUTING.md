@@ -106,14 +106,18 @@ PR body must include:
 
 ### 7. CI Must Pass
 
-These checks run automatically on every PR:
+All jobs run in a single unified workflow (`pipeline.yml`) on every PR:
 
-| Workflow | Jobs                                                     | Blocks Merge? |
-| -------- | -------------------------------------------------------- | ------------- |
-| CI       | Lint (ruff), Type check (mypy), Test (pytest + coverage) | Yes           |
-| Secrets  | gitleaks scan                                            | Yes           |
-| Security | pip-audit (dependency CVEs), bandit (SAST)               | Yes           |
-| PR Title | Conventional commit format check                         | Yes           |
+| Stage            | Jobs                                               | Blocks Merge? |
+| ---------------- | -------------------------------------------------- | ------------- |
+| Gate             | Conventional commit PR title check                 | Yes           |
+| Security         | gitleaks + bandit + pip-audit + npm audit          | Yes           |
+| Quality Backend  | ruff lint + mypy + pytest (80% coverage threshold) | Yes           |
+| Quality Frontend | eslint + tsc + vitest (80% lines) + vite build     | Yes           |
+| Build            | Docker images (amd64) + CycloneDX SBOMs            | Yes           |
+| Scan             | Trivy on both images (informational)               | No            |
+
+On merge to main, additional Release (push to ECR) and Deploy (update manifests) jobs run.
 
 All checks must be green before merge.
 
@@ -150,21 +154,52 @@ After merge:
 ## Local Setup
 
 ```bash
+# Backend
 python -m venv .venv
 source .venv/bin/activate  # or: . .venv/bin/activate.fish
 pip install -e ".[dev]"
+
+# Frontend
+cd frontend && npm install
+```
+
+### Verify locally (backend + frontend)
+
+```bash
+# Backend
+ruff check src/ tests/ && ruff format --check src/ tests/
+mypy src/
+pytest --cov=src --cov-report=term -q
+
+# Frontend
+cd frontend
+npm run lint
+npx tsc --noEmit
+npm test
+npm run build
 ```
 
 ## Project Structure
 
 ```
 src/
-  api/          FastAPI app, routes, schemas
-  scoring/      Signal taxonomy, extraction, score computation
-  data/         Data loading, CSV generation
-  pipeline/     Feature engineering (Polars)
-tests/          pytest test suite
+  api/            FastAPI app, routes (14 modules), schemas
+  scoring/        Signal taxonomy, extraction, score computation
+  ai/             AWS Bedrock: text-to-SQL, narratives, chat
+  models/         Isolation Forest anomaly detection
+  validation/     Retrospective validation
+  data/           Data loading, Neo4j projection
+  pipeline/       Feature engineering (Polars)
+frontend/
+  src/pages/      React page components (Dashboard, Simulate, ...)
+  src/components/ Shared components (Layout, AssistantDrawer, ...)
+  src/lib/        API client, helpers
+  src/contexts/   React context (AuthContext)
+tests/            Backend pytest suite (30+ test files)
 .github/
-  workflows/    CI/CD pipelines
-db/             Database schema (init.sql)
+  workflows/      pipeline.yml (unified CI/CD) + terraform.yml
+  agents/         Copilot agent personas
+db/               Database schema (init.sql)
+k8s/              Kubernetes manifests (EKS)
+terraform/        AWS infrastructure (ECR, IAM)
 ```

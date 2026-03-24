@@ -1,20 +1,82 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# CMS Fraud Detection — Frontend
 
-# Run and deploy your AI Studio app
+> Vite + React 19 + TypeScript + Tailwind CSS v4
 
-This contains everything you need to run your app locally.
+## Quick Start
 
-View your app in AI Studio: https://ai.studio/apps/337c7ee9-2da1-414f-98e3-510db6f77b78
+```bash
+npm install
+npm run dev          # http://localhost:3000
+```
 
-## Run Locally
+## Scripts
 
-**Prerequisites:**  Node.js
+| Command                 | Purpose                        |
+| ----------------------- | ------------------------------ |
+| `npm run dev`           | Development server (port 3000) |
+| `npm run build`         | Production build to `dist/`    |
+| `npm run preview`       | Preview production build       |
+| `npm run lint`          | ESLint check                   |
+| `npm test`              | Run tests (Vitest)             |
+| `npm run test:coverage` | Tests with coverage report     |
 
+## Stack
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+- **React 19** + **React Router 7** (SPA, client-side routing)
+- **Vite 6** (build tool + HMR dev server)
+- **Tailwind CSS v4** (utility-first styling)
+- **Recharts 3** (data visualizations)
+- **react-simple-maps** (US choropleth heatmap)
+- **Lucide React** (icons)
+- **Motion** (animations)
+- **Vitest** + **Testing Library** + **MSW** (testing)
+
+## Pages
+
+| Route             | Page           | Description                                 |
+| ----------------- | -------------- | ------------------------------------------- |
+| `/`               | Dashboard      | Aggregate stats, risk distribution, heatmap |
+| `/providers`      | Providers      | Provider list with search                   |
+| `/providers/:npi` | ProviderDetail | Deep-dive into a single provider            |
+| `/claims`         | Claims         | Claims queue                                |
+| `/claims/:id`     | ClaimDetail    | Individual claim view                       |
+| `/simulate`       | Simulate       | Claims simulator with real-time scoring     |
+| `/fairness`       | Fairness       | Fairness metrics dashboard                  |
+| `/risk-map`       | RiskMap        | Geographic risk heatmap                     |
+| `/investigations` | Investigations | Investigation case list                     |
+| `/analytics`      | Analytics      | Analytics view                              |
+| `/validation`     | Validation     | Retrospective validation results            |
+| `/login`          | Login          | Authentication                              |
+
+## Project Structure
+
+```
+frontend/src/
+  App.tsx               Route definitions
+  main.tsx              Entry point
+  index.css             Global styles (Tailwind)
+  pages/                Route page components
+  components/           Shared components (Layout, AssistantDrawer, EvidenceGraph, ...)
+  contexts/             React context providers (AuthContext)
+  lib/                  API client, helpers, utilities
+  mocks/                MSW handlers for testing
+```
+
+## Environment
+
+The frontend connects to the FastAPI backend. In development, configure the API URL:
+
+```bash
+# Default: http://localhost:8000
+VITE_API_URL=http://localhost:8000
+```
+
+## Docker
+
+```bash
+# Build production image (nginx serving static build)
+docker build -t cms-fraud-frontend .
+
+# Run
+docker run -p 3000:3000 cms-fraud-frontend
+```

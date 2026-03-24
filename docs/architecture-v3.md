@@ -47,7 +47,7 @@ interfaces:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                     Frontend (Next.js + TypeScript + shadcn/ui)         │
+│                     Frontend (Vite + React 19 + TypeScript + Tailwind v4) │
 │                                                                         │
 │  ┌─────────────────────────────────────┐  ┌──────────────────────────┐ │
 │  │         Claims Simulator             │  │    Chat Sidebar          │ │
@@ -262,20 +262,20 @@ and disparate impact measures.
 
 ## Tech Stack
 
-| Layer         | Technology               | Why                                                    |
-| ------------- | ------------------------ | ------------------------------------------------------ |
-| Frontend      | Next.js 16 + TypeScript  | SSR, app router, API routes as BFF                     |
-| UI Components | shadcn/ui + Tailwind CSS | Polished, accessible, fast to build                    |
-| Charts        | Recharts                 | React-native, composable, AI can specify chart configs |
-| Backend       | Python 3.12 + FastAPI    | Async, auto-docs, scoring engine                       |
-| Database      | PostgreSQL 16            | Operational store, SQL queries, production-grade       |
-| Graph         | Neo4j 5                  | Relationship traversal, Cypher queries                 |
-| ETL           | DuckDB + Polars          | One-time data processing (not runtime)                 |
-| AI            | AWS Bedrock (Claude)     | FedRAMP authorized, GovCloud-ready, multi-model        |
-| Containers    | Docker + docker-compose  | Local dev, multi-service                               |
-| CI            | GitHub Actions           | Lint, test, build, coverage                            |
-| CD            | ArgoCD                   | GitOps deployment to EKS                               |
-| Registry      | Amazon ECR               | AWS-native container image store                       |
+| Layer      | Technology                        | Why                                                   |
+| ---------- | --------------------------------- | ----------------------------------------------------- |
+| Frontend   | Vite + React 19 + TypeScript      | Fast builds, SPA with React Router                    |
+| UI         | Tailwind CSS v4 + Lucide + Motion | Utility-first CSS, icons, animations                  |
+| Charts     | Recharts + react-simple-maps      | Composable charts, US choropleth heatmap              |
+| Backend    | Python 3.12 + FastAPI             | Async, auto-docs, scoring engine                      |
+| Database   | PostgreSQL 16                     | Operational store, SQL queries, production-grade      |
+| Graph      | Neo4j 5                           | Relationship traversal, Cypher queries                |
+| ETL        | DuckDB + Polars                   | One-time data processing (not runtime)                |
+| AI         | AWS Bedrock (Claude)              | FedRAMP authorized, GovCloud-ready, multi-model       |
+| Containers | Docker + docker-compose           | Local dev, multi-service                              |
+| CI         | GitHub Actions                    | Unified pipeline: lint, test, build, security, deploy |
+| CD         | ArgoCD                            | GitOps deployment to EKS                              |
+| Registry   | Amazon ECR                        | AWS-native container image store                      |
 
 ## Data Flow
 
@@ -470,120 +470,113 @@ CREATE INDEX idx_providers_type ON providers(provider_type);
 
 ```
 cms-fraud-detection/
-├── backend/                    # Python FastAPI application
+├── src/                        # Python backend (FastAPI)
+│   ├── api/                    # FastAPI app + routes
+│   │   ├── app.py              # App factory with lifespan
+│   │   ├── auth.py             # JWT authentication
+│   │   ├── deps.py             # DB pool management, FastAPI deps
+│   │   ├── graph_client.py     # Neo4j graph client
+│   │   ├── schemas.py          # Pydantic request/response models
+│   │   └── routes/
+│   │       ├── auth.py         # POST /api/auth/login, /api/auth/register
+│   │       ├── cases.py        # GET /api/cases
+│   │       ├── chat.py         # POST /api/chat (SSE streaming)
+│   │       ├── claims.py       # GET /api/claims
+│   │       ├── dashboard.py    # GET /api/dashboard, /api/dashboard/heatmap
+│   │       ├── fairness.py     # GET /api/fairness
+│   │       ├── graph.py        # GET /api/graph/{npi}
+│   │       ├── network.py      # GET /api/network/{npi}
+│   │       ├── providers.py    # GET /api/providers, /api/providers/{npi}
+│   │       ├── score.py        # POST /api/score
+│   │       ├── signals.py      # GET /api/signals/{npi}
+│   │       ├── simulate.py     # POST /api/simulate
+│   │       └── validation.py   # GET /api/validation
+│   ├── ai/                     # LLM reasoning layer
+│   │   ├── bedrock.py          # AWS Bedrock client wrapper
+│   │   ├── chart_spec.py       # AI → Recharts chart config
+│   │   ├── narrative.py        # Structured signals → narrative
+│   │   ├── prompts.py          # System prompts + few-shot examples
+│   │   └── text_to_sql.py      # NL → PostgreSQL SQL
+│   ├── scoring/                # Deterministic scoring engine
+│   │   ├── extract.py          # Signal extraction per case
+│   │   ├── score.py            # Risk + legitimacy score computation
+│   │   └── taxonomy.py         # Signal definitions, weights, thresholds
+│   ├── models/                 # ML models
+│   │   ├── anomaly.py          # Isolation Forest training
+│   │   └── anomaly_scorer.py   # Anomaly score inference
+│   ├── validation/             # Retrospective validation
+│   │   └── retrospective.py    # Scoring vs. revocation outcomes
+│   ├── data/                   # Data loading utilities
+│   │   ├── load_postgres.py    # Bulk data loader
+│   │   ├── build_demo_case_csv.py
+│   │   └── project_graph.py    # Neo4j graph projection
+│   └── pipeline/               # Feature engineering
+│       └── build_features.py   # Polars-based provider features
+├── tests/                      # Backend test suite (30+ test files)
+│   ├── test_extract.py, test_score.py, test_taxonomy.py  # Scoring
+│   ├── test_text_to_sql.py, test_narrative.py, test_bedrock.py  # AI
+│   ├── test_anomaly.py, test_anomaly_scorer.py  # ML models
+│   ├── test_retrospective.py   # Validation
+│   ├── test_dashboard.py, test_providers.py, ...  # API routes
+│   └── load/                   # k6 load tests
+├── frontend/                   # Vite + React 19 SPA
 │   ├── src/
-│   │   ├── api/                # FastAPI routes
-│   │   │   ├── main.py         # App factory, middleware, lifespan
-│   │   │   ├── routes/
-│   │   │   │   ├── dashboard.py# GET /api/dashboard, /api/dashboard/heatmap
-│   │   │   │   ├── score.py    # POST /api/score
-│   │   │   │   ├── providers.py# GET /api/providers, .../trends
-│   │   │   │   ├── claims.py   # GET /api/claims
-│   │   │   │   ├── chat.py     # POST /api/chat (SSE streaming)
-│   │   │   │   ├── signals.py  # GET /api/signals/{npi}, /api/peers/{npi}
-│   │   │   │   ├── fairness.py # GET /api/fairness
-│   │   │   │   └── graph.py    # GET /api/graph/{npi}
-│   │   │   └── schemas.py      # Pydantic request/response models
-│   │   ├── scoring/            # Scoring engine
-│   │   │   ├── engine.py       # Risk + legitimacy score computation
-│   │   │   ├── signals.py      # Signal extraction per case
-│   │   │   └── taxonomy.py     # Signal definitions, weights, thresholds
-│   │   ├── ai/                 # LLM reasoning layer
-│   │   │   ├── client.py       # AWS Bedrock client wrapper
-│   │   │   ├── text_to_sql.py  # NL → PostgreSQL SQL
-│   │   │   ├── narrator.py     # Structured signals → narrative
-│   │   │   └── prompts/        # System prompts + few-shot examples
-│   │   ├── graph/              # Neo4j integration
-│   │   │   ├── client.py       # Neo4j driver wrapper
-│   │   │   ├── queries.py      # Cypher query templates
-│   │   │   └── project.py      # Data → Neo4j projection
-│   │   ├── db/                 # PostgreSQL integration
-│   │   │   ├── engine.py       # SQLAlchemy engine + session
-│   │   │   ├── models.py       # SQLAlchemy ORM models
-│   │   │   └── seed.py         # Load processed data into PostgreSQL
-│   │   └── etl/                # One-time data processing
-│   │       ├── ingest.py       # Raw CSV → DuckDB → Parquet
-│   │       ├── canonicalize.py # Build provider identity spine
-│   │       ├── signals.py      # Harvest signals from all sources
-│   │       ├── peers.py        # Compute peer baselines
-│   │       ├── fairness.py    # Compute fairness metrics per cohort
-│   │       ├── fixture.py     # Generate small demo dataset (500 providers)
-│   │       └── load.py         # Parquet → PostgreSQL + Neo4j
-│   ├── tests/
-│   │   ├── test_scoring.py
-│   │   ├── test_signals.py
-│   │   ├── test_fairness.py
-│   │   ├── test_api.py
-│   │   └── test_chat.py
-│   ├── pyproject.toml
-│   ├── Dockerfile
-│   └── alembic/                # DB migrations
-│       └── versions/
-├── frontend/                   # Next.js 16 application
-│   ├── app/
-│   │   ├── layout.tsx          # Root layout + nav + search bar
-│   │   ├── page.tsx            # Overview dashboard (landing page)
-│   │   ├── claims/
-│   │   │   └── page.tsx        # Claims simulator view
-│   │   ├── fairness/
-│   │   │   └── page.tsx        # Fairness dashboard view
-│   │   ├── providers/
-│   │   │   └── [npi]/
-│   │   │       └── page.tsx    # Provider detail page
-│   │   └── api/                # BFF routes (optional proxy)
-│   ├── components/
-│   │   ├── ui/                 # shadcn/ui components
-│   │   ├── dashboard/
-│   │   │   ├── stats-cards.tsx # Aggregate stat cards
-│   │   │   ├── risk-heatmap.tsx# US choropleth map
-│   │   │   └── top-flagged.tsx # Top flagged providers list
-│   │   ├── claims-table.tsx
-│   │   ├── provider-detail.tsx
-│   │   ├── provider-search.tsx # Autocomplete search bar
-│   │   ├── signal-card.tsx
-│   │   ├── risk-gauge.tsx
-│   │   ├── peer-chart.tsx
-│   │   ├── trend-chart.tsx     # Time-series billing trends
-│   │   ├── fairness-charts.tsx # Flagging rate bar charts
-│   │   ├── evidence-graph.tsx  # Node-link graph visualization
-│   │   ├── chat-sidebar.tsx
-│   │   └── chart-renderer.tsx
-│   ├── hooks/
-│   │   ├── use-score.ts
-│   │   ├── use-chat.ts        # Handles SSE streaming
-│   │   ├── use-dashboard.ts
-│   │   └── use-providers.ts
-│   ├── lib/
-│   │   ├── api.ts              # API client (fetch wrapper)
-│   │   └── types.ts            # TypeScript interfaces
-│   ├── package.json
-│   ├── next.config.ts
-│   ├── tailwind.config.ts
-│   └── Dockerfile              # Multi-stage: build + standalone output
-├── manifests/                  # Kubernetes deployment
-│   ├── base/
-│   │   ├── namespace.yaml
-│   │   ├── backend-deployment.yaml
-│   │   ├── backend-service.yaml
-│   │   ├── frontend-deployment.yaml
-│   │   ├── frontend-service.yaml
-│   │   ├── postgres-statefulset.yaml
-│   │   ├── neo4j-statefulset.yaml
-│   │   ├── ingress.yaml
-│   │   └── kustomization.yaml
-│   └── overlays/
-│       ├── dev/
-│       │   └── kustomization.yaml
-│       └── prod/
-│           └── kustomization.yaml
+│   │   ├── App.tsx             # React Router route definitions
+│   │   ├── main.tsx            # Entry point
+│   │   ├── pages/              # Route pages
+│   │   │   ├── Dashboard.tsx   # Landing page with stats + heatmap
+│   │   │   ├── Providers.tsx   # Provider list + search
+│   │   │   ├── ProviderDetail.tsx  # Provider deep-dive
+│   │   │   ├── Claims.tsx      # Claims queue
+│   │   │   ├── ClaimDetail.tsx # Individual claim view
+│   │   │   ├── Simulate.tsx    # Claims simulator
+│   │   │   ├── Fairness.tsx    # Fairness dashboard
+│   │   │   ├── RiskMap.tsx     # Geographic risk heatmap
+│   │   │   ├── Investigations.tsx / InvestigationDetail.tsx
+│   │   │   ├── Analytics.tsx   # Analytics view
+│   │   │   ├── Validation.tsx  # Retrospective validation results
+│   │   │   └── Login.tsx       # Authentication
+│   │   ├── components/         # Shared components
+│   │   │   ├── Layout.tsx      # App shell with nav
+│   │   │   ├── AssistantDrawer.tsx  # AI chat sidebar
+│   │   │   ├── EvidenceGraph.tsx    # Neo4j graph visualization
+│   │   │   ├── ProtectedRoute.tsx   # Auth guard
+│   │   │   └── StatusBadge.tsx, PriorityBadge.tsx, Timeline.tsx
+│   │   ├── contexts/           # React context providers
+│   │   │   └── AuthContext.tsx
+│   │   ├── lib/                # Utilities
+│   │   │   ├── api.ts          # API client (fetch wrapper)
+│   │   │   ├── helpers.ts      # Formatting utilities
+│   │   │   └── utils.ts        # General utilities
+│   │   └── mocks/              # MSW mock handlers for tests
+│   ├── Dockerfile              # Multi-stage: build + nginx
+│   ├── nginx.conf              # Production nginx config
+│   ├── vite.config.ts
+│   └── vitest.config.ts
+├── db/
+│   └── init.sql                # PostgreSQL schema (raw SQL, no Alembic)
+├── k8s/                        # Kubernetes manifests (EKS)
+│   ├── argocd-app.yaml         # ArgoCD Application
+│   └── cms-fraud/              # Namespace resources
+│       ├── namespace.yaml, secrets.yaml
+│       ├── postgres.yaml, postgres-configmap.yaml
+│       ├── neo4j.yaml
+│       ├── api.yaml, frontend.yaml
+├── terraform/                  # AWS infrastructure (ECR, IAM)
+│   ├── ecr.tf, iam.tf, providers.tf, variables.tf
 ├── .github/
-│   └── workflows/
-│       ├── ci.yaml             # Lint, test, build, coverage
-│       └── cd.yaml             # Build images, push to registry
-├── docker-compose.yml          # Local dev: backend + frontend + pg + neo4j
-├── .env.example                # Documented environment variable template
-├── docs/
-├── data/                       # gitignored — raw and processed data
+│   ├── workflows/
+│   │   ├── pipeline.yml        # Unified: gate + security + quality + build + deploy
+│   │   └── terraform.yml       # Plan on PR, apply on merge
+│   ├── copilot-instructions.md
+│   ├── copilot-setup-steps.yml
+│   ├── agents/                 # 9 Copilot agent personas
+│   └── pull_request_template.md
+├── docker-compose.yml          # Local dev: db + neo4j + api + frontend
+├── Dockerfile                  # Backend API image
+├── pyproject.toml
+├── docs/                       # All documentation + diagrams
+├── data/                       # gitignored — raw, processed, models
 └── README.md
 ```
 
@@ -593,32 +586,32 @@ cms-fraud-detection/
 
 ```
 Local Development:
-  docker-compose up
-  ├── backend    (FastAPI on :8000)
-  ├── frontend   (Next.js on :3000, standalone output in prod)
-  ├── postgres   (PostgreSQL 16 on :5432)
+  docker compose up -d
+  ├── api        (FastAPI on :8000)
+  ├── frontend   (Vite/nginx on :3000)
+  ├── db         (PostgreSQL 16 on :5432)
   └── neo4j      (Neo4j 5 on :7687 + :7474)
 
-CI/CD Pipeline:
-  Push to main
-    → GitHub Actions:
-        1. Lint (ruff + eslint)
-        2. Test (pytest + vitest)
-        3. Coverage check
-        4. Build Docker images (backend + frontend)
-        5. Push to container registry
-        6. Update manifests with new image tags
-    → ArgoCD detects manifest change
-    → ArgoCD syncs to EKS cluster
-    → Judges access via ingress URL
+CI/CD Pipeline (unified pipeline.yml):
+  PR opened
+    → Gate: conventional commit PR title check
+    → Security (parallel): gitleaks + bandit + pip-audit + npm audit
+    → Quality (parallel):
+        Backend: ruff + mypy + pytest + coverage (80% threshold)
+        Frontend: eslint + tsc + vitest (80% lines) + vite build
+    → Build: Docker images (amd64) + CycloneDX SBOMs
+    → Scan: Trivy on both images
+  Merge to main (additional):
+    → Release: push to ECR with :sha + :latest tags
+    → Deploy: update precise-manifests with SHA tags → ArgoCD auto-syncs
 
-EKS Cluster:
-  Namespace: cms-fraud-detection
-  ├── backend (Deployment, 2 replicas)
-  ├── frontend (Deployment, 2 replicas, Next.js standalone)
-  ├── postgres (StatefulSet, PVC)
-  ├── neo4j (StatefulSet, PVC)
-  └── ingress (ALB or nginx-ingress)
+EKS Cluster (508aas-platform-dev-cluster, us-east-1):
+  Namespace: cms-fraud
+  ├── api (Deployment, 2 replicas, LoadBalancer)
+  ├── frontend (Deployment, nginx serving Vite build)
+  ├── postgres (StatefulSet, 20Gi gp3 PVC)
+  ├── neo4j (StatefulSet, 10Gi gp3 PVC)
+  └── Istio VirtualService → https://argus.precise-lab.com
 ```
 
 ## Docker Compose (Local Dev)
@@ -626,56 +619,46 @@ EKS Cluster:
 ```yaml
 # docker-compose.yml
 services:
-  backend:
-    build: ./backend
-    ports: ["8000:8000"]
-    environment:
-      DATABASE_URL: postgresql://cms:cms@postgres:5432/cms_fraud
-      NEO4J_URI: bolt://neo4j:7687
-      NEO4J_PASSWORD: changeme
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_REGION: ${AWS_REGION:-us-east-1}
-      BEDROCK_MODEL_ID: ${BEDROCK_MODEL_ID:-anthropic.claude-sonnet-4-20250514}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      neo4j:
-        condition: service_healthy
-
-  frontend:
-    build: ./frontend
-    ports: ["3000:3000"]
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
-
-  postgres:
+  db:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: cms_fraud
       POSTGRES_USER: cms
-      POSTGRES_PASSWORD: cms
+      POSTGRES_PASSWORD: cms_local_dev
+    ports: ["5432:5432"]
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports: ["5432:5432"]
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cms"]
+      test: ["CMD-SHELL", "pg_isready -U cms -d cms_fraud"]
       interval: 5s
-      retries: 5
 
   neo4j:
     image: neo4j:5-community
     environment:
-      NEO4J_AUTH: neo4j/changeme
+      NEO4J_AUTH: neo4j/cms_graph_dev
+    ports: ["7474:7474", "7687:7687"]
     volumes:
       - neo4jdata:/data
-    ports:
-      - "7474:7474"
-      - "7687:7687"
     healthcheck:
-      test: ["CMD", "neo4j", "status"]
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p cms_graph_dev 'RETURN 1'"]
       interval: 10s
-      retries: 5
+
+  api:
+    build: .
+    ports: ["8000:8000"]
+    environment:
+      DATABASE_URL: postgresql://cms:cms_local_dev@db:5432/cms_fraud
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_PASSWORD: cms_graph_dev
+    depends_on:
+      db: { condition: service_healthy }
+      neo4j: { condition: service_healthy }
+
+  frontend:
+    build: ./frontend
+    ports: ["3000:3000"]
+    depends_on: [api]
 
 volumes:
   pgdata:

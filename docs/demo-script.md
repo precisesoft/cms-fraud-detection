@@ -61,7 +61,7 @@ Ask a few natural-language questions:
 
 "**91% were still flagged.** Billing abuse cases: 94%. Felony-related revocations: 100%. The baseline for non-revoked providers? Only 51%. Our behavioral signals have real discriminative power."
 
-"The scoring engine uses 14 explainable signals across 4 categories. We also trained an isolation forest anomaly detection model that correlates with our rule-based scores and independently identifies the same high-risk providers."
+"The scoring engine uses 13 explainable signals across 4 categories. We also trained an isolation forest anomaly detection model that correlates with our rule-based scores and independently identifies the same high-risk providers."
 
 ## 6. Responsible AI (30s)
 
@@ -82,7 +82,7 @@ Ask a few natural-language questions:
 ## Backup Slides (if asked)
 
 - Architecture diagram: EKS deployment, CI/CD pipeline, data flow
-- Signal taxonomy: all 14 signals with weights and thresholds
+- Signal taxonomy: all 13 signals with weights and thresholds
 - Anomaly model: feature importance, correlation with rule scores
 - Load test results: throughput under concurrent users
 - Full retrospective validation breakdown by revocation reason
@@ -95,7 +95,7 @@ Ask a few natural-language questions:
 | Billing abuse detection       | 94%                              |
 | Felony detection              | 100%                             |
 | Non-revoked baseline flagging | 51.4%                            |
-| Risk signals                  | 6 risk + 7 legitimacy = 14 total |
+| Risk signals                  | 6 risk + 7 legitimacy = 13 total |
 | Providers scored              | 10,282                           |
 | Cases scored                  | 13,225                           |
 | Public data sources           | 4 active + 2 reference           |

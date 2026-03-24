@@ -41,20 +41,20 @@
 
 ## Sprint Timeline
 
-| Phase                    | Due    | Status          | Key Deliverables                                       |
-| ------------------------ | ------ | --------------- | ------------------------------------------------------ |
-| Phase 0: Project Spine   | Mar 14 | **Done**        | Monorepo, CI/CD, Dockerfiles, branch protection        |
-| Phase 1: Data Foundation | Mar 18 | **Done**        | 19GB ETL, 13K cases + 10K providers, Neo4j graph       |
-| Phase 2: Scoring + API   | Mar 20 | **Done**        | Scoring engine, all REST endpoints, peer baselines     |
-| Phase 3: Ai Signal(Revisit) | Mar 22 | **In Progress** | Text-to-SQL, risk narratives, chat with charts         |
-| Phase 4: User Interface  | Mar 24 | **In Progress** | Claims simulator, investigation workflow, chat sidebar |
-| Phase 5: Ship            | Mar 26 | Pending         | Demo script, AI/OSS disclosure, judge access           |
+| Phase                    | Due    | Status   | Key Deliverables                                       |
+| ------------------------ | ------ | -------- | ------------------------------------------------------ |
+| Phase 0: Project Spine   | Mar 14 | **Done** | Monorepo, CI/CD, Dockerfiles, branch protection        |
+| Phase 1: Data Foundation | Mar 18 | **Done** | 19GB ETL, 13K cases + 10K providers, Neo4j graph       |
+| Phase 2: Scoring + API   | Mar 20 | **Done** | Scoring engine, all REST endpoints, peer baselines     |
+| Phase 3: AI Signals      | Mar 22 | **Done** | Text-to-SQL, risk narratives, anomaly detection        |
+| Phase 4: User Interface  | Mar 24 | **Done** | Claims simulator, investigation workflow, chat sidebar |
+| Phase 5: Ship            | Mar 25 | **Done** | Demo script, AI/OSS disclosure, judge access           |
 
 **Demo Day**: March 27, 2026 — Reston, Virginia
 
 ## Problem Statement
 
-CMS loses an estimated $60B+ annually to improper payments across Medicare and Medicaid. Current detection is largely reactive — fraud is identified after payments are made. This project builds a decision-support system that identifies anomalous provider billing patterns, surfaces evidence-backed risk cases, and provides explainable scores that human reviewers can act on realtime proractive.
+CMS loses an estimated $60B+ annually to improper payments across Medicare and Medicaid. Current detection is largely reactive — fraud is identified after payments are made. This project builds a decision-support system that identifies anomalous provider billing patterns, surfaces evidence-backed risk cases, and provides explainable scores that human reviewers can act on in real time, proactively.
 
 **Validated result:** In retrospective testing, our scoring system detected **91% of eventually-revoked providers from billing patterns alone** — before CMS acted on revocation.
 
@@ -62,15 +62,15 @@ CMS loses an estimated $60B+ annually to improper payments across Medicare and M
 
 **Live App**: [argus.precise-lab.com](https://argus.precise-lab.com) | **Validation Endpoint**: [/api/validation](/api/validation)
 
-| Deliverable | Document |
-|---|---|
-| Risk Scoring Methodology | [docs/risk-scoring-methodology.md](docs/risk-scoring-methodology.md) |
-| Responsible AI Considerations | [docs/responsible-ai-considerations.md](docs/responsible-ai-considerations.md) |
-| AI & Open Source Disclosure | [docs/ai-oss-disclosure.md](docs/ai-oss-disclosure.md) |
-| Path to CMS Pilot (5-min brief) | [docs/path-to-cms-pilot.md](docs/path-to-cms-pilot.md) |
-| Demo Script (5-7 min) | [docs/demo-script.md](docs/demo-script.md) |
-| Isolation Forest Model Card | [docs/model-card-isolation-forest.md](docs/model-card-isolation-forest.md) |
-| Architecture Diagrams | [docs/diagrams/](docs/diagrams/) |
+| Deliverable                     | Document                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------ |
+| Risk Scoring Methodology        | [docs/risk-scoring-methodology.md](docs/risk-scoring-methodology.md)           |
+| Responsible AI Considerations   | [docs/responsible-ai-considerations.md](docs/responsible-ai-considerations.md) |
+| AI & Open Source Disclosure     | [docs/ai-oss-disclosure.md](docs/ai-oss-disclosure.md)                         |
+| Path to CMS Pilot (5-min brief) | [docs/path-to-cms-pilot.md](docs/path-to-cms-pilot.md)                         |
+| Demo Script (5-7 min)           | [docs/demo-script.md](docs/demo-script.md)                                     |
+| Isolation Forest Model Card     | [docs/model-card-isolation-forest.md](docs/model-card-isolation-forest.md)     |
+| Architecture Diagrams           | [docs/diagrams/](docs/diagrams/)                                               |
 
 ## Key Principles
 
@@ -135,17 +135,17 @@ All datasets are publicly available and currently downloadable. No PHI is used.
 
 ## Tech Stack
 
-| Layer    | Technology                                           | Status |
-| -------- | ---------------------------------------------------- | ------ |
-| Frontend | Next.js 16 + TypeScript + Tailwind + shadcn/ui       | Live   |
-| Backend  | Python 3.12 + FastAPI + psycopg                      | Live   |
-| Database | PostgreSQL 16 (EKS StatefulSet)                      | Live   |
-| Graph    | Neo4j 5 Community (EKS StatefulSet)                  | Live   |
-| Scoring  | Rule-based taxonomy (14 signals) + anomaly detection | Live   |
-| AI       | AWS Bedrock (Claude) — narratives, text-to-SQL, chat | Live   |
-| ETL      | DuckDB + Polars                                      | Done   |
-| CI/CD    | GitHub Actions + ECR + ArgoCD                        | Live   |
-| Infra    | AWS EKS + Istio + Terraform                          | Live   |
+| Layer    | Technology                                            | Status |
+| -------- | ----------------------------------------------------- | ------ |
+| Frontend | Vite + React 19 + TypeScript + Tailwind v4 + Recharts | Live   |
+| Backend  | Python 3.12 + FastAPI + psycopg                       | Live   |
+| Database | PostgreSQL 16 (EKS StatefulSet)                       | Live   |
+| Graph    | Neo4j 5 Community (EKS StatefulSet)                   | Live   |
+| Scoring  | Rule-based taxonomy (13 signals) + Isolation Forest   | Live   |
+| AI       | AWS Bedrock (Claude) — narratives, text-to-SQL, chat  | Live   |
+| ETL      | DuckDB + Polars                                       | Done   |
+| CI/CD    | GitHub Actions (unified pipeline) + ECR + ArgoCD      | Live   |
+| Infra    | AWS EKS + Istio + Terraform                           | Live   |
 
 ## Quickstart
 
@@ -154,18 +154,21 @@ All datasets are publicly available and currently downloadable. No PHI is used.
 git clone git@github.com:precisesoft/cms-fraud-detection.git
 cd cms-fraud-detection
 
-# Start Postgres
+# Start all services (Postgres, Neo4j, API, Frontend)
 docker compose up -d
 
-# Install Python dependencies
+# --- Backend ---
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-
-# Run tests
-pytest --cov=src -q
-
-# Start API server (requires Postgres running)
+pytest --cov=src -q                    # Run backend tests
 uvicorn src.api.app:create_app --factory --host 0.0.0.0 --port 8000
+
+# --- Frontend ---
+cd frontend
+npm install
+npm run dev                            # http://localhost:3000
+npm test                               # Run frontend tests
+
 # API docs: http://localhost:8000/docs
 ```
 
