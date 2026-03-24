@@ -399,7 +399,7 @@ export function LiveMonitor() {
                       fill="none"
                       stroke={labelColor(evt.case_label)}
                       strokeWidth={1.5}
-                      opacity={0}
+                      initial={{ r: 6, opacity: 0 }}
                       animate={{ r: [6, 18], opacity: [0.6, 0] }}
                       transition={{
                         duration: 1.5,
