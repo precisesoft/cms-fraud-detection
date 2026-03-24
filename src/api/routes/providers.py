@@ -10,6 +10,8 @@ from psycopg.rows import dict_row
 
 from src.api.deps import get_db
 from src.api.schemas import (
+    ExplainResponse,
+    FeatureContribution,
     PaginationMeta,
     ProviderDetail,
     ProviderListResponse,
@@ -167,3 +169,30 @@ async def get_provider_radar(
         ),
     ]
     return RadarResponse(npi=npi, dimensions=dims)
+
+
+@router.get("/{npi}/explain", response_model=ExplainResponse)
+async def explain_provider(
+    npi: str,
+    top_n: int = Query(5, ge=1, le=20),
+    conn: AsyncConnection = Depends(get_db),
+) -> ExplainResponse:
+    """Return per-feature importance explaining the anomaly score for a provider."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute("SELECT * FROM provider_features WHERE npi = %s", [npi])
+        row = await cur.fetchone()
+
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Provider {npi} not found")
+
+    from src.explainability.shap_explainer import explain_provider as _explain
+
+    result = _explain(dict(row), top_n=top_n)
+    if result is None:
+        return ExplainResponse(npi=npi)
+
+    return ExplainResponse(
+        npi=npi,
+        anomaly_score=result["anomaly_score"],
+        top_features=[FeatureContribution(**f) for f in result["top_features"]],
+    )
