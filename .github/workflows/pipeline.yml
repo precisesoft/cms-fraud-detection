@@ -21,6 +21,7 @@ concurrency:
 env:
   ECR_REGISTRY: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  NODE_NO_WARNINGS: "1"
 
 permissions:
   contents: read
@@ -64,6 +65,7 @@ jobs:
     needs: [gate]
     if: always() && (needs.gate.result == 'success' || needs.gate.result == 'skipped')
     steps:
+      - run: git config --global init.defaultBranch main
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -139,6 +141,7 @@ jobs:
     env:
       COVERAGE_THRESHOLD: 95
     steps:
+      - run: git config --global init.defaultBranch main
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
@@ -191,6 +194,7 @@ jobs:
     needs: [gate]
     if: always() && (needs.gate.result == 'success' || needs.gate.result == 'skipped')
     steps:
+      - run: git config --global init.defaultBranch main
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
@@ -233,6 +237,7 @@ jobs:
       needs.quality-backend.result == 'success' &&
       needs.quality-frontend.result == 'success'
     steps:
+      - run: git config --global init.defaultBranch main
       - uses: actions/checkout@v4
 
       - name: Build API image
@@ -287,7 +292,7 @@ jobs:
         run: cd frontend && npm ci
 
       - name: Generate frontend SBOM
-        run: cd frontend && npx @cyclonedx/cyclonedx-npm --ignore-npm-errors --output-file ../sbom-frontend.cdx.json
+        run: cd frontend && npx @cyclonedx/cyclonedx-npm --ignore-npm-errors --output-file ../sbom-frontend.cdx.json 2>&1 | grep -v "^npm warn"
 
       - name: Upload SBOMs
         uses: actions/upload-artifact@v4
@@ -361,6 +366,7 @@ jobs:
     permissions:
       contents: read
     steps:
+      - run: git config --global init.defaultBranch main
       - uses: actions/checkout@v4
 
       - uses: aws-actions/configure-aws-credentials@v4
