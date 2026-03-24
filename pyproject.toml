@@ -78,3 +78,10 @@ skips = ["B608"]  # SQL injection — false positive on DuckDB file-path f-strin
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+
+[tool.coverage.run]
+branch = true
+omit = ["src/data/build_demo_case_csv.py"]
+
+[tool.coverage.report]
+fail_under = 75
