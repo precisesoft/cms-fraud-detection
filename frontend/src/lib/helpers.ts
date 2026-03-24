@@ -54,3 +54,16 @@ export function providerDisplayName(p: { provider_name?: string | null; provider
   const parts = [p.provider_last_org_name, p.provider_first_name].filter(Boolean);
   return parts.length ? parts.join(', ') : p.npi ?? 'Unknown';
 }
+
+/**
+ * Formats an internal pipe-delimited case ID (NPI|HCPCS|entity_code) into a
+ * human-readable "NPI — HCPCS" label. Falls back to the raw value if the
+ * string does not follow the expected format.
+ */
+export function formatCaseId(caseId: string): string {
+  const parts = caseId.split('|');
+  if (parts.length >= 2) {
+    return `${parts[0]} \u2014 ${parts[1]}`;
+  }
+  return caseId;
+}

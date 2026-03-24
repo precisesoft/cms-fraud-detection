@@ -8,6 +8,7 @@ import {
   formatCompactUSD,
   formatNumber,
   providerDisplayName,
+  formatCaseId,
 } from "../helpers";
 
 describe("riskBandLabel", () => {
@@ -261,5 +262,23 @@ describe("providerDisplayName", () => {
 
   it("returns Unknown when all fields are absent", () => {
     expect(providerDisplayName({})).toBe("Unknown");
+  });
+});
+
+describe("formatCaseId", () => {
+  it("formats a standard three-part pipe-delimited case ID as NPI — HCPCS", () => {
+    expect(formatCaseId("1821387911|90677|O")).toBe("1821387911 \u2014 90677");
+  });
+
+  it("formats a two-part pipe-delimited case ID", () => {
+    expect(formatCaseId("1821387911|90677")).toBe("1821387911 \u2014 90677");
+  });
+
+  it("returns the raw value when there are no pipe separators", () => {
+    expect(formatCaseId("1821387911")).toBe("1821387911");
+  });
+
+  it("returns the raw value for an empty string", () => {
+    expect(formatCaseId("")).toBe("");
   });
 });

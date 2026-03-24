@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { getClaims } from '../lib/api';
 import type { Claim, PaginationMeta } from '../lib/api';
 import { cn } from '../lib/utils';
-import { formatUSD, scoreColor } from '../lib/helpers';
+import { formatUSD, scoreColor, formatCaseId } from '../lib/helpers';
 
 export function Claims() {
   const [claims, setClaims] = React.useState<Claim[]>([]);
@@ -89,7 +89,7 @@ export function Claims() {
               ) : claims.map((claim) => (
                 <tr key={claim.case_id} className="hover:bg-slate-50/60 transition-colors">
                   <td className="px-5 py-3 text-xs font-mono font-bold text-indigo-600">
-                    <Link to={`/claims/${claim.case_id}`} className="hover:underline">{claim.case_id}</Link>
+                    <Link to={`/claims/${claim.case_id}`} className="hover:underline">{formatCaseId(claim.case_id)}</Link>
                   </td>
                   <td className="px-5 py-3 text-xs font-mono text-slate-700">
                     <Link to={`/providers/${claim.npi}`} className="hover:text-indigo-600 hover:underline">{claim.npi}</Link>
