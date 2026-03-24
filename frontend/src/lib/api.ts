@@ -469,6 +469,23 @@ export function getProviderNetwork(npi: string) {
   return request<NetworkRiskResponse>(`/api/network/${npi}`);
 }
 
+export interface FeatureContribution {
+  name: string;
+  contribution: number;
+  actual_value: number;
+  direction: string;
+}
+
+export interface ExplainResponse {
+  npi: string;
+  anomaly_score: number | null;
+  top_features: FeatureContribution[];
+}
+
+export function getProviderExplain(npi: string) {
+  return request<ExplainResponse>(`/api/providers/${npi}/explain`);
+}
+
 export function getProviderGraph(npi: string) {
   return request<GraphResponse>(`/api/graph/${npi}`);
 }
