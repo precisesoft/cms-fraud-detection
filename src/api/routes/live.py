@@ -14,12 +14,11 @@ import json
 import time
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
-from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 
-from src.api.deps import get_db
+from src.api.deps import pool as _pool
 from src.models.anomaly_scorer import score_provider
 from src.scoring.score import score_case
 from src.scoring.taxonomy import SignalDirection
@@ -55,7 +54,6 @@ _FEATURES_SQL = """SELECT * FROM provider_features WHERE npi = %s"""
 
 @router.get("/stream")
 async def stream_claims(
-    conn: AsyncConnection = Depends(get_db),
     interval: float = Query(default=1.5, ge=0.5, le=5.0),
     limit: int = Query(default=0, ge=0),
 ):
@@ -63,70 +61,77 @@ async def stream_claims(
 
     Each event contains a randomly sampled claim scored in real-time
     through the 14-signal scoring engine with live latency measurement.
+
+    NOTE: Connection is managed inside the generator, not via Depends(),
+    because FastAPI closes dependency-injected resources before
+    StreamingResponse starts iterating.
     """
 
     async def event_generator():
-        count = 0
-        while limit == 0 or count < limit:
-            try:
-                # 1. Sample a random claim
-                async with conn.cursor(row_factory=dict_row) as cur:
-                    await cur.execute(_RANDOM_CLAIM_SQL)
-                    row = await cur.fetchone()
-
-                if not row:
-                    await asyncio.sleep(interval)
-                    continue
-
-                # 2. Score it live and measure latency
-                start = time.monotonic()
-                card = score_case(dict(row))
-                latency_ms = (time.monotonic() - start) * 1000
-
-                # 3. Get anomaly score (optional, non-fatal)
-                anomaly_score: float | None = None
+        if _pool is None:
+            return
+        async with _pool.connection() as conn:
+            count = 0
+            while limit == 0 or count < limit:
                 try:
+                    # 1. Sample a random claim
                     async with conn.cursor(row_factory=dict_row) as cur:
-                        await cur.execute(_FEATURES_SQL, [row["npi"]])
-                        features_row = await cur.fetchone()
-                    if features_row:
-                        anomaly_score = score_provider(features_row)
+                        await cur.execute(_RANDOM_CLAIM_SQL)
+                        row = await cur.fetchone()
+
+                    if not row:
+                        await asyncio.sleep(interval)
+                        continue
+
+                    # 2. Score it live and measure latency
+                    start = time.monotonic()
+                    card = score_case(dict(row))
+                    latency_ms = (time.monotonic() - start) * 1000
+
+                    # 3. Get anomaly score (optional, non-fatal)
+                    anomaly_score: float | None = None
+                    try:
+                        async with conn.cursor(row_factory=dict_row) as cur:
+                            await cur.execute(_FEATURES_SQL, [row["npi"]])
+                            features_row = await cur.fetchone()
+                        if features_row:
+                            anomaly_score = score_provider(features_row)
+                    except Exception:
+                        pass
+
+                    # 4. Build event payload
+                    risk_signals = [
+                        s.signal.name
+                        for s in card.signals
+                        if s.signal.direction == SignalDirection.risk
+                    ]
+
+                    event = {
+                        "event_id": f"evt_{count:05d}",
+                        "timestamp": datetime.now(UTC).isoformat(),
+                        "npi": row["npi"],
+                        "provider_name": row.get("provider_name") or "Unknown",
+                        "state": row.get("state") or "Unknown",
+                        "city": row.get("city") or "",
+                        "hcpcs_code": row.get("hcpcs_cd") or "",
+                        "hcpcs_desc": row.get("hcpcs_desc") or "",
+                        "submitted_charge": float(row.get("avg_submitted_charge") or 0),
+                        "risk_score": card.risk_score,
+                        "legitimacy_score": card.legitimacy_score,
+                        "case_label": card.case_label.value,
+                        "anomaly_score": anomaly_score,
+                        "signals": risk_signals,
+                        "scoring_latency_ms": round(latency_ms, 1),
+                    }
+
+                    yield f"data: {json.dumps(event)}\n\n"
+                    count += 1
+
                 except Exception:
-                    pass
+                    # Connection lost or DB error — stop gracefully
+                    break
 
-                # 4. Build event payload
-                risk_signals = [
-                    s.signal.name
-                    for s in card.signals
-                    if s.signal.direction == SignalDirection.risk
-                ]
-
-                event = {
-                    "event_id": f"evt_{count:05d}",
-                    "timestamp": datetime.now(UTC).isoformat(),
-                    "npi": row["npi"],
-                    "provider_name": row.get("provider_name") or "Unknown",
-                    "state": row.get("state") or "Unknown",
-                    "city": row.get("city") or "",
-                    "hcpcs_code": row.get("hcpcs_cd") or "",
-                    "hcpcs_desc": row.get("hcpcs_desc") or "",
-                    "submitted_charge": float(row.get("avg_submitted_charge") or 0),
-                    "risk_score": card.risk_score,
-                    "legitimacy_score": card.legitimacy_score,
-                    "case_label": card.case_label.value,
-                    "anomaly_score": anomaly_score,
-                    "signals": risk_signals,
-                    "scoring_latency_ms": round(latency_ms, 1),
-                }
-
-                yield f"data: {json.dumps(event)}\n\n"
-                count += 1
-
-            except Exception:
-                # Connection lost or DB error — stop gracefully
-                break
-
-            await asyncio.sleep(interval)
+                await asyncio.sleep(interval)
 
     return StreamingResponse(
         event_generator(),
