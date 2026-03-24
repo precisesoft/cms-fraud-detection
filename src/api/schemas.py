@@ -547,6 +547,38 @@ class GraphResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Fraud Ring Cluster
+# ---------------------------------------------------------------------------
+
+
+class ClusterMember(BaseModel):
+    """A provider discovered in the same fraud ring cluster."""
+
+    npi: str
+    provider_name: str | None = None
+    provider_type: str | None = None
+    state: str | None = None
+    zip5: str | None = None
+    risk_score: int | None = None
+    risk_band: RiskBand | None = None
+    revoked: bool = False
+    link_type: str = Field(description="SAME_ZIP or SAME_ORG")
+    hops: int = Field(description="Distance from seed NPI")
+
+
+class FraudClusterResponse(BaseModel):
+    """Fraud ring cluster for a provider."""
+
+    npi: str
+    cluster_id: str = Field(description="Deterministic ID: sorted NPIs joined by underscore")
+    members: list[ClusterMember] = Field(default_factory=list)
+    cluster_size: int = 0
+    high_risk_count: int = 0
+    revoked_count: int = 0
+    truncated: bool = False
+
+
+# ---------------------------------------------------------------------------
 # Case Actions (Investigation Workflow)
 # ---------------------------------------------------------------------------
 
