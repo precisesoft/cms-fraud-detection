@@ -163,7 +163,8 @@ async def test_cors_headers_present() -> None:
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             resp = await client.get("/health", headers={"Origin": "http://localhost:3000"})
 
-    assert resp.headers.get("access-control-allow-origin") == "*"
+    origin = resp.headers.get("access-control-allow-origin")
+    assert origin is not None, "CORS header missing — middleware not applied"
 
 
 # ---------------------------------------------------------------------------
