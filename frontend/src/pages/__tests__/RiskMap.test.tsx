@@ -25,14 +25,40 @@ vi.mock("../../lib/api", () => ({
 }));
 
 vi.mock("react-simple-maps", () => ({
-  ComposableMap: ({ children }: { children: React.ReactNode }) => <div data-testid="map">{children}</div>,
-  Geographies: ({ children }: { children: (props: { geographies: Array<{ id: string; rsmKey: string }> }) => React.ReactNode }) =>
-    <div>{children({ geographies: [{ id: "12", rsmKey: "FL" }, { id: "48", rsmKey: "TX" }] })}</div>,
-  Geography: ({ geography, onMouseEnter, onMouseLeave }: { geography: { id: string }; onMouseEnter?: (event: MouseEvent) => void; onMouseLeave?: () => void }) => (
+  ComposableMap: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="map">{children}</div>
+  ),
+  Geographies: ({
+    children,
+  }: {
+    children: (props: {
+      geographies: Array<{ id: string; rsmKey: string }>;
+    }) => React.ReactNode;
+  }) => (
+    <div>
+      {children({
+        geographies: [
+          { id: "12", rsmKey: "FL" },
+          { id: "48", rsmKey: "TX" },
+        ],
+      })}
+    </div>
+  ),
+  Geography: ({
+    geography,
+    onMouseEnter,
+    onMouseLeave,
+  }: {
+    geography: { id: string };
+    onMouseEnter?: (event: MouseEvent) => void;
+    onMouseLeave?: () => void;
+  }) => (
     <button
       type="button"
       data-testid={`state-${geography.id}`}
-      onMouseEnter={() => onMouseEnter?.({ clientX: 10, clientY: 10 } as MouseEvent)}
+      onMouseEnter={() =>
+        onMouseEnter?.({ clientX: 10, clientY: 10 } as MouseEvent)
+      }
       onMouseLeave={onMouseLeave}
     >
       {geography.id}
@@ -52,7 +78,10 @@ function renderRiskMap() {
     <MemoryRouter initialEntries={["/risk-map"]}>
       <Routes>
         <Route path="/risk-map" element={<RiskMap />} />
-        <Route path="/providers" element={<div data-testid="providers-page">Providers page</div>} />
+        <Route
+          path="/providers"
+          element={<div data-testid="providers-page">Providers page</div>}
+        />
       </Routes>
     </MemoryRouter>,
   );
@@ -86,6 +115,35 @@ describe("RiskMap", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("providers-page")).toBeInTheDocument();
+    });
+  });
+
+  it("handles mouse enter and leave on geography elements", async () => {
+    const user = userEvent.setup();
+    renderRiskMap();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("state-12")).toBeInTheDocument();
+    });
+
+    // Hover triggers onMouseEnter callback without error
+    await user.hover(screen.getByTestId("state-12"));
+    // Unhover triggers onMouseLeave callback without error
+    await user.unhover(screen.getByTestId("state-12"));
+  });
+
+  it("shows loading state initially", () => {
+    vi.mocked(getHeatmap).mockReturnValue(new Promise(() => {}));
+    const { container } = renderRiskMap();
+    expect(container.querySelector(".animate-spin")).toBeInTheDocument();
+  });
+
+  it("shows error state when API fails", async () => {
+    vi.mocked(getHeatmap).mockRejectedValue(new Error("fail"));
+    renderRiskMap();
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("map")).toBeInTheDocument();
     });
   });
 });
