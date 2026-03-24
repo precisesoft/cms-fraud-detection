@@ -1,6 +1,7 @@
 import React from 'react';
 import { TrendingUp, Map } from 'lucide-react';
-import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simple-maps';
+import { Link } from 'react-router-dom';
+import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import { getHeatmap } from '../lib/api';
 import type { HeatmapEntry } from '../lib/api';
 import { cn } from '../lib/utils';
@@ -87,42 +88,40 @@ export function RiskMap() {
               height={500}
               style={{ width: '100%', height: 'auto' }}
             >
-              <ZoomableGroup>
-                <Geographies geography={GEO_URL}>
-                  {({ geographies }) =>
-                    geographies.map((geo) => {
-                      const fips = geo.id as string;
-                      const abbr = FIPS_TO_ABBR[fips];
-                      const entry = abbr ? byState.get(abbr) : undefined;
-                      return (
-                        <Geography
-                          key={geo.rsmKey}
-                          geography={geo}
-                          fill={fillForRisk(entry?.avg_risk_score)}
-                          stroke="#fff"
-                          strokeWidth={0.5}
-                          style={{
-                            default: { outline: 'none' },
-                            hover: { outline: 'none', filter: 'brightness(0.92)', cursor: 'pointer' },
-                            pressed: { outline: 'none' },
-                          }}
-                          onMouseEnter={(evt) => {
-                            if (entry) {
-                              setTooltip({ entry, x: evt.clientX, y: evt.clientY });
-                            }
-                          }}
-                          onMouseMove={(evt) => {
-                            if (entry) {
-                              setTooltip({ entry, x: evt.clientX, y: evt.clientY });
-                            }
-                          }}
-                          onMouseLeave={() => setTooltip(null)}
-                        />
-                      );
-                    })
-                  }
-                </Geographies>
-              </ZoomableGroup>
+              <Geographies geography={GEO_URL}>
+                {({ geographies }) =>
+                  geographies.map((geo) => {
+                    const fips = geo.id as string;
+                    const abbr = FIPS_TO_ABBR[fips];
+                    const entry = abbr ? byState.get(abbr) : undefined;
+                    return (
+                      <Geography
+                        key={geo.rsmKey}
+                        geography={geo}
+                        fill={fillForRisk(entry?.avg_risk_score)}
+                        stroke="#fff"
+                        strokeWidth={0.5}
+                        style={{
+                          default: { outline: 'none' },
+                          hover: { outline: 'none', filter: 'brightness(0.96)', cursor: 'default' },
+                          pressed: { outline: 'none' },
+                        }}
+                        onMouseEnter={(evt) => {
+                          if (entry) {
+                            setTooltip({ entry, x: evt.clientX, y: evt.clientY });
+                          }
+                        }}
+                        onMouseMove={(evt) => {
+                          if (entry) {
+                            setTooltip({ entry, x: evt.clientX, y: evt.clientY });
+                          }
+                        }}
+                        onMouseLeave={() => setTooltip(null)}
+                      />
+                    );
+                  })
+                }
+              </Geographies>
             </ComposableMap>
 
             {/* Floating Tooltip */}
@@ -155,7 +154,11 @@ export function RiskMap() {
             <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4"><TrendingUp className="w-4 h-4 text-rose-500" /> Highest Risk States</h3>
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
               {sortedByRisk.slice(0, 20).map((entry, i) => (
-                <div key={entry.state} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50 transition-colors">
+                <Link
+                  key={entry.state}
+                  to={`/providers?state=${encodeURIComponent(entry.state)}`}
+                  className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50 transition-colors"
+                >
                   <div className="flex items-center gap-3">
                     <span className="text-[10px] font-black text-slate-400 w-5">{i + 1}.</span>
                     <span className="text-sm font-bold text-slate-800">{entry.state}</span>
@@ -165,7 +168,7 @@ export function RiskMap() {
                     <span className="text-xs text-slate-500">{entry.flagged_count} flagged</span>
                     <span className={cn('text-sm font-bold', scoreColor(entry.avg_risk_score))}>{entry.avg_risk_score.toFixed(1)}</span>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
