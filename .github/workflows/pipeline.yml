@@ -63,7 +63,7 @@ jobs:
     name: Security
     runs-on: ubuntu-latest
     needs: [gate]
-    if: always() && (needs.gate.result == 'success' || needs.gate.result == 'skipped')
+    if: always() && github.event_name != 'push' && (needs.gate.result == 'success' || needs.gate.result == 'skipped')
     steps:
       - run: git config --global init.defaultBranch main
       - uses: actions/checkout@v4
@@ -140,7 +140,7 @@ jobs:
     name: Quality (Backend)
     runs-on: ubuntu-latest
     needs: [gate]
-    if: always() && (needs.gate.result == 'success' || needs.gate.result == 'skipped')
+    if: always() && github.event_name != 'push' && (needs.gate.result == 'success' || needs.gate.result == 'skipped')
     env:
       COVERAGE_THRESHOLD: 95
     steps:
@@ -195,7 +195,7 @@ jobs:
     name: Quality (Frontend)
     runs-on: ubuntu-latest
     needs: [gate]
-    if: always() && (needs.gate.result == 'success' || needs.gate.result == 'skipped')
+    if: always() && github.event_name != 'push' && (needs.gate.result == 'success' || needs.gate.result == 'skipped')
     steps:
       - run: git config --global init.defaultBranch main
       - uses: actions/checkout@v4
@@ -233,12 +233,15 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     needs: [security, quality-backend, quality-frontend]
-    # Explicit check: default success() skips when dependencies ran via always()
+    # On push to main: skip quality/security (already passed on PR), go straight to build
+    # On PR/dispatch: require all three to succeed
     if: |
       always() &&
-      needs.security.result == 'success' &&
-      needs.quality-backend.result == 'success' &&
-      needs.quality-frontend.result == 'success'
+      (github.event_name == 'push' || (
+        needs.security.result == 'success' &&
+        needs.quality-backend.result == 'success' &&
+        needs.quality-frontend.result == 'success'
+      ))
     steps:
       - run: git config --global init.defaultBranch main
       - uses: actions/checkout@v4
