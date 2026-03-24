@@ -1,11 +1,11 @@
 # Architecture v3 — CMS Provider Intelligence Platform
 
 > Production-grade, containerized application deployed via CI/CD to EKS.
-> Supersedes v2. This is the build plan.
+> Supersedes v2. This is the production architecture.
 
 STATUS: approved
 created: 2026-03-14
-updated: 2026-03-15
+updated: 2026-03-24
 
 ---
 
@@ -15,7 +15,7 @@ All diagrams are in `docs/diagrams/` as rendered PNGs.
 
 | #   | Diagram                                                            | File                         | Purpose                                                      |
 | --- | ------------------------------------------------------------------ | ---------------------------- | ------------------------------------------------------------ |
-| 1   | [System Architecture](diagrams/01-system-architecture.png)         | `01-system-architecture`     | Full-stack component map with all 13 API endpoints           |
+| 1   | [System Architecture](diagrams/01-system-architecture.png)         | `01-system-architecture`     | Full-stack component map with all 14 API endpoints           |
 | 2   | [Deployment Architecture](diagrams/02-deployment-architecture.png) | `02-deployment-architecture` | CI/CD pipeline: GitHub Actions → ECR → ArgoCD → EKS          |
 | 3   | [Data Pipeline](diagrams/03-data-pipeline.png)                     | `03-data-pipeline`           | ETL flow: 19GB raw CMS CSVs → DuckDB → PostgreSQL + Neo4j    |
 | 4   | [Scoring Engine](diagrams/04-scoring-engine.png)                   | `04-scoring-engine`          | Claim input → signal extraction → dual scoring → narrative   |
@@ -41,6 +41,8 @@ interfaces:
 2. **Claims Simulator** — Select a claim, push through scoring engine, see full signal breakdown
 3. **Investigation Chat** — Sidebar where anyone (not just data engineers) can ask
    plain English questions and get answers with charts
+
+All three are live at [argus.precise-lab.com](https://argus.precise-lab.com).
 
 ## System Architecture
 
@@ -82,7 +84,7 @@ interfaces:
 ├──────────┬──────────┬──────────────────┬────────────────────────────────┤
 │  Signal  │    AI    │  Scoring Engine  │  Data Access Layer             │
 │ Harvester│ Reasoner │                  │                                │
-│          │          │  Deterministic   │  SQLAlchemy (PostgreSQL)       │
+│          │          │  Deterministic   │  psycopg (PostgreSQL)          │
 │ Extracts │ Claude   │  risk + legit    │  neo4j-driver (Neo4j)          │
 │ signals  │ API:     │  scoring with    │  DuckDB (analytical queries)   │
 │ from all │ text→SQL │  full provenance │                                │
@@ -600,7 +602,7 @@ CI/CD Pipeline (unified pipeline.yml):
     → Gate: conventional commit PR title check
     → Security (parallel): gitleaks + bandit + pip-audit + npm audit
     → Quality (parallel):
-        Backend: ruff + mypy + pytest + coverage (80% threshold)
+        Backend: ruff + mypy + pytest + coverage (95% threshold)
         Frontend: eslint + tsc + vitest (80% lines) + vite build
     → Build: Docker images (amd64) + CycloneDX SBOMs
     → Scan: Trivy on both images
@@ -670,312 +672,6 @@ volumes:
 
 ---
 
-# Epics
+## Development Process
 
-## Epic 1: Data Foundation
-
-**Goal**: Build the ETL pipeline that transforms 19GB of raw CMS CSVs into a loaded
-PostgreSQL database and Neo4j graph, ready for the application to query.
-
-**Acceptance Criteria**:
-
-- [ ] Raw CSVs are ingested via DuckDB into canonical Parquet tables
-- [ ] Provider identity spine built from Part B + Enrollment + Revocations
-- [ ] Peer baselines computed by (specialty × state × HCPCS × place_of_service)
-- [ ] Signals harvested for every ProviderServiceCase
-- [ ] Risk and legitimacy scores computed for all cases
-- [ ] PostgreSQL schema created and loaded with all tables
-- [ ] Neo4j graph projected with Provider → Case → Signal → Source relationships
-- [ ] ETL is repeatable: `python -m backend.src.etl.load` runs end-to-end
-- [ ] Data integrity verified: row counts match, no null NPIs in providers table
-
-**Stories**:
-
-1. Create PostgreSQL schema with Alembic migrations
-2. Build DuckDB ingestion pipeline (raw CSV → Parquet)
-3. Build provider identity spine (Part B + Enrollment + Revocations)
-4. Compute peer baselines by specialty × geography
-5. Harvest signals and compute risk/legitimacy scores
-6. Bulk load Parquet into PostgreSQL
-7. Project graph into Neo4j
-8. Write ETL integration test
-9. Create demo data fixture (500 providers, 5K cases for fast dev/demo)
-
----
-
-## Epic 2: Scoring Engine
-
-**Goal**: Build a deterministic scoring engine that takes any claim (NPI + HCPCS +
-place of service + charge + volume) and returns a risk score with full signal
-breakdown and source provenance.
-
-**Acceptance Criteria**:
-
-- [ ] `score(npi, hcpcs, place_of_service, charge, volume)` returns a `ScoreResult`
-- [ ] `ScoreResult` contains: risk_score, legitimacy_score, case_label, signals[],
-      narrative, provenance[]
-- [ ] Each signal includes: type, direction, value, z_score, peer_baseline,
-      points_contributed, source_table
-- [ ] Scoring is deterministic — same input always produces same output
-- [ ] Scoring works for providers already in the database (lookup) and new patterns
-      (compute against peer baselines on the fly)
-- [ ] Scoring engine has >90% test coverage
-- [ ] Fairness metrics computed: flagging rate by state and specialty cohorts
-- [ ] Statistical parity and disparate impact measures pass thresholds
-
-**Stories**:
-
-1. Define signal taxonomy and weights in `taxonomy.py`
-2. Implement signal extraction for each signal type
-3. Implement risk score computation (weighted sum with tiered thresholds)
-4. Implement legitimacy score computation
-5. Implement case labeling logic (high_risk / review / stable)
-6. Implement on-the-fly scoring for new claim patterns
-7. Implement fairness analysis across geography and specialty
-8. Write comprehensive scoring tests with known expected outputs
-
----
-
-## Epic 3: Evidence Graph
-
-**Goal**: Neo4j graph that enables relationship traversal and investigation queries.
-Judges can see how providers, cases, signals, and sources connect.
-
-**Acceptance Criteria**:
-
-- [ ] Graph contains: Provider, Case, Signal, PeerGroup, Source nodes
-- [ ] Relationships: HAS_CASE, HAS_SIGNAL, IN_PEER_GROUP, SOURCED_FROM
-- [ ] Cypher query for "all signals for NPI X" returns correct results
-- [ ] Cypher query for "high-risk providers in state Y" works
-- [ ] Cypher query for "providers with similar signal patterns" works
-- [ ] Graph data matches PostgreSQL data (consistency check)
-- [ ] Neo4j client wrapper with connection pooling
-
-**Stories**:
-
-1. Define Neo4j node and relationship schema
-2. Build projection pipeline (PostgreSQL → Neo4j)
-3. Write Cypher query templates for common patterns
-4. Build Neo4j client wrapper with health checks
-5. Write graph consistency tests
-
----
-
-## Epic 4: AI Reasoning Layer
-
-**Goal**: Claude API integration that powers text-to-SQL queries, risk narratives,
-and the chat interface. A business owner can ask questions and get answers without
-knowing SQL.
-
-**Acceptance Criteria**:
-
-- [ ] Text-to-SQL: natural language → PostgreSQL SQL → execute → formatted answer
-- [ ] Narrative generator: structured signals → human-readable investigation brief
-- [ ] Chat endpoint handles multi-turn conversation with context
-- [ ] Chart specification: AI can return Recharts-compatible chart configs
-- [ ] Prompt library with few-shot examples for SQL generation
-- [ ] SQL injection prevention: generated SQL is validated before execution
-- [ ] Fallback: if AI generates invalid SQL, returns helpful error, not a crash
-- [ ] Response latency < 5s for typical queries
-- [ ] Chat responses stream via SSE (token-by-token delivery)
-
-**Stories**:
-
-1. Build AWS Bedrock client wrapper with retry and error handling
-2. Create PostgreSQL schema prompt with table descriptions and examples
-3. Implement text-to-SQL with query validation and sandboxing
-4. Implement narrative generator for risk score explanations
-5. Implement chat endpoint with conversation history
-6. Build chart specification generator (AI → Recharts config)
-7. Implement streaming chat responses (SSE via Bedrock streaming API)
-8. Write test suite with 20+ representative questions
-9. Add SQL injection guards and query complexity limits
-
----
-
-## Epic 5: API Layer
-
-**Goal**: FastAPI backend that serves the frontend with all data, scoring, and chat
-capabilities. Production-ready with proper error handling, CORS, health checks.
-
-**Acceptance Criteria**:
-
-- [ ] All endpoints from the architecture spec are implemented
-- [ ] Pydantic schemas for all request/response models
-- [ ] CORS configured for frontend origin
-- [ ] Health check endpoint for k8s probes
-- [ ] Structured logging (JSON)
-- [ ] Error handling middleware (no stack traces in responses)
-- [ ] API auto-docs at /docs (Swagger UI)
-- [ ] Response times: < 200ms for data queries, < 5s for AI-powered endpoints
-
-**Stories**:
-
-1. FastAPI app factory with middleware and lifespan
-2. Implement `/api/dashboard` and `/api/dashboard/heatmap` routes
-3. Implement `/api/providers` and `/api/providers/{npi}` routes (with ?q= search)
-4. Implement `/api/providers/{npi}/trends` route
-5. Implement `/api/claims` route with pagination and filtering
-6. Implement `/api/score` route (scoring engine integration)
-7. Implement `/api/chat` route with SSE streaming (AI layer integration)
-8. Implement `/api/signals/{npi}` and `/api/peers/{npi}` routes
-9. Implement `/api/fairness` route
-10. Implement `/api/graph/{npi}` route (Neo4j traversal)
-11. Add Pydantic schemas and response models
-12. Add health check, CORS, error handling middleware
-
----
-
-## Epic 6: Frontend — Dashboard, Claims Simulator, Fairness
-
-**Goal**: React frontend with three views: (1) overview dashboard with risk heatmap,
-(2) claims simulator with scoring and transparency, (3) fairness dashboard proving
-responsible AI. Provider search available from every view.
-
-**Acceptance Criteria**:
-
-- [ ] Overview dashboard as landing page with stat cards and risk heatmap
-- [ ] US choropleth heatmap colored by average risk score per state
-- [ ] Top flagged providers list on dashboard
-- [ ] Provider search with autocomplete (NPI, name, specialty)
-- [ ] Claims data table with sortable columns (NPI, HCPCS, risk score, band)
-- [ ] Click a row → Provider detail panel slides in
-- [ ] "Scan" button pushes claim through scoring engine, shows result
-- [ ] Risk gauge component (0-100 with color bands)
-- [ ] Signal cards showing risk and legitimacy factors
-- [ ] Peer comparison chart (provider vs peer average)
-- [ ] Time-series billing trend chart (provider vs peer over time)
-- [ ] Evidence graph visualization (expandable, P2)
-- [ ] AI narrative displayed in the detail panel
-- [ ] Fairness dashboard with flagging rates by specialty and state
-- [ ] Statistical parity and disparate impact pass/fail badges
-- [ ] Responsive layout, works on desktop and tablet
-- [ ] Loading states and error handling
-
-**Stories**:
-
-1. Scaffold Vite + React 19 + TypeScript project
-2. Build overview dashboard page (stat cards, top flagged list)
-3. Build risk heatmap component (US choropleth map)
-4. Build provider search with autocomplete
-5. Build claims data table component
-6. Build provider detail panel with signal cards
-7. Build risk gauge component
-8. Build peer comparison chart (Recharts)
-9. Build time-series trend chart
-10. Integrate scoring engine — "Scan" button flow
-11. Build fairness dashboard view (flagging rate charts + metrics)
-12. Build evidence graph visualization (P2 — if time permits)
-13. Add loading states, error boundaries, empty states
-
----
-
-## Epic 7: Chat Sidebar
-
-**Goal**: Sliding sidebar chat interface where users type plain English questions
-and get answers with optional charts. No SQL knowledge needed.
-
-**Acceptance Criteria**:
-
-- [ ] Sidebar slides in/out from the right edge
-- [ ] Text input with send button
-- [ ] Messages render with markdown support
-- [ ] AI responses can include inline charts (Recharts)
-- [ ] AI responses can include data tables
-- [ ] Conversation history maintained during session
-- [ ] Suggested questions shown when chat is empty
-- [ ] Loading indicator while AI is processing
-- [ ] Streaming responses — tokens render as they arrive (SSE)
-- [ ] Markdown rendering in AI responses
-
-**Stories**:
-
-1. Build chat sidebar shell (slide in/out, responsive)
-2. Build message list component (user + AI messages with markdown)
-3. Build text input with send action
-4. Integrate with `/api/chat` endpoint (SSE streaming)
-5. Build chart renderer for AI-generated chart specs
-6. Build data table renderer for query results
-7. Add suggested questions component
-
----
-
-## Epic 8: CI/CD Pipeline
-
-**Goal**: Automated pipeline from push to deployed application. GitHub Actions for
-CI, ArgoCD for CD to EKS.
-
-**Acceptance Criteria**:
-
-- [ ] Push to any branch triggers CI (lint + test + build)
-- [ ] Push to `main` triggers CD (build images + push + deploy)
-- [ ] Backend CI: ruff lint, pytest, coverage report
-- [ ] Frontend CI: eslint, tsc, vitest, build
-- [ ] Docker images built and pushed to container registry
-- [ ] Kustomize manifests for dev and prod overlays
-- [ ] ArgoCD Application manifest for automated sync
-- [ ] PR code review via GitHub Copilot (auto-review enabled)
-
-**Stories**:
-
-1. Scaffold monorepo with docker-compose.yml
-2. Create .env.example with documented variables
-3. Create GitHub Actions CI workflow (backend)
-4. Create GitHub Actions CI workflow (frontend)
-5. Create GitHub Actions CD workflow (build + push images)
-6. Write Dockerfiles for backend and frontend (multi-stage)
-7. Create Kustomize base manifests (deployments, services, ingress)
-8. Create Kustomize overlays (dev, prod)
-9. Create ArgoCD Application manifest
-10. Configure GitHub branch protection and PR template
-
----
-
-## Epic 9: Documentation & Deliverables
-
-**Goal**: All hackathon-required deliverables plus operational docs.
-
-**Acceptance Criteria**:
-
-- [ ] Architecture diagram (visual, not ASCII)
-- [ ] Risk-scoring explanation document
-- [ ] Responsible AI considerations document
-- [ ] 5-minute "Path to CMS Pilot" briefing
-- [ ] AI tool usage disclosure
-- [ ] Open-source library disclosure
-- [ ] README with quickstart (docker-compose up)
-- [ ] End-to-end demo script, timed and rehearsed
-- [ ] Judge access to private repo configured
-
-**Stories**:
-
-1. Generate architecture diagram
-2. Write risk-scoring methodology document
-3. Write responsible AI considerations (references fairness metrics)
-4. Draft "Path to CMS Pilot" 5-minute briefing
-5. Create AI tool usage and open-source disclosures
-6. Update README with final quickstart
-7. Write demo script (5-7 min) and rehearse on deployed system
-8. Set up judge access to private repo
-
----
-
-## Epic Execution Order
-
-```
-Epic 8: CI/CD Pipeline          ━━━━ (Days 1-2, then maintenance)
-Epic 1: Data Foundation         ━━━━━━━━━━ (Days 1-3)
-Epic 2: Scoring Engine          ━━━━━━━━━━ (Days 2-4, overlaps with E1)
-Epic 3: Evidence Graph          ━━━━━━ (Days 3-5)
-Epic 4: AI Reasoning Layer      ━━━━━━━━ (Days 4-7)
-Epic 5: API Layer               ━━━━━━━━━━ (Days 4-8, parallel with E4)
-Epic 6: Frontend (all views)    ━━━━━━━━━━━━ (Days 5-10)
-Epic 7: Chat Sidebar            ━━━━━━━━ (Days 8-10, after E6 shell exists)
-Epic 9: Docs & Deliverables     ━━━━━━ (Days 10-12)
-         Demo rehearsal          ━━━━ (Days 12-13)
-```
-
-**Critical path**: E8 → E1 → E2 → E5 → E6 (infra → data → scoring → API → UI)
-**Parallel track**: E3 + E4 can build alongside E2 and E5
-**Start early**: E8 (CI/CD) should be first so all subsequent work flows through it
-**End strong**: Demo script and rehearsal are the last and highest-leverage activities
+For the full development process — AI-assisted workflow, agile process, 19 epics delivered, and CI/CD pipeline details — see [development-process.md](development-process.md).
