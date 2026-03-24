@@ -46,7 +46,7 @@ WITH RECURSIVE ring AS (
             AND pf.entity_code = 'O' AND r.entity_code = 'O')
     )
     WHERE r.hops < 3
-      AND pf.npi NOT IN (SELECT npi FROM ring)
+      AND pf.npi != r.npi
 )
 SELECT DISTINCT ON (r.npi)
        r.npi,
