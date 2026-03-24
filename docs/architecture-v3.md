@@ -11,7 +11,7 @@ updated: 2026-03-15
 
 ## Diagrams
 
-All diagrams are in `docs/diagrams/` as Mermaid source (`.mmd`) with rendered PNGs.
+All diagrams are in `docs/diagrams/` as rendered PNGs.
 
 | #   | Diagram                                                            | File                         | Purpose                                                      |
 | --- | ------------------------------------------------------------------ | ---------------------------- | ------------------------------------------------------------ |
