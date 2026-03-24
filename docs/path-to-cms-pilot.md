@@ -63,6 +63,19 @@ The system is designed so the **MVP maps directly to a pilot** with minimal rewo
 - No PHI required — works on public data today
 - **Validated**: 91% of eventually-revoked providers detected from billing patterns alone (94% for billing abuse, 100% for felony-related revocations)
 
+## Integration with Existing CMS Systems
+
+CMS already operates the **Fraud Prevention System (FPS)**, a real-time pre-payment scoring engine that processes approximately 15 million Medicare Fee-for-Service claim lines per day (operated by Peraton under a CMS contract). FPS generates provider risk, priority, and actionability scores that feed investigation queues for **Unified Program Integrity Contractors (UPICs)** — the five regional contractors who replaced ZPICs in 2016–2019 and are required by CMS to derive 45% of new investigations from FPS leads. In 2025, CMS also launched the Fraud Detection Operation Center (FDOC) using FPS outputs.
+
+Argus is designed to be **complementary to FPS, not a replacement**:
+
+- **FPS** screens claims at the transaction level — it scores individual claim lines pre-payment.
+- **Argus** profiles providers at the behavioral level — it builds an explainable evidence picture across a provider's full billing history, peer group, enrollment status, and sanctions record.
+
+The integration point is straightforward: FPS-flagged NPIs become investigation triggers in Argus. A UPIC investigator receives an FPS lead (a risk score on a claim), then uses Argus to answer the harder question — _why does this provider's overall billing pattern look suspicious, and what evidence supports that conclusion?_
+
+This directly addresses a documented gap. GAO Report GAO-17-710 criticized FPS for lacking defined effectiveness measures and transparency in how risk scores are generated. Argus addresses this with 13 named signals, each with a threshold, a weight, and a data-source citation — the kind of provenance that supports an administrative action or law enforcement referral.
+
 ### Pilot Phase (6 months)
 
 | Change                           | What It Takes                                                                                                                                                                                    |
@@ -74,6 +87,8 @@ The system is designed so the **MVP maps directly to a pilot** with minimal rewo
 | **Real-time scoring**            | The system already demonstrates real-time scoring at sub-50ms latency via SSE streaming. Connecting to a live CMS claims feed (SQS/Kafka) is a configuration change, not an architecture change. |
 | **Multi-year temporal analysis** | Connect 3-5 years of Part B data to detect year-over-year growth, billing acceleration, and code-mix shifts.                                                                                     |
 | **Feedback loop**                | Reviewer decisions (true positive, false positive) feed back into signal weight tuning.                                                                                                          |
+| **FPS lead ingestion**           | Ingest provider NPIs flagged by FPS as investigation triggers. Configuration change, not architecture change.                                                                                    |
+| **UCM integration**              | Push Argus evidence packages to CMS Unified Case Management system for UPIC workflow.                                                                                                            |
 
 ### Production Scale (12 months)
 
