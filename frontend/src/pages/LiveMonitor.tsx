@@ -483,7 +483,7 @@ export function LiveMonitor() {
                       {evt.risk_score}
                     </span>
                     <span className="text-[10px] font-mono text-slate-300 shrink-0 w-10 text-right">
-                      {evt.scoring_latency_ms.toFixed(0)}ms
+                      {evt.scoring_latency_ms.toFixed(1)}ms
                     </span>
                   </motion.button>
                 ))}
