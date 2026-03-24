@@ -108,7 +108,7 @@ export function Layout() {
           id="sidebar-nav"
           role="navigation"
           className={cn(
-            "fixed inset-y-14 left-0 z-40 w-64 bg-white border-r border-slate-200 flex flex-col transform transition-transform duration-200 ease-in-out md:translate-x-0 md:sticky md:top-14 md:h-[calc(100vh-3.5rem)]",
+            "fixed inset-y-14 left-0 z-40 w-64 bg-white border-r border-slate-200 flex flex-col transform transition-transform duration-200 ease-in-out md:translate-x-0",
             isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
           )}
         >
@@ -168,7 +168,7 @@ export function Layout() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-slate-50/50 p-6 md:p-8">
+        <main className="flex-1 overflow-y-auto bg-slate-50/50 p-6 md:p-8 md:ml-64">
           <div className="max-w-7xl mx-auto">
             <Suspense
               fallback={
