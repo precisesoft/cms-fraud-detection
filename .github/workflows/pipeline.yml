@@ -89,8 +89,7 @@ jobs:
         run: pip install -e ".[dev]"
 
       - name: Run bandit
-        run: bandit -r src/ -c pyproject.toml -f json -o bandit-report.json
-        continue-on-error: true
+        run: bandit -r src/ -c pyproject.toml -f json -o bandit-report.json || true
 
       - name: Check for HIGH severity findings
         run: |
