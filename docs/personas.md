@@ -68,7 +68,7 @@ Argus sits at the payment gate. It scores every claim against peer baselines, fl
 
 **Success metric**: Builds a complete evidence package in <30 minutes (vs. 4 hours today)
 
-**Key screens**: Provider Detail (`/providers/[npi]`), Evidence Graph, AI Chat Sidebar
+**Key screens**: Provider Detail (`/providers/:npi`), Evidence Graph, AI Chat Sidebar
 
 ---
 
@@ -130,7 +130,7 @@ Argus sits at the payment gate. It scores every claim against peer baselines, fl
 
 **Success metric**: Correctly validates or dismisses clinical flags with documented reasoning
 
-**Key screens**: Provider Detail (`/providers/[npi]`), Peer Chart, Signals
+**Key screens**: Provider Detail (`/providers/:npi`), Peer Chart, Signals
 
 ---
 
@@ -186,11 +186,11 @@ This is the "hero" journey for the hackathon demo. It shows Argus's core value p
    - Connected to 2 other providers at same Miami address
    - All 3 providers bill the same code (J3490)
 
-4. ASK AI (future — chat sidebar)
+4. ASK AI (chat sidebar)
    "Show me all providers at 1234 Biscayne Blvd billing J3490"
    → AI returns 3 providers, all flagged, combined $1.2M
 
-5. EXPORT CASE
+5. EXPORT CASE (future)
    Marcus generates a case summary with all evidence for law enforcement referral.
 ```
 
@@ -215,7 +215,7 @@ This is the "hero" journey for the hackathon demo. It shows Argus's core value p
    Weekly trend line shows flagging rate stable at 1.5%
    No emerging fraud patterns detected this week
 
-5. GENERATE REPORT
+5. GENERATE REPORT (future)
    Director exports weekly summary for CMS leadership briefing
 ```
 
