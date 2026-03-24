@@ -96,6 +96,22 @@ normalized = clamp(50 - raw_score * 100, 0, 100)
 
 Higher scores indicate more anomalous billing patterns. Scores are ordinal rankings, not calibrated probabilities. The score is served via `src/models/anomaly_scorer.py` using lazy-loaded model caching (`lru_cache`).
 
+## Per-Provider Feature Importance
+
+The system provides per-provider explainability via a **leave-one-out approximation** (`src/explainability/shap_explainer.py`, exposed at `GET /api/providers/{npi}/explain`).
+
+**Method**: For each of the 49 features, zero the value, re-score through the model, and measure the anomaly score delta. Features with the largest absolute delta are the strongest contributors to that provider's anomaly score.
+
+| Delta    | Direction  | Meaning                                      |
+| -------- | ---------- | -------------------------------------------- |
+| Positive | Risk       | Feature was pushing anomaly score higher     |
+| Negative | Protective | Feature was reducing the anomaly score       |
+| Zero     | Neutral    | Feature was already at zero or had no effect |
+
+**Trade-offs vs. SHAP**: Leave-one-out uses zero as the baseline rather than the expected value, which may overstate the contribution of binary features (e.g., `enrolled_2025`). However, it requires no additional dependencies, runs in under 100ms, and produces directionally identical top-feature rankings for tree-based models.
+
+**UI integration**: The Provider Detail page displays the top 5 features as horizontal bars (red = risk-increasing, green = protective) alongside a Score Agreement indicator comparing the rule-based risk score and the ML anomaly score.
+
 ## Limitations
 
 1. **Single-year cross-section**: Trained on 2022 data only. No temporal validation across years. Provider behavior may shift over time.
@@ -126,3 +142,4 @@ Higher scores indicate more anomalous billing patterns. Scores are ordinal ranki
 | Version | Date       | Notes                                                         |
 | ------- | ---------- | ------------------------------------------------------------- |
 | 1.0.0   | March 2026 | Initial model (200 estimators, 49 features, 10,282 providers) |
+| 1.1.0   | March 2026 | Added per-provider leave-one-out feature importance endpoint  |

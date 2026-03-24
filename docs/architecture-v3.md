@@ -36,9 +36,10 @@ This is a real application, not a demo script. It loads 19GB of public CMS data 
 a database, builds a provider evidence graph, harvests signals, and provides two
 interfaces:
 
-1. **Claims Simulator** — Payments flow in, get scanned, risk-scored in real time
-   with full transparency into every factor
-2. **Investigation Chat** — Sidebar where anyone (not just data engineers) can ask
+1. **Live Payment Monitor** — Claims stream in via SSE, scored in real time (<50ms),
+   displayed on a live US map with pulsing risk dots
+2. **Claims Simulator** — Select a claim, push through scoring engine, see full signal breakdown
+3. **Investigation Chat** — Sidebar where anyone (not just data engineers) can ask
    plain English questions and get answers with charts
 
 ## System Architecture
@@ -75,6 +76,8 @@ interfaces:
 │  GET  /api/peers/{npi}     — Peer group comparison data                  │
 │  GET  /api/fairness        — Flagging rate by geography + specialty       │
 │  GET  /api/graph/{npi}     — Evidence graph nodes + edges from Neo4j      │
+│  GET  /api/live/stream     — SSE real-time scored claim stream            │
+│  GET  /api/providers/{npi}/explain — Per-provider ML feature importance  │
 │  GET  /api/health          — Health check for k8s probes                 │
 ├──────────┬──────────┬──────────────────┬────────────────────────────────┤
 │  Signal  │    AI    │  Scoring Engine  │  Data Access Layer             │

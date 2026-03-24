@@ -48,6 +48,7 @@
 | Phase 2: Scoring + API   | Mar 20 | **Done** | Scoring engine, all REST endpoints, peer baselines     |
 | Phase 3: AI Signals      | Mar 22 | **Done** | Text-to-SQL, risk narratives, anomaly detection        |
 | Phase 4: User Interface  | Mar 24 | **Done** | Claims simulator, investigation workflow, chat sidebar |
+| Phase 4b: Live Monitor   | Mar 24 | **Done** | SSE real-time payment monitor, ML explainability UI    |
 | Phase 5: Ship            | Mar 25 | **Done** | Demo script, AI/OSS disclosure, judge access           |
 
 **Demo Day**: March 27, 2026 — Reston, Virginia
@@ -78,7 +79,8 @@ CMS loses an estimated $60B+ annually to improper payments across Medicare and M
 2. **Transparent Decision Logic** — Rule-based scoring with peer comparison, validated against revocation outcomes
 3. **AI-Assisted Investigation** — LLM-powered natural language queries, risk narratives, and chat interface for analysts
 4. **Cloud-Native Architecture** — EKS, ArgoCD, Terraform — designed for scale
-5. **Mission-Ready** — Clear pathway from MVP to agency pilot
+5. **Real-Time Scoring** — SSE-streamed live payment monitor scores claims in under 50ms
+6. **Mission-Ready** — Clear pathway from MVP to agency pilot
 
 ## Architecture
 
@@ -135,17 +137,17 @@ All datasets are publicly available and currently downloadable. No PHI is used.
 
 ## Tech Stack
 
-| Layer    | Technology                                            | Status |
-| -------- | ----------------------------------------------------- | ------ |
-| Frontend | Vite + React 19 + TypeScript + Tailwind v4 + Recharts | Live   |
-| Backend  | Python 3.12 + FastAPI + psycopg                       | Live   |
-| Database | PostgreSQL 16 (EKS StatefulSet)                       | Live   |
-| Graph    | Neo4j 5 Community (EKS StatefulSet)                   | Live   |
-| Scoring  | Rule-based taxonomy (13 signals) + Isolation Forest   | Live   |
-| AI       | AWS Bedrock (Claude) — narratives, text-to-SQL, chat  | Live   |
-| ETL      | DuckDB + Polars                                       | Done   |
-| CI/CD    | GitHub Actions (unified pipeline) + ECR + ArgoCD      | Live   |
-| Infra    | AWS EKS + Istio + Terraform                           | Live   |
+| Layer    | Technology                                                                        | Status |
+| -------- | --------------------------------------------------------------------------------- | ------ |
+| Frontend | Vite + React 19 + TypeScript + Tailwind v4 + Recharts                             | Live   |
+| Backend  | Python 3.12 + FastAPI + psycopg                                                   | Live   |
+| Database | PostgreSQL 16 (EKS StatefulSet)                                                   | Live   |
+| Graph    | Neo4j 5 Community (EKS StatefulSet)                                               | Live   |
+| Scoring  | Rule-based taxonomy (14 signals) + Isolation Forest + per-provider explainability | Live   |
+| AI       | AWS Bedrock (Claude) — narratives, text-to-SQL, chat                              | Live   |
+| ETL      | DuckDB + Polars                                                                   | Done   |
+| CI/CD    | GitHub Actions (unified pipeline) + ECR + ArgoCD                                  | Live   |
+| Infra    | AWS EKS + Istio + Terraform                                                       | Live   |
 
 ## Quickstart
 
