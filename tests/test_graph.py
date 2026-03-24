@@ -123,6 +123,17 @@ class TestNodeId:
     def test_source_id(self):
         assert _node_id(SOURCE_NODE) == "source:Medicare Physician & Other Practitioners"
 
+    def test_unknown_node_type_uses_element_id(self):
+        """A node with an unrecognised label should fall back to element_id (line 42)."""
+        unknown = FakeNode("Widget", {"foo": "bar"}, element_id="elem-99")
+        nid = _node_id(unknown)
+        assert nid == "widget:elem-99"
+
+    def test_neighbor_node_id(self):
+        """SAME_ZIP neighbor is also a Provider — should produce provider: prefix."""
+        neighbor = FakeNode("Provider", {"npi": "9999999999"})
+        assert _node_id(neighbor) == "provider:9999999999"
+
 
 class TestNodeLabel:
     def test_provider_label(self):
@@ -139,6 +150,18 @@ class TestNodeLabel:
 
     def test_source_label(self):
         assert _node_label(SOURCE_NODE) == "Medicare Physician & Other Practitioners"
+
+    def test_unknown_node_label_returns_props_str(self):
+        """Unknown node type should return str(props) fallback (line 60)."""
+        unknown = FakeNode("Widget", {"foo": "bar"})
+        label = _node_label(unknown)
+        # Should not raise; returns some string representation
+        assert isinstance(label, str)
+
+    def test_provider_label_falls_back_to_npi_when_no_name(self):
+        """Provider node without 'name' key falls back to npi."""
+        node = FakeNode("Provider", {"npi": "5555555555"})
+        assert _node_label(node) == "5555555555"
 
 
 class TestBuildGraph:
@@ -179,6 +202,38 @@ class TestBuildGraph:
         assert len(has_signal) == 1
         assert has_signal[0].properties["value"] == 3.5
         assert has_signal[0].properties["points"] == 14
+
+    def test_neighbor_edge_included(self):
+        """SAME_ZIP neighbor should produce an edge between provider and neighbor."""
+        neighbor = FakeNode("Provider", {"npi": "9999999999", "name": "Neighbor Clinic"})
+        same_zip_rel = FakeRel("SAME_ZIP")
+        record = {
+            **FULL_RECORD,
+            "neighbor": neighbor,
+            "sz": same_zip_rel,
+        }
+        nodes, edges = _build_graph([record])
+        same_zip_edges = [e for e in edges if e.type == "SAME_ZIP"]
+        assert len(same_zip_edges) == 1
+
+    def test_add_edge_skips_none_rel(self):
+        """add_edge should skip when rel is None even if both node IDs are present."""
+        record = {
+            "p": PROVIDER_NODE,
+            "hc": None,  # rel is None → edge must not be created
+            "c": CASE_NODE,
+            "hs": None,
+            "s": None,
+            "ip": None,
+            "pg": None,
+            "sf": None,
+            "src": None,
+            "neighbor": None,
+            "sz": None,
+        }
+        nodes, edges = _build_graph([record])
+        # c is added as a node but hc is None → no HAS_CASE edge
+        assert not any(e.type == "HAS_CASE" for e in edges)
 
 
 # ---------------------------------------------------------------------------
@@ -313,3 +368,22 @@ class TestGraphEndpoint:
             resp = await client.get("/api/graph/1234567890")
         edge_types = {e["type"] for e in resp.json()["edges"]}
         assert edge_types == {"HAS_CASE", "HAS_SIGNAL", "IN_PEER_GROUP", "SOURCED_FROM"}
+
+    async def test_provider_with_neighbor_returns_same_zip_edge(self):
+        """A SAME_ZIP neighbor should appear as an edge in the API response (line 60)."""
+        neighbor = FakeNode(
+            "Provider", {"npi": "9999999999", "name": "Neighbor Clinic"}, element_id="n1"
+        )
+        same_zip_rel = FakeRel("SAME_ZIP")
+        record_with_neighbor = {
+            **FULL_RECORD,
+            "neighbor": neighbor,
+            "sz": same_zip_rel,
+        }
+        app = _make_app([record_with_neighbor])
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/graph/1234567890")
+        edge_types = {e["type"] for e in resp.json()["edges"]}
+        assert "SAME_ZIP" in edge_types

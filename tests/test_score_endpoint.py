@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from unittest.mock import patch
 
 import httpx
 from fastapi import FastAPI
@@ -44,6 +45,24 @@ PEER_STATS_NORMAL = {
 
 PEER_STATS_TOO_FEW = {**PEER_STATS_NORMAL, "peer_count": 5}
 
+# A minimal features row that score_provider can accept without raising.
+FEATURES_ROW = {
+    "mean_volume_z": 1.0,
+    "mean_intensity_z": 0.5,
+    "mean_charge_z": 0.8,
+    "mean_payment_z": 0.3,
+    "service_hhi": 0.2,
+    "top_code_share": 0.4,
+    "top3_code_share": 0.6,
+    "n_volume_outlier_lines": 1,
+    "n_intensity_outlier_lines": 0,
+    "n_charge_outlier_lines": 0,
+    "frac_volume_outlier_lines": 0.1,
+    "charge_cv": 0.5,
+    "risk_legitimacy_gap": 10,
+    "max_seed_risk_score": 40,
+}
+
 
 class _ScoreCursor:
     """Cursor that returns results from a shared queue."""
@@ -77,6 +96,25 @@ class _FakeConn:
         return _ScoreCursor([result])
 
 
+class _FakeConnWithFeatures:
+    """Fake connection: provider → peers → features_row (3 cursors)."""
+
+    def __init__(
+        self,
+        provider: dict | None,
+        peers: dict | None = None,
+        features: dict | None = None,
+    ):
+        self._queue: list[dict | None] = [provider]
+        if peers is not None:
+            self._queue.append(peers)
+        self._queue.append(features)  # third cursor for features
+
+    def cursor(self, row_factory=None):
+        result = self._queue.pop(0) if self._queue else None
+        return _ScoreCursor([result])
+
+
 def _make_app(provider: dict | None, peers: dict | None = None) -> FastAPI:
     @asynccontextmanager
     async def _noop_lifespan(app: FastAPI):
@@ -86,6 +124,29 @@ def _make_app(provider: dict | None, peers: dict | None = None) -> FastAPI:
     test_app.include_router(router, prefix="/api")
 
     conn = _FakeConn(provider, peers)
+
+    async def fake_db():
+        yield conn
+
+    test_app.dependency_overrides[get_db] = fake_db
+    return test_app
+
+
+def _make_app_with_features(
+    provider: dict | None,
+    peers: dict | None = None,
+    features: dict | None = None,
+) -> FastAPI:
+    """Test app where the third cursor call returns a features row."""
+
+    @asynccontextmanager
+    async def _noop_lifespan(app: FastAPI):
+        yield
+
+    test_app = FastAPI(lifespan=_noop_lifespan)
+    test_app.include_router(router, prefix="/api")
+
+    conn = _FakeConnWithFeatures(provider, peers, features)
 
     async def fake_db():
         yield conn
@@ -260,3 +321,46 @@ class TestScoreResponseStructure:
             resp = await client.post("/api/score", json={})
 
         assert resp.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Tests — anomaly score path (line 145: features_row is not None)
+# ---------------------------------------------------------------------------
+
+
+class TestAnomalyScorePath:
+    async def test_anomaly_score_computed_when_features_row_present(self):
+        """When the features query returns a row, score_provider should be called
+        and anomaly_score should be a float in the response (covers line 145)."""
+        app = _make_app_with_features(
+            provider=ENROLLED_PROVIDER,
+            peers=None,
+            features=FEATURES_ROW,
+        )
+        with patch(
+            "src.api.routes.score.score_provider",
+            return_value=0.42,
+        ):
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                resp = await client.post("/api/score", json={"npi": "1234567890"})
+
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["anomaly_score"] == 0.42
+
+    async def test_anomaly_score_none_when_no_features_row(self):
+        """When the features query returns None, anomaly_score should be null."""
+        app = _make_app_with_features(
+            provider=ENROLLED_PROVIDER,
+            peers=None,
+            features=None,
+        )
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.post("/api/score", json={"npi": "1234567890"})
+
+        assert resp.status_code == 200
+        assert resp.json()["anomaly_score"] is None

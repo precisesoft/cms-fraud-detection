@@ -13,10 +13,13 @@ from sklearn.preprocessing import StandardScaler  # noqa: E402
 
 from src.models.anomaly import (  # noqa: E402
     EXCLUDE_COLS,
+    _print_summary,
     build_feature_matrix,
     compute_correlation,
     compute_permutation_importance,
     detection_rate_at_k,
+    load_features,
+    run,
     select_feature_columns,
     train_model,
 )
@@ -280,3 +283,109 @@ class TestPermutationImportance:
         top10 = compute_permutation_importance(model, x_scaled, cols, n_repeats=3)
         returned_features = {e["feature"] for e in top10}
         assert returned_features.issubset(set(cols))
+
+
+# ---------------------------------------------------------------------------
+# Tests: load_features
+# ---------------------------------------------------------------------------
+
+
+class TestLoadFeatures:
+    def test_loads_parquet(self, synthetic_df: pl.DataFrame, tmp_path) -> None:
+        path = tmp_path / "features.parquet"
+        synthetic_df.write_parquet(path)
+        result = load_features(path)
+        assert result.shape == synthetic_df.shape
+
+    def test_raises_on_missing_file(self, tmp_path) -> None:
+        with pytest.raises(Exception):
+            load_features(tmp_path / "nonexistent.parquet")
+
+
+# ---------------------------------------------------------------------------
+# Tests: _print_summary
+# ---------------------------------------------------------------------------
+
+
+class TestPrintSummary:
+    def test_prints_without_error(self, capsys) -> None:
+        results = {
+            "model_metadata": {
+                "model_type": "IsolationForest",
+                "n_estimators": 200,
+                "contamination": 0.05,
+                "random_state": 42,
+                "n_features": 8,
+                "n_samples": 200,
+            },
+            "correlation_anomaly_vs_rule_risk": -0.4321,
+            "detection_rates": {
+                "top_5pct": 0.3,
+                "top_10pct": 0.5,
+                "top_20pct": 0.7,
+                "note": "test",
+            },
+            "top10_features_permutation_importance": [
+                {"feature": "total_benes", "importance": 0.012345},
+                {"feature": "mean_payment_amt", "importance": 0.009876},
+            ],
+        }
+        _print_summary(results)
+        captured = capsys.readouterr()
+        assert "ISOLATION FOREST" in captured.out
+        assert "total_benes" in captured.out
+        assert "200" in captured.out
+
+
+# ---------------------------------------------------------------------------
+# Tests: run (full pipeline)
+# ---------------------------------------------------------------------------
+
+
+class TestRun:
+    def test_full_pipeline(self, synthetic_df: pl.DataFrame, tmp_path) -> None:
+        features_path = tmp_path / "features.parquet"
+        model_path = tmp_path / "model.joblib"
+        results_path = tmp_path / "results.json"
+
+        synthetic_df.write_parquet(features_path)
+
+        results = run(
+            features_path=features_path,
+            model_path=model_path,
+            results_path=results_path,
+        )
+
+        # Verify return structure
+        assert "model_metadata" in results
+        assert "correlation_anomaly_vs_rule_risk" in results
+        assert "detection_rates" in results
+        assert "top10_features_permutation_importance" in results
+
+        # Verify metadata
+        meta = results["model_metadata"]
+        assert meta["model_type"] == "IsolationForest"
+        assert meta["n_samples"] == len(synthetic_df)
+        assert meta["n_features"] > 0
+
+        # Verify files written
+        assert results_path.exists()
+        assert model_path.exists()
+
+        # Verify correlation is a float in range
+        corr = results["correlation_anomaly_vs_rule_risk"]
+        assert isinstance(corr, float)
+        assert -1.0 <= corr <= 1.0
+
+    def test_detection_rates_structure(self, synthetic_df: pl.DataFrame, tmp_path) -> None:
+        features_path = tmp_path / "features.parquet"
+        synthetic_df.write_parquet(features_path)
+
+        results = run(
+            features_path=features_path,
+            model_path=tmp_path / "m.joblib",
+            results_path=tmp_path / "r.json",
+        )
+        det = results["detection_rates"]
+        for key in ("top_5pct", "top_10pct", "top_20pct"):
+            assert 0.0 <= det[key] <= 1.0

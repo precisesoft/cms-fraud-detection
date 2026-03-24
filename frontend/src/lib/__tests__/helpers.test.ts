@@ -30,6 +30,11 @@ describe("riskBandLabel", () => {
   it("returns Unknown for undefined", () => {
     expect(riskBandLabel(undefined)).toBe("Unknown");
   });
+
+  it("returns the raw band string for an unknown band value", () => {
+    // Line 9 default branch: unknown band strings pass through
+    expect(riskBandLabel("something_else" as never)).toBe("something_else");
+  });
 });
 
 describe("riskBandColor", () => {

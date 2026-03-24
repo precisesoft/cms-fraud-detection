@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -332,3 +332,249 @@ async def test_synthesize_limits_to_10_rows():
         call_args = mock.call_args
         user_msg = call_args.kwargs["messages"][0]["content"]
         assert "20 total rows" in user_msg
+
+
+# ---------------------------------------------------------------------------
+# text_to_sql() end-to-end tests (lines 105-161)
+# ---------------------------------------------------------------------------
+
+
+def _make_async_cursor(columns: list[str], rows: list[tuple]):
+    """Build a mock async cursor that returns canned description + rows."""
+    cur = AsyncMock()
+    cur.description = [MagicMock(name=col) for col in columns]
+    for desc_mock, col_name in zip(cur.description, columns):
+        desc_mock.name = col_name
+    cur.fetchall = AsyncMock(return_value=rows)
+    cur.execute = AsyncMock()
+
+    ctx = AsyncMock()
+    ctx.__aenter__ = AsyncMock(return_value=cur)
+    ctx.__aexit__ = AsyncMock(return_value=False)
+    return ctx
+
+
+def _make_async_conn(columns: list[str], rows: list[tuple]):
+    """Build a mock AsyncConnection whose cursor() returns canned data."""
+    conn = MagicMock()
+    conn.cursor = MagicMock(return_value=_make_async_cursor(columns, rows))
+    return conn
+
+
+@pytest.mark.asyncio
+async def test_text_to_sql_basic_select():
+    """Basic SELECT returning a single scalar row."""
+    from src.ai.text_to_sql import text_to_sql
+
+    conn = _make_async_conn(["count"], [(42,)])
+
+    with (
+        patch("src.ai.text_to_sql.build_text_to_sql_system_prompt", return_value="sys"),
+        patch(
+            "src.ai.text_to_sql.invoke",
+            new_callable=AsyncMock,
+            return_value={"text": "SELECT count(*) FROM providers"},
+        ),
+    ):
+        result = await text_to_sql("How many providers?", conn)
+
+    assert result["sql"].startswith("SELECT count(*)")
+    assert result["row_count"] == 1
+    assert result["columns"] == ["count"]
+    assert result["rows"] == [{"count": 42}]
+    assert "42" in result["answer"]
+
+
+@pytest.mark.asyncio
+async def test_text_to_sql_markdown_fences_stripped():
+    """SQL wrapped in ```sql ... ``` fences should be cleaned before validation."""
+    from src.ai.text_to_sql import text_to_sql
+
+    conn = _make_async_conn(["npi"], [("1234567890",)])
+
+    with (
+        patch("src.ai.text_to_sql.build_text_to_sql_system_prompt", return_value="sys"),
+        patch(
+            "src.ai.text_to_sql.invoke",
+            new_callable=AsyncMock,
+            return_value={"text": "```sql\nSELECT npi FROM provider_features LIMIT 1\n```"},
+        ),
+    ):
+        result = await text_to_sql("Give me an NPI", conn)
+
+    assert result["sql"].startswith("SELECT npi")
+    assert "```" not in result["sql"]
+
+
+@pytest.mark.asyncio
+async def test_text_to_sql_multi_row_triggers_synthesis():
+    """Multi-row results should invoke _synthesize_results and use its output."""
+    from src.ai.text_to_sql import text_to_sql
+
+    rows = [("FL", 42), ("TX", 35), ("CA", 28)]
+    conn = _make_async_conn(["state", "count"], rows)
+
+    synthesis_text = "Florida leads with 42 high-risk providers."
+    with (
+        patch("src.ai.text_to_sql.build_text_to_sql_system_prompt", return_value="sys"),
+        patch(
+            "src.ai.text_to_sql.invoke",
+            new_callable=AsyncMock,
+            side_effect=[
+                {
+                    "text": (
+                        "SELECT state, count(*) FROM provider_features GROUP BY state LIMIT 500"
+                    )
+                },
+                {"text": synthesis_text},
+            ],
+        ),
+    ):
+        result = await text_to_sql("States with most high-risk providers?", conn)
+
+    assert result["row_count"] == 3
+    assert result["answer"] == synthesis_text
+
+
+@pytest.mark.asyncio
+async def test_text_to_sql_unanswerable_raises():
+    """When the LLM returns UNANSWERABLE, text_to_sql should propagate SQLValidationError."""
+    from src.ai.text_to_sql import text_to_sql
+
+    conn = _make_async_conn([], [])
+
+    with (
+        patch("src.ai.text_to_sql.build_text_to_sql_system_prompt", return_value="sys"),
+        patch(
+            "src.ai.text_to_sql.invoke",
+            new_callable=AsyncMock,
+            return_value={"text": "UNANSWERABLE"},
+        ),
+        pytest.raises(SQLValidationError, match="UNANSWERABLE"),
+    ):
+        await text_to_sql("What is the patient's diagnosis?", conn)
+
+
+@pytest.mark.asyncio
+async def test_text_to_sql_with_history():
+    """Conversation history should be prepended to messages."""
+    from src.ai.text_to_sql import text_to_sql
+
+    conn = _make_async_conn(["total"], [(100,)])
+    history = [
+        {"role": "user", "content": "prior question"},
+        {"role": "assistant", "content": "prior answer"},
+    ]
+
+    captured_messages: list[dict] = []
+
+    async def capture_invoke(**kwargs):
+        captured_messages.extend(kwargs.get("messages", []))
+        return {"text": "SELECT count(*) FROM provider_features LIMIT 500"}
+
+    with (
+        patch("src.ai.text_to_sql.build_text_to_sql_system_prompt", return_value="sys"),
+        patch("src.ai.text_to_sql.invoke", side_effect=capture_invoke),
+    ):
+        await text_to_sql("Follow-up question", conn, history=history)
+
+    # history items appear before the new user message
+    assert len(captured_messages) >= 3
+    assert captured_messages[0]["content"] == "prior question"
+    assert captured_messages[-1]["content"] == "Follow-up question"
+
+
+@pytest.mark.asyncio
+async def test_text_to_sql_single_row_multi_col():
+    """Single row with multiple columns should list col: value pairs in the answer."""
+    from src.ai.text_to_sql import text_to_sql
+
+    conn = _make_async_conn(["npi", "state"], [("1234567890", "FL")])
+
+    with (
+        patch("src.ai.text_to_sql.build_text_to_sql_system_prompt", return_value="sys"),
+        patch(
+            "src.ai.text_to_sql.invoke",
+            new_callable=AsyncMock,
+            return_value={"text": "SELECT npi, state FROM provider_features LIMIT 1"},
+        ),
+    ):
+        result = await text_to_sql("Get one provider", conn)
+
+    assert "npi" in result["answer"]
+    assert "1234567890" in result["answer"]
+    assert "FL" in result["answer"]
+
+
+@pytest.mark.asyncio
+async def test_text_to_sql_no_rows_returns_no_results():
+    """Zero rows from DB should return a 'No results' answer."""
+    from src.ai.text_to_sql import text_to_sql
+
+    conn = _make_async_conn(["npi"], [])
+
+    with (
+        patch("src.ai.text_to_sql.build_text_to_sql_system_prompt", return_value="sys"),
+        patch(
+            "src.ai.text_to_sql.invoke",
+            new_callable=AsyncMock,
+            return_value={"text": "SELECT npi FROM provider_features WHERE state = 'ZZ' LIMIT 500"},
+        ),
+    ):
+        result = await text_to_sql("Providers in ZZ?", conn)
+
+    assert result["row_count"] == 0
+    assert "No results" in result["answer"]
+
+
+@pytest.mark.asyncio
+async def test_text_to_sql_synthesis_none_keeps_format_answer():
+    """When _synthesize_results returns None the formatted answer is kept."""
+    from src.ai.text_to_sql import text_to_sql
+
+    rows = [("FL", 10), ("TX", 8)]
+    conn = _make_async_conn(["state", "cnt"], rows)
+
+    with (
+        patch("src.ai.text_to_sql.build_text_to_sql_system_prompt", return_value="sys"),
+        patch(
+            "src.ai.text_to_sql.invoke",
+            new_callable=AsyncMock,
+            side_effect=[
+                {
+                    "text": "SELECT state, count(*) AS cnt"
+                    " FROM provider_features GROUP BY state LIMIT 500"
+                },
+                RuntimeError("synthesis failed"),
+            ],
+        ),
+    ):
+        result = await text_to_sql("State counts", conn)
+
+    # synthesis raised → fell back to _format_answer which says "Found N results."
+    assert result["row_count"] == 2
+    assert "2" in result["answer"] or "results" in result["answer"].lower()
+
+
+# ---------------------------------------------------------------------------
+# _format_answer additional branch coverage (lines 171-188)
+# ---------------------------------------------------------------------------
+
+
+def test_format_answer_multi_row_count():
+    """Multiple rows returns a 'Found N results.' message."""
+    rows = [{"id": i} for i in range(5)]
+    result = _format_answer("q", ["id"], rows)
+    assert "5" in result
+
+
+def test_format_answer_single_col_scalar_none():
+    """Scalar result of None formats as N/A."""
+    result = _format_answer("q", ["val"], [{"val": None}])
+    assert result == "N/A"
+
+
+def test_format_answer_single_col_scalar_float():
+    """Scalar float result."""
+    result = _format_answer("q", ["score"], [{"score": 3.14}])
+    assert "3.14" in result

@@ -223,3 +223,116 @@ class TestNetworkEndpoint:
         body = resp.json()
         assert len(body["same_org_flagged"]) == 1
         assert body["same_org_flagged"][0]["npi"] == "7777777777"
+
+    @pytest.mark.anyio
+    async def test_no_zip5_skips_same_zip_and_zip_stats(self):
+        """Provider with no zip5 should skip same-zip query and return zip_risk_summary=None
+        (covers the zip5 branch-miss on lines 93 and 105)."""
+        provider_no_zip = {**PROVIDER_ROW, "zip5": None}
+
+        class _NoZipCursor:
+            """Only ever returns provider (call 1); further calls return empty."""
+
+            def __init__(self, provider):
+                self._provider = provider
+                self._call = 0
+
+            async def execute(self, sql: str, params=None):
+                self._call += 1
+
+            async def fetchone(self):
+                if self._call == 1:
+                    return self._provider
+                return None
+
+            async def fetchall(self):
+                return []
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *args):
+                pass
+
+        class _NoZipConn:
+            def cursor(self, row_factory=None):
+                return _NoZipCursor(provider_no_zip)
+
+        @asynccontextmanager
+        async def _noop_lifespan(app: FastAPI):
+            yield
+
+        test_app = FastAPI(lifespan=_noop_lifespan)
+        test_app.include_router(router, prefix="/api")
+
+        async def fake_db():
+            yield _NoZipConn()
+
+        test_app.dependency_overrides[get_db] = fake_db
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=test_app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/network/1234567890")
+
+        body = resp.json()
+        assert resp.status_code == 200
+        assert body["zip5"] is None
+        assert body["same_zip_flagged"] == []
+        assert body["zip_risk_summary"] is None
+
+    @pytest.mark.anyio
+    async def test_no_org_name_skips_same_org_query(self):
+        """Provider with no provider_name should skip the same-org query
+        (covers the org_name branch-miss on line 99)."""
+        provider_no_org = {**PROVIDER_ROW, "provider_name": None}
+
+        class _NoOrgCursor:
+            """Returns provider on call 1, same_zip on call 2, zip_stats on call 3."""
+
+            def __init__(self):
+                self._call = 0
+
+            async def execute(self, sql: str, params=None):
+                self._call += 1
+
+            async def fetchone(self):
+                if self._call == 1:
+                    return provider_no_org
+                if self._call == 3:
+                    return ZIP_STATS_ROW
+                return None
+
+            async def fetchall(self):
+                return []  # same-zip returns empty
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *args):
+                pass
+
+        class _NoOrgConn:
+            def cursor(self, row_factory=None):
+                return _NoOrgCursor()
+
+        @asynccontextmanager
+        async def _noop_lifespan(app: FastAPI):
+            yield
+
+        test_app = FastAPI(lifespan=_noop_lifespan)
+        test_app.include_router(router, prefix="/api")
+
+        async def fake_db():
+            yield _NoOrgConn()
+
+        test_app.dependency_overrides[get_db] = fake_db
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=test_app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/network/1234567890")
+
+        body = resp.json()
+        assert resp.status_code == 200
+        assert body["same_org_flagged"] == []

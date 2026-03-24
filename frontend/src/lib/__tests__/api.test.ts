@@ -5,9 +5,26 @@ import {
   clearToken,
   getHealth,
   getDashboard,
+  getHeatmap,
   getProviders,
+  getProviderDetail,
+  getProviderSignals,
+  getProviderPeers,
+  getProviderRadar,
+  getProviderNetwork,
+  getProviderGraph,
   getClaims,
+  getClaim,
+  simulateClaim,
   scoreClaim,
+  getFairness,
+  chat,
+  caseAction,
+  getCaseActions,
+  getPendingCases,
+  getValidation,
+  login,
+  getMe,
 } from "../api";
 
 /* ── localStorage mock ─────────────────────────────────────── */
@@ -264,6 +281,30 @@ describe("getClaims — query params", () => {
     const [url] = fetchMock.mock.calls[0] as [string];
     expect(url).toContain("risk_min=0");
   });
+
+  it("appends state filter", async () => {
+    await getClaims({ state: "FL" });
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toContain("state=FL");
+  });
+
+  it("appends provider_type filter", async () => {
+    await getClaims({ provider_type: "Cardiology" });
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toContain("provider_type=Cardiology");
+  });
+
+  it("appends page param", async () => {
+    await getClaims({ page: 3 });
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toContain("page=3");
+  });
+
+  it("appends per_page param", async () => {
+    await getClaims({ per_page: 25 });
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toContain("per_page=25");
+  });
 });
 
 /* ── scoreClaim POST body ──────────────────────────────────── */
@@ -313,5 +354,294 @@ describe("scoreClaim — POST body", () => {
 
     const [url] = fetchMock.mock.calls[0] as [string];
     expect(url).toMatch(/\/api\/score$/);
+  });
+});
+
+/* ── getHeatmap ────────────────────────────────────────────── */
+
+describe("getHeatmap", () => {
+  it("calls /api/dashboard/heatmap", async () => {
+    fetchMock.mockReturnValue(okResponse({ data: [] }));
+    await getHeatmap();
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toMatch(/\/api\/dashboard\/heatmap$/);
+  });
+});
+
+/* ── getProviderDetail ─────────────────────────────────────── */
+
+describe("getProviderDetail", () => {
+  it("calls /api/providers/:npi", async () => {
+    fetchMock.mockReturnValue(okResponse({ npi: "123" }));
+    await getProviderDetail("123");
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toMatch(/\/api\/providers\/123$/);
+  });
+});
+
+/* ── getProviderSignals ────────────────────────────────────── */
+
+describe("getProviderSignals", () => {
+  it("calls /api/providers/:npi/signals", async () => {
+    fetchMock.mockReturnValue(okResponse([]));
+    await getProviderSignals("456");
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toMatch(/\/api\/providers\/456\/signals$/);
+  });
+});
+
+/* ── getProviderPeers ──────────────────────────────────────── */
+
+describe("getProviderPeers", () => {
+  it("calls /api/providers/:npi/peers", async () => {
+    fetchMock.mockReturnValue(
+      okResponse({ npi: "789", lines: [], total_lines: 0 }),
+    );
+    await getProviderPeers("789");
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toMatch(/\/api\/providers\/789\/peers$/);
+  });
+});
+
+/* ── getProviderRadar ──────────────────────────────────────── */
+
+describe("getProviderRadar", () => {
+  it("calls /api/providers/:npi/radar", async () => {
+    fetchMock.mockReturnValue(okResponse({ npi: "111", dimensions: [] }));
+    await getProviderRadar("111");
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toMatch(/\/api\/providers\/111\/radar$/);
+  });
+});
+
+/* ── getProviderNetwork ────────────────────────────────────── */
+
+describe("getProviderNetwork", () => {
+  it("calls /api/network/:npi", async () => {
+    fetchMock.mockReturnValue(
+      okResponse({
+        npi: "222",
+        zip5: null,
+        same_zip_flagged: [],
+        same_org_flagged: [],
+        zip_risk_summary: null,
+      }),
+    );
+    await getProviderNetwork("222");
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toMatch(/\/api\/network\/222$/);
+  });
+});
+
+/* ── getProviderGraph ──────────────────────────────────────── */
+
+describe("getProviderGraph", () => {
+  it("calls /api/graph/:npi", async () => {
+    fetchMock.mockReturnValue(okResponse({ npi: "333", nodes: [], edges: [] }));
+    await getProviderGraph("333");
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toMatch(/\/api\/graph\/333$/);
+  });
+});
+
+/* ── getClaim ──────────────────────────────────────────────── */
+
+describe("getClaim", () => {
+  it("calls /api/claims/:caseId with URL encoding", async () => {
+    fetchMock.mockReturnValue(okResponse({ case_id: "C-001", npi: "1" }));
+    await getClaim("C-001");
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toMatch(/\/api\/claims\/C-001$/);
+  });
+});
+
+/* ── simulateClaim ─────────────────────────────────────────── */
+
+describe("simulateClaim", () => {
+  it("sends POST to /api/claims/simulate with payload", async () => {
+    const payload = {
+      npi: "111",
+      hcpcs_cd: "99213",
+      submitted_charge: 100,
+      num_services: 10,
+      num_benes: 5,
+    };
+    fetchMock.mockReturnValue(
+      okResponse({
+        npi: "111",
+        hcpcs_cd: "99213",
+        risk_score: 50,
+        risk_band: "review",
+        recommendation: "review",
+        signals: [],
+        peer_comparisons: [],
+        provider_name: null,
+        provider_type: null,
+        state: null,
+        narrative: null,
+        anomaly_score: null,
+      }),
+    );
+    await simulateClaim(payload);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toMatch(/\/api\/claims\/simulate$/);
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string)).toEqual(payload);
+  });
+});
+
+/* ── getFairness ───────────────────────────────────────────── */
+
+describe("getFairness", () => {
+  it("calls /api/fairness with no params", async () => {
+    fetchMock.mockReturnValue(okResponse({ by_state: [], by_specialty: [] }));
+    await getFairness();
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toMatch(/\/api\/fairness$/);
+  });
+
+  it("appends threshold and blind params", async () => {
+    fetchMock.mockReturnValue(okResponse({ by_state: [], by_specialty: [] }));
+    await getFairness({ threshold: 50, blind: true });
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toContain("threshold=50");
+    expect(url).toContain("blind=true");
+  });
+});
+
+/* ── chat ──────────────────────────────────────────────────── */
+
+describe("chat", () => {
+  it("sends POST to /api/chat with message and history", async () => {
+    fetchMock.mockReturnValue(
+      okResponse({
+        answer: "hello",
+        sql: null,
+        columns: [],
+        rows: [],
+        row_count: 0,
+        duration_ms: 10,
+        chart_spec: null,
+      }),
+    );
+    await chat("test question", [{ role: "user", content: "prior" }]);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toMatch(/\/api\/chat$/);
+    expect(init.method).toBe("POST");
+    const body = JSON.parse(init.body as string);
+    expect(body.message).toBe("test question");
+    expect(body.history).toHaveLength(1);
+  });
+
+  it("defaults to empty history", async () => {
+    fetchMock.mockReturnValue(
+      okResponse({
+        answer: "ok",
+        sql: null,
+        columns: [],
+        rows: [],
+        row_count: 0,
+        duration_ms: 0,
+        chart_spec: null,
+      }),
+    );
+    await chat("hi");
+    const body = JSON.parse(
+      (fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string,
+    );
+    expect(body.history).toEqual([]);
+  });
+});
+
+/* ── caseAction ────────────────────────────────────────────── */
+
+describe("caseAction", () => {
+  it("sends POST to /api/cases/:caseId/action", async () => {
+    fetchMock.mockReturnValue(
+      okResponse({ case_id: "C1", action: "APPROVED", message: "ok" }),
+    );
+    await caseAction("C1", "APPROVED", "looks good");
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toMatch(/\/api\/cases\/C1\/action$/);
+    expect(init.method).toBe("POST");
+    const body = JSON.parse(init.body as string);
+    expect(body.action).toBe("APPROVED");
+    expect(body.notes).toBe("looks good");
+  });
+});
+
+/* ── getCaseActions ────────────────────────────────────────── */
+
+describe("getCaseActions", () => {
+  it("calls /api/cases/:caseId/actions", async () => {
+    fetchMock.mockReturnValue(
+      okResponse({ case_id: "C2", actions: [], current_status: null }),
+    );
+    await getCaseActions("C2");
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toMatch(/\/api\/cases\/C2\/actions$/);
+  });
+});
+
+/* ── getPendingCases ───────────────────────────────────────── */
+
+describe("getPendingCases", () => {
+  it("calls /api/cases/pending with default limit", async () => {
+    fetchMock.mockReturnValue(okResponse([]));
+    await getPendingCases();
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toContain("/api/cases/pending?limit=50");
+  });
+
+  it("respects custom limit", async () => {
+    fetchMock.mockReturnValue(okResponse([]));
+    await getPendingCases(10);
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toContain("limit=10");
+  });
+});
+
+/* ── getValidation ─────────────────────────────────────────── */
+
+describe("getValidation", () => {
+  it("calls /api/validation", async () => {
+    fetchMock.mockReturnValue(okResponse({ overall_detection_rate: 0.8 }));
+    await getValidation();
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toMatch(/\/api\/validation$/);
+  });
+});
+
+/* ── login ─────────────────────────────────────────────────── */
+
+describe("login", () => {
+  it("sends POST to /api/auth/login with credentials", async () => {
+    fetchMock.mockReturnValue(
+      okResponse({
+        access_token: "tok123",
+        token_type: "bearer",
+        user: { id: 1, username: "admin", role: "admin", full_name: null },
+      }),
+    );
+    await login("admin", "pass");
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toMatch(/\/api\/auth\/login$/);
+    expect(init.method).toBe("POST");
+    const body = JSON.parse(init.body as string);
+    expect(body.username).toBe("admin");
+    expect(body.password).toBe("pass");
+  });
+});
+
+/* ── getMe ─────────────────────────────────────────────────── */
+
+describe("getMe", () => {
+  it("calls /api/auth/me", async () => {
+    fetchMock.mockReturnValue(
+      okResponse({ id: 1, username: "admin", role: "admin", full_name: null }),
+    );
+    await getMe();
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toMatch(/\/api\/auth\/me$/);
   });
 });

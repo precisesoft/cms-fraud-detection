@@ -83,6 +83,25 @@ async def test_record_action_all_types():
         assert result.action == action
 
 
+@pytest.mark.asyncio
+async def test_record_action_empty_npi_raises_400():
+    """When case_id has no pipe and DB returns None, npi becomes '' → 400 (line 50)."""
+    conn, cur = _mock_conn(None)
+    # DB returns None, and the case_id has no pipe so split gives [""]
+    cur.fetchone = AsyncMock(side_effect=[None, (1,)])
+    req = CaseActionRequest(action=CaseAction.flagged)
+
+    from fastapi import HTTPException
+
+    # case_id with no NPI prefix — split("|")[0] is the whole string which is non-empty
+    # To trigger the empty-npi path we need case_id="" so split gives [""]
+    with pytest.raises(HTTPException) as exc_info:
+        await record_action("", req, conn)
+
+    assert exc_info.value.status_code == 400
+    assert "Cannot resolve NPI" in exc_info.value.detail
+
+
 # ---------------------------------------------------------------------------
 # list_actions tests
 # ---------------------------------------------------------------------------
