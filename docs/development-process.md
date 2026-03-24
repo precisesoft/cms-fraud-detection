@@ -7,10 +7,10 @@
 | Metric                      | Value                           |
 | --------------------------- | ------------------------------- |
 | Sprint duration             | 10 days (Mar 14 – Mar 24, 2026) |
-| Total issues created        | 315                             |
-| Total pull requests         | 342                             |
+| Total issues tracked        | 181                             |
+| Total pull requests         | 162                             |
 | Commits to main             | 179                             |
-| Epics completed             | 16                              |
+| Epics completed             | 19                              |
 | Daily scoreboards published | 9                               |
 | Test coverage (backend)     | 99%                             |
 | Test coverage (frontend)    | 98%                             |
@@ -23,7 +23,7 @@ This project was built using a human-AI collaborative workflow with two AI agent
 
 [`copilot-swe-agent`](https://docs.github.com/en/copilot/using-github-copilot/using-copilot-coding-agent) is a GitHub-native coding agent that picks up assigned issues, writes code on a branch, and opens draft PRs.
 
-- **43 PRs authored** by Copilot (43% of all PRs)
+- **43 PRs authored** by Copilot (27% of all PRs)
 - Configured via `.github/copilot-setup-steps.yml` (installs deps, runs linters)
 - Guided by `.github/copilot-instructions.md` (project conventions, stack, code style)
 - Has **write access** to the repo so CI runs without manual approval
@@ -60,7 +60,7 @@ Specialized agent configurations in `.github/agents/` guide Copilot's behavior b
 
 ### Epic-Driven Planning
 
-Work was organized into 16 epics, each a GitHub issue with a checklist of child issues:
+Work was organized into 19 epics, each a GitHub issue with a checklist of child issues:
 
 1. Data Foundation
 2. Scoring Engine
