@@ -71,6 +71,19 @@ export function Validation() {
     detected: d.detected,
   }));
 
+  function shortLabel(reason: string, maxLen = 24): string {
+    if (reason.length <= maxLen) return reason;
+    // Extract description after a leading regulation-code prefix, e.g. "424.535(A)(1) Noncompliance…"
+    const match = reason.match(/^[\d.()\w]+\s+(.+)$/);
+    if (match) {
+      const desc = match[1];
+      return desc.length <= maxLen ? desc : desc.slice(0, maxLen - 1) + "…";
+    }
+    return reason.slice(0, maxLen - 1) + "…";
+  }
+
+  const chartHeight = Math.max(280, chartData.length * 48);
+
   const detected =
     report.total_revoked_providers - (report.provider_level?.stable ?? 0);
   const missed = report.provider_level?.stable ?? 0;
@@ -347,22 +360,30 @@ export function Validation() {
           <ShieldCheck className="w-4 h-4 text-emerald-500" /> Detection Rate by
           Revocation Reason
         </h3>
-        <div className="h-80">
+        <div style={{ height: chartHeight }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
-              margin={{ top: 5, right: 20, bottom: 60, left: 10 }}
+              layout="vertical"
+              margin={{ top: 5, right: 30, bottom: 5, left: 10 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis
-                dataKey="reason"
-                tick={{ fontSize: 10, fontWeight: 600, fill: "#64748b" }}
-                angle={-45}
-                textAnchor="end"
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="#f1f5f9"
+                horizontal={false}
               />
-              <YAxis
+              <XAxis
+                type="number"
+                domain={[0, 100]}
                 tick={{ fontSize: 10, fill: "#64748b" }}
                 tickFormatter={(v: number) => `${v}%`}
+              />
+              <YAxis
+                type="category"
+                dataKey="reason"
+                width={160}
+                tick={{ fontSize: 10, fontWeight: 600, fill: "#64748b" }}
+                tickFormatter={(v: string) => shortLabel(v)}
               />
               <Tooltip
                 contentStyle={{
@@ -371,8 +392,9 @@ export function Validation() {
                   border: "1px solid #e2e8f0",
                 }}
                 formatter={(value: number) => [`${value}%`, "Detection Rate"]}
+                labelFormatter={(label: string) => label}
               />
-              <Bar dataKey="rate" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="rate" radius={[0, 4, 4, 0]}>
                 {chartData.map((entry, i) => (
                   <Cell
                     key={i}
