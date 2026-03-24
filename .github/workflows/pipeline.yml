@@ -145,7 +145,7 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev,ml]"
 
       - name: Lint
         run: ruff check src/ tests/ && ruff format --check src/ tests/
