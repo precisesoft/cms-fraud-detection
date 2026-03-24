@@ -26,6 +26,24 @@ import { getValidation } from "../lib/api";
 import type { ValidationReport } from "../lib/api";
 import { cn } from "../lib/utils";
 
+/** Pixels allocated per bar row for dynamic chart height calculation. */
+const PIXELS_PER_BAR = 48;
+
+/**
+ * Returns a short display label for a regulation reason string.
+ * Strips a leading code prefix (e.g. "424.535(A)(1)") and truncates to maxLen.
+ */
+function shortLabel(reason: string, maxLen = 24): string {
+  if (reason.length <= maxLen) return reason;
+  // Extract description after a leading regulation-code prefix, e.g. "424.535(A)(1) Noncompliance…"
+  const match = reason.match(/^[\d.()\w]+\s+(.+)$/);
+  if (match) {
+    const desc = match[1];
+    return desc.length <= maxLen ? desc : desc.slice(0, maxLen - 1) + "…";
+  }
+  return reason.slice(0, maxLen - 1) + "…";
+}
+
 export function Validation() {
   const [report, setReport] = React.useState<ValidationReport | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -71,18 +89,7 @@ export function Validation() {
     detected: d.detected,
   }));
 
-  function shortLabel(reason: string, maxLen = 24): string {
-    if (reason.length <= maxLen) return reason;
-    // Extract description after a leading regulation-code prefix, e.g. "424.535(A)(1) Noncompliance…"
-    const match = reason.match(/^[\d.()\w]+\s+(.+)$/);
-    if (match) {
-      const desc = match[1];
-      return desc.length <= maxLen ? desc : desc.slice(0, maxLen - 1) + "…";
-    }
-    return reason.slice(0, maxLen - 1) + "…";
-  }
-
-  const chartHeight = Math.max(280, chartData.length * 48);
+  const chartHeight = Math.max(280, chartData.length * PIXELS_PER_BAR);
 
   const detected =
     report.total_revoked_providers - (report.provider_level?.stable ?? 0);
