@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import json
 from contextlib import asynccontextmanager
+from unittest.mock import patch
 
 import httpx
 import pytest
 from fastapi import FastAPI
 
-from src.api.deps import get_db
 from src.api.routes.live import router
 
 # ---------------------------------------------------------------------------
@@ -76,11 +76,15 @@ class FakeConn:
         yield FakeCursor(self._row)
 
 
-def make_fake_db(row=CLAIM_ROW):
-    async def _dep():
-        yield FakeConn(row)
+class FakePool:
+    """Minimal async pool that returns a FakeConn."""
 
-    return _dep
+    def __init__(self, row=CLAIM_ROW):
+        self._row = row
+
+    @asynccontextmanager
+    async def connection(self):
+        yield FakeConn(self._row)
 
 
 # ---------------------------------------------------------------------------
@@ -92,8 +96,13 @@ def make_fake_db(row=CLAIM_ROW):
 def app():
     _app = FastAPI()
     _app.include_router(router, prefix="/api")
-    _app.dependency_overrides[get_db] = make_fake_db()
     return _app
+
+
+@pytest.fixture(autouse=True)
+def _mock_pool():
+    with patch("src.api.routes.live._pool", FakePool()):
+        yield
 
 
 # ---------------------------------------------------------------------------
