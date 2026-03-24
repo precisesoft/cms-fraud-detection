@@ -25,32 +25,42 @@ Proactive CMS provider fraud detection with explainable AI. Identifies anomalous
 ## Architecture
 
 - **API:** FastAPI with async psycopg pool (`src/api/`)
+- **Scoring:** Deterministic rule engine + Isolation Forest (`src/scoring/`, `src/models/`)
+- **AI:** AWS Bedrock Claude — text-to-SQL, narratives, chat (`src/ai/`)
 - **Pipeline:** Polars-based feature engineering (`src/pipeline/`)
-- **Data:** psycopg COPY bulk loader (`src/data/`)
-- **DB:** PostgreSQL 16 on forge k3s (NodePort 30432)
+- **Data:** psycopg COPY bulk loader, Neo4j projection (`src/data/`)
+- **Validation:** Retrospective scoring vs. revocation outcomes (`src/validation/`)
+- **DB:** PostgreSQL 16 + Neo4j 5 on EKS (namespace: `cms-fraud`)
+- **Frontend:** Vite + React 19 + React Router + Tailwind v4 (`frontend/`)
 - **Schemas:** Pydantic v2 models (`src/api/schemas.py`)
 
 ## Key Files
 
-| Path                             | Purpose                                 |
-| -------------------------------- | --------------------------------------- |
-| `src/api/app.py`                 | FastAPI app factory with lifespan       |
-| `src/api/deps.py`                | DB pool management, FastAPI deps        |
-| `src/api/schemas.py`             | All Pydantic request/response models    |
-| `src/pipeline/build_features.py` | Provider-level feature engineering      |
-| `src/data/load_postgres.py`      | Bulk data loader                        |
-| `tests/test_build_features.py`   | Feature pipeline tests                  |
-| `pyproject.toml`                 | Deps, ruff, mypy, bandit, pytest config |
+| Path                              | Purpose                                        |
+| --------------------------------- | ---------------------------------------------- |
+| `src/api/app.py`                  | FastAPI app factory with lifespan              |
+| `src/api/deps.py`                 | DB pool management, FastAPI deps               |
+| `src/api/schemas.py`              | All Pydantic request/response models           |
+| `src/api/routes/`                 | 14 route modules (dashboard, score, chat, ...) |
+| `src/scoring/taxonomy.py`         | Signal definitions, weights, thresholds        |
+| `src/scoring/extract.py`          | Signal extraction per case                     |
+| `src/scoring/score.py`            | Risk + legitimacy score computation            |
+| `src/ai/text_to_sql.py`           | NL → PostgreSQL SQL                            |
+| `src/ai/narrative.py`             | Structured signals → narrative                 |
+| `src/models/anomaly_scorer.py`    | Isolation Forest inference                     |
+| `src/validation/retrospective.py` | Retrospective validation                       |
+| `src/pipeline/build_features.py`  | Provider-level feature engineering             |
+| `src/data/load_postgres.py`       | Bulk data loader                               |
+| `frontend/src/App.tsx`            | React Router route definitions                 |
+| `frontend/src/pages/`             | All page components (Dashboard, Simulate, ...) |
+| `pyproject.toml`                  | Deps, ruff, mypy, bandit, pytest config        |
 
-## CI Checks (all must pass on PRs)
+## CI/CD (unified pipeline)
 
-| Workflow       | Jobs                                                    |
-| -------------- | ------------------------------------------------------- |
-| `ci.yml`       | lint (ruff), typecheck (mypy), test (pytest + coverage) |
-| `secrets.yml`  | gitleaks secrets scan                                   |
-| `security.yml` | pip-audit (CVEs), bandit (SAST)                         |
-| `pr-title.yml` | conventional commit format check                        |
-| `sbom.yml`     | CycloneDX SBOM (push to main only)                      |
+| Workflow        | Jobs                                                                                                                                                                                                                                      |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pipeline.yml`  | Gate (PR title) → Security (gitleaks, bandit, pip-audit, npm audit) → Quality Backend (ruff, mypy, pytest 80%) → Quality Frontend (eslint, tsc, vitest 80%, build) → Build (Docker + SBOM) → Scan (Trivy) → Release + Deploy (merge only) |
+| `terraform.yml` | Plan on PR, apply on merge (paths: terraform/\*\*)                                                                                                                                                                                        |
 
 ## Conventions
 
@@ -60,6 +70,9 @@ Proactive CMS provider fraud detection with explainable AI. Identifies anomalous
 - **Risk bands:** 0-30 stable, 31-50 review, 51+ high_risk
 - **DB creds:** dev default `cms:cms_local_dev` — never use in production
 
-## Active Epics
+## Completed Epics
 
-- **Epic #8:** CI/CD Pipeline — see issue for child issues and status
+- **Epic #8:** CI/CD Pipeline v1 — COMPLETE
+- **Epic #112:** EKS Migration — COMPLETE
+- **Epic #273:** Unified CI/CD Pipeline — COMPLETE
+- **Epic #302:** Test Coverage 90%+ — COMPLETE (99% backend, 98% frontend)

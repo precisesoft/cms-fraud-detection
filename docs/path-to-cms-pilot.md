@@ -33,15 +33,15 @@ We built an **explainable, proactive provider risk detection system** that turns
 
 ## Technical Architecture (60 seconds)
 
-| Layer    | Technology                | Why                                         |
-| -------- | ------------------------- | ------------------------------------------- |
-| API      | FastAPI (Python 3.12)     | Async, auto-documented, 9 live endpoints    |
-| Scoring  | Deterministic rule engine | Auditable, reproducible, no model drift     |
-| Data     | PostgreSQL 16 + Neo4j 5   | Relational queries + relationship traversal |
-| AI       | AWS Bedrock (Claude)      | **FedRAMP High authorized**, GovCloud-ready |
-| Frontend | Next.js 16.2.0 + shadcn/ui | Modern, accessible, responsive              |
-| Infra    | Kubernetes (k3s)          | Container-native, horizontally scalable     |
-| CI/CD    | GitHub Actions            | 7 automated checks on every PR              |
+| Layer    | Technology                        | Why                                         |
+| -------- | --------------------------------- | ------------------------------------------- |
+| API      | FastAPI (Python 3.12)             | Async, auto-documented, 14 live endpoints   |
+| Scoring  | Deterministic rule engine + IF    | Auditable, reproducible, anomaly detection  |
+| Data     | PostgreSQL 16 + Neo4j 5           | Relational queries + relationship traversal |
+| AI       | AWS Bedrock (Claude)              | **FedRAMP High authorized**, GovCloud-ready |
+| Frontend | Vite + React 19 + Tailwind v4     | Fast SPA, modern React, utility-first CSS   |
+| Infra    | AWS EKS + Istio + ArgoCD          | Container-native, horizontally scalable     |
+| CI/CD    | GitHub Actions (unified pipeline) | Gate + security + quality + build + deploy  |
 
 **Data sources** — 19GB of real, public CMS data:
 

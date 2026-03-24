@@ -37,7 +37,7 @@ Argus sits at the payment gate. It scores every claim against peer baselines, fl
 
 **Success metric**: Processes 200+ claims/day with <5% false positive escalation rate
 
-**Key screens**: Claims Inbox (`/inbox`), Claim Simulation (`/simulate`)
+**Key screens**: Claims Queue (`/claims`), Claim Simulation (`/simulate`)
 
 ---
 
@@ -99,7 +99,7 @@ Argus sits at the payment gate. It scores every claim against peer baselines, fl
 
 **Success metric**: Identifies systemic fraud patterns across states/specialties; maintains disparate impact ratio ≥ 0.8
 
-**Key screens**: Dashboard (`/`), Heatmap (`/heatmap`), Fairness (`/fairness`)
+**Key screens**: Dashboard (`/`), Risk Map (`/risk-map`), Fairness (`/fairness`)
 
 ---
 
@@ -223,36 +223,38 @@ This is the "hero" journey for the hackathon demo. It shows Argus's core value p
 
 ## Screen-to-Persona Mapping
 
-| Screen                               | Sarah (Analyst) | Marcus (SIU) | Director Chen |  Dr. Patel  |
-| ------------------------------------ | :-------------: | :----------: | :-----------: | :---------: |
-| Claims Inbox (`/inbox`)              |   **Primary**   |  Secondary   |       —       |      —      |
-| Claim Simulation (`/simulate`)       |   **Primary**   |      —       |       —       |      —      |
-| Provider Detail (`/providers/[npi]`) |    Secondary    | **Primary**  |       —       | **Primary** |
-| Evidence Graph                       |        —        | **Primary**  |       —       |      —      |
-| Peer Chart                           |    Reference    | **Primary**  |       —       | **Primary** |
-| Dashboard (`/`)                      |        —        |      —       |  **Primary**  |      —      |
-| Heatmap (`/heatmap`)                 |        —        |      —       |  **Primary**  |      —      |
-| Fairness (`/fairness`)               |        —        |      —       |  **Primary**  |      —      |
-| AI Chat (future)                     |        —        | **Primary**  |       —       |      —      |
+| Screen                              | Sarah (Analyst) | Marcus (SIU) | Director Chen |  Dr. Patel  |
+| ----------------------------------- | :-------------: | :----------: | :-----------: | :---------: |
+| Claims Queue (`/claims`)            |   **Primary**   |  Secondary   |       —       |      —      |
+| Claim Simulation (`/simulate`)      |   **Primary**   |      —       |       —       |      —      |
+| Provider Detail (`/providers/:npi`) |    Secondary    | **Primary**  |       —       | **Primary** |
+| Evidence Graph                      |        —        | **Primary**  |       —       |      —      |
+| Peer Chart                          |    Reference    | **Primary**  |       —       | **Primary** |
+| Dashboard (`/`)                     |        —        |      —       |  **Primary**  |      —      |
+| Risk Map (`/risk-map`)              |        —        |      —       |  **Primary**  |      —      |
+| Fairness (`/fairness`)              |        —        |      —       |  **Primary**  |      —      |
+| AI Chat Sidebar (AssistantDrawer)   |        —        | **Primary**  |       —       |      —      |
 
 ---
 
 ## What Already Exists vs. What's Needed
 
-| Feature                              | Status               | Serves                |
-| ------------------------------------ | -------------------- | --------------------- |
-| Dashboard with risk distribution     | ✅ Built             | Director              |
-| Provider search + list               | ✅ Built             | All                   |
-| Provider detail with signals         | ✅ Built             | SIU, Medical Director |
-| Peer comparison chart                | ✅ Built             | SIU, Medical Director |
-| Evidence graph (Neo4j)               | ✅ Built             | SIU                   |
-| Risk gauge                           | ✅ Built             | All                   |
-| Heatmap                              | ✅ Built             | Director              |
-| Fairness dashboard                   | ✅ Built             | Director              |
-| Scan button (provider scoring)       | ✅ Built             | Analyst               |
-| **Claim simulation form**            | 🔨 Next              | **Analyst**           |
-| **Scoring result with verdict**      | 🔨 Next              | **Analyst**           |
-| **Claims inbox**                     | 🔨 Next              | **Analyst**           |
-| **Case actions (approve/flag/deny)** | 🔨 Next              | **Analyst, SIU**      |
-| **AI narrative**                     | 🔜 Blocked on Epic 4 | **SIU, Analyst**      |
-| **AI chat sidebar**                  | 🔜 Blocked on Epic 4 | **SIU**               |
+| Feature                              | Status   | Serves                |
+| ------------------------------------ | -------- | --------------------- |
+| Dashboard with risk distribution     | ✅ Built | Director              |
+| Provider search + list               | ✅ Built | All                   |
+| Provider detail with signals         | ✅ Built | SIU, Medical Director |
+| Peer comparison chart                | ✅ Built | SIU, Medical Director |
+| Evidence graph (Neo4j)               | ✅ Built | SIU                   |
+| Risk gauge                           | ✅ Built | All                   |
+| Risk map (geographic heatmap)        | ✅ Built | Director              |
+| Fairness dashboard                   | ✅ Built | Director              |
+| Claims queue                         | ✅ Built | Analyst               |
+| Claim simulation form                | ✅ Built | Analyst               |
+| Scoring result with signals          | ✅ Built | Analyst               |
+| AI narrative generation              | ✅ Built | SIU, Analyst          |
+| AI chat sidebar (AssistantDrawer)    | ✅ Built | SIU                   |
+| Text-to-SQL queries                  | ✅ Built | SIU                   |
+| Retrospective validation             | ✅ Built | Director              |
+| Anomaly detection (Isolation Forest) | ✅ Built | All                   |
+| Authentication (JWT)                 | ✅ Built | All                   |
