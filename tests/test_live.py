@@ -40,8 +40,6 @@ CLAIM_ROW = {
     "services_per_bene_peer_z": 0.8,
     "submitted_to_allowed_peer_z": 0.5,
     "payment_peer_z": 0.3,
-    "top_code_share": 0.4,
-    "service_hhi": 0.2,
 }
 
 
