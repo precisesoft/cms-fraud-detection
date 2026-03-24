@@ -2,6 +2,7 @@ import React, { Suspense } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   LayoutDashboard,
+  Activity,
   PlayCircle,
   Users,
   FileText,
@@ -20,6 +21,7 @@ import { useAuth } from "../contexts/AuthContext";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Live Monitor", href: "/live", icon: Activity },
   { name: "Simulate", href: "/simulate", icon: PlayCircle },
   { name: "Providers", href: "/providers", icon: Users },
   { name: "Claims", href: "/claims", icon: FileText },
