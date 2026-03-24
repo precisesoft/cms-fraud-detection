@@ -153,6 +153,23 @@ class ProviderListResponse(BaseModel):
     meta: PaginationMeta
 
 
+class ProviderScoreDetails(BaseModel):
+    """Hybrid score summary for a provider detail view."""
+
+    npi: str
+    explainable_risk_score: int | None = Field(default=None, ge=0, le=100)
+    explainable_risk_band: RiskBand | None = None
+    anomaly_score: float | None = Field(default=None, ge=0, le=100)
+    ml_suspicion_max: float | None = Field(default=None, ge=0, le=100)
+    ml_suspicion_avg: float | None = Field(default=None, ge=0, le=100)
+    hybrid_composite_max: float | None = Field(default=None, ge=0, le=100)
+    hybrid_composite_avg: float | None = Field(default=None, ge=0, le=100)
+    hybrid_risk_label: Literal["low", "medium", "high", "critical"] | None = None
+    service_line_scored_count: int = 0
+    model_name: str | None = None
+    model_version: str | None = None
+
+
 # ---------------------------------------------------------------------------
 # Claim / service case schemas
 # ---------------------------------------------------------------------------
@@ -214,6 +231,21 @@ class ClaimListResponse(BaseModel):
     meta: PaginationMeta
 
 
+class ClaimScoreDetails(BaseModel):
+    """Hybrid score summary for a claim or investigation detail view."""
+
+    case_id: str
+    npi: str
+    explainable_risk_score: int | None = Field(default=None, ge=0, le=100)
+    explainable_risk_band: RiskBand | None = None
+    anomaly_score: float | None = Field(default=None, ge=0, le=100)
+    ml_predicted_probability: float | None = Field(default=None, ge=0, le=100)
+    hybrid_composite_score: float | None = Field(default=None, ge=0, le=100)
+    hybrid_risk_label: Literal["low", "medium", "high", "critical"] | None = None
+    model_name: str | None = None
+    model_version: str | None = None
+
+
 # ---------------------------------------------------------------------------
 # Scoring schemas
 # ---------------------------------------------------------------------------
@@ -271,6 +303,27 @@ class ScoreResult(BaseModel):
     )
 
 
+class ScoreV2Result(ScoreResult):
+    """V2 scoring output with weak-supervised and composite scoring."""
+
+    ml_predicted_probability: float | None = Field(
+        default=None,
+        ge=0,
+        le=100,
+        description="Weakly supervised fraud probability (0-100, higher = more suspicious)",
+    )
+    composite_score: float | None = Field(
+        default=None,
+        ge=0,
+        le=100,
+        description="Composite hybrid risk score combining rules, anomaly, context, and ML output.",
+    )
+    composite_risk_label: Literal["low", "medium", "high", "critical"] | None = Field(
+        default=None,
+        description="Composite risk band derived from the hybrid score.",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Claim Simulation schemas
 # ---------------------------------------------------------------------------
@@ -321,6 +374,17 @@ class ClaimSimulationResult(BaseModel):
         ge=0,
         le=100,
         description="Isolation forest anomaly score (0-100, higher = more anomalous)",
+    )
+
+
+class ClaimSimulationV2Result(ClaimSimulationResult):
+    """V2 output for real-time single-claim scoring with ML probability."""
+
+    ml_predicted_probability: float | None = Field(
+        default=None,
+        ge=0,
+        le=100,
+        description="Weakly supervised fraud probability (0-100, higher = more suspicious)",
     )
 
 

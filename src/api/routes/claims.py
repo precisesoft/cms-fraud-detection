@@ -3,13 +3,21 @@
 from __future__ import annotations
 
 import math
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 
 from src.api.deps import get_db
-from src.api.schemas import Claim, ClaimListResponse, PaginationMeta
+from src.api.schemas import (
+    Claim,
+    ClaimListResponse,
+    ClaimScoreDetails,
+    PaginationMeta,
+    risk_band_from_score,
+)
+from src.models.weak_supervised import compute_anomaly_score
 
 router = APIRouter(prefix="/claims", tags=["claims"])
 
@@ -104,3 +112,95 @@ async def get_claim(
     if not row:
         raise HTTPException(status_code=404, detail="Claim not found")
     return Claim(**row)
+
+
+def _hybrid_label_from_score(
+    score: float | None,
+) -> Literal["low", "medium", "high", "critical"] | None:
+    if score is None:
+        return None
+    if score >= 90.0:
+        return "critical"
+    if score >= 70.0:
+        return "high"
+    if score >= 40.0:
+        return "medium"
+    return "low"
+
+
+@router.get("/{case_id}/score-details", response_model=ClaimScoreDetails)
+async def get_claim_score_details(
+    case_id: str,
+    conn: AsyncConnection = Depends(get_db),
+) -> ClaimScoreDetails:
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"SELECT {_COLS} FROM provider_service_cases WHERE case_id = %s",
+            (case_id,),
+        )
+        claim_row = await cur.fetchone()
+
+    if not claim_row:
+        raise HTTPException(status_code=404, detail="Claim not found")
+
+    anomaly_score = compute_anomaly_score(claim_row)
+
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            """
+            SELECT model_name, model_version
+            FROM trained_models
+            ORDER BY trained_at DESC NULLS LAST, id DESC
+            LIMIT 1
+            """
+        )
+        latest_model = await cur.fetchone()
+
+    score_row: dict | None = None
+    if latest_model:
+        async with conn.cursor(row_factory=dict_row) as cur:
+            await cur.execute(
+                """
+                SELECT predicted_probability,
+                       composite_score,
+                       risk_label,
+                       model_name,
+                       model_version
+                FROM observation_model_scores
+                WHERE case_id = %s
+                  AND model_name = %s
+                  AND model_version = %s
+                ORDER BY scored_at DESC, id DESC
+                LIMIT 1
+                """,
+                [case_id, latest_model["model_name"], latest_model["model_version"]],
+            )
+            score_row = await cur.fetchone()
+
+    hybrid_score = score_row["composite_score"] if score_row else None
+    hybrid_risk_label = None
+    if score_row and score_row.get("risk_label"):
+        hybrid_risk_label = score_row["risk_label"]
+    else:
+        hybrid_risk_label = _hybrid_label_from_score(hybrid_score)
+
+    model_name = score_row["model_name"] if score_row else None
+    if model_name is None and latest_model:
+        model_name = latest_model["model_name"]
+
+    model_version = score_row["model_version"] if score_row else None
+    if model_version is None and latest_model:
+        model_version = latest_model["model_version"]
+
+    return ClaimScoreDetails(
+        case_id=case_id,
+        npi=claim_row["npi"],
+        explainable_risk_score=claim_row.get("seed_risk_score"),
+        explainable_risk_band=risk_band_from_score(claim_row.get("seed_risk_score")),
+        anomaly_score=round(float(anomaly_score), 1),
+        ml_predicted_probability=score_row["predicted_probability"] if score_row else None,
+        hybrid_composite_score=hybrid_score,
+        hybrid_risk_label=hybrid_risk_label,
+        model_name=model_name,
+        model_version=model_version,
+    )

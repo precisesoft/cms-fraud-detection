@@ -8,6 +8,7 @@ import {
   getHeatmap,
   getProviders,
   getProviderDetail,
+  getProviderScoreDetails,
   getProviderSignals,
   getProviderPeers,
   getProviderRadar,
@@ -15,6 +16,7 @@ import {
   getProviderGraph,
   getClaims,
   getClaim,
+  getClaimScoreDetails,
   simulateClaim,
   scoreClaim,
   getFairness,
@@ -353,7 +355,7 @@ describe("scoreClaim — POST body", () => {
     await scoreClaim({ npi: "1" });
 
     const [url] = fetchMock.mock.calls[0] as [string];
-    expect(url).toMatch(/\/api\/score$/);
+    expect(url).toMatch(/\/api\/v2\/score$/);
   });
 });
 
@@ -376,6 +378,17 @@ describe("getProviderDetail", () => {
     await getProviderDetail("123");
     const [url] = fetchMock.mock.calls[0] as [string];
     expect(url).toMatch(/\/api\/providers\/123$/);
+  });
+});
+
+/* ── getProviderScoreDetails ──────────────────────────────── */
+
+describe("getProviderScoreDetails", () => {
+  it("calls /api/providers/:npi/score-details", async () => {
+    fetchMock.mockReturnValue(okResponse({ npi: "123" }));
+    await getProviderScoreDetails("123");
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toMatch(/\/api\/providers\/123\/score-details$/);
   });
 });
 
@@ -455,10 +468,21 @@ describe("getClaim", () => {
   });
 });
 
+/* ── getClaimScoreDetails ─────────────────────────────────── */
+
+describe("getClaimScoreDetails", () => {
+  it("calls /api/claims/:caseId/score-details with URL encoding", async () => {
+    fetchMock.mockReturnValue(okResponse({ case_id: "C-001", npi: "1" }));
+    await getClaimScoreDetails("C-001");
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toMatch(/\/api\/claims\/C-001\/score-details$/);
+  });
+});
+
 /* ── simulateClaim ─────────────────────────────────────────── */
 
 describe("simulateClaim", () => {
-  it("sends POST to /api/claims/simulate with payload", async () => {
+  it("sends POST to /api/v2/claims/simulate with payload", async () => {
     const payload = {
       npi: "111",
       hcpcs_cd: "99213",
@@ -480,11 +504,12 @@ describe("simulateClaim", () => {
         state: null,
         narrative: null,
         anomaly_score: null,
+        ml_predicted_probability: null,
       }),
     );
     await simulateClaim(payload);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toMatch(/\/api\/claims\/simulate$/);
+    expect(url).toMatch(/\/api\/v2\/claims\/simulate$/);
     expect(init.method).toBe("POST");
     expect(JSON.parse(init.body as string)).toEqual(payload);
   });

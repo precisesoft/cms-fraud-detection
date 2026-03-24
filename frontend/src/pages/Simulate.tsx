@@ -1,5 +1,5 @@
 import React from 'react';
-import { Zap, AlertTriangle, DollarSign, Stethoscope, Hash, MapPin, Users } from 'lucide-react';
+import { Zap, AlertTriangle, DollarSign, Stethoscope, Hash, MapPin, Users, Brain, Activity } from 'lucide-react';
 import { simulateClaim } from '../lib/api';
 import type { ClaimSimulationResult, ClaimSimulationRequest } from '../lib/api';
 import { cn } from '../lib/utils';
@@ -126,6 +126,30 @@ export function Simulate() {
                   <span className="text-xs text-slate-500">Recommendation: <span className="font-bold text-slate-700 capitalize">{result.recommendation}</span></span>
                 </div>
                 {result.provider_name && <p className="mt-3 text-sm text-slate-600">{result.provider_name} · {result.provider_type ?? '—'} · {result.state ?? '—'}</p>}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center gap-2 text-slate-500 text-xs font-bold uppercase tracking-wider">
+                    <Activity className="w-4 h-4 text-amber-500" />
+                    Anomaly Score
+                  </div>
+                  <p className="mt-3 text-3xl font-black text-slate-900">
+                    {result.anomaly_score != null ? result.anomaly_score.toFixed(1) : '—'}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">Isolation-forest outlier score</p>
+                </div>
+
+                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center gap-2 text-slate-500 text-xs font-bold uppercase tracking-wider">
+                    <Brain className="w-4 h-4 text-indigo-500" />
+                    ML Suspicion
+                  </div>
+                  <p className="mt-3 text-3xl font-black text-slate-900">
+                    {result.ml_predicted_probability != null ? `${result.ml_predicted_probability.toFixed(1)}%` : '—'}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">Weakly supervised fraud probability</p>
+                </div>
               </div>
 
               {/* Narrative */}

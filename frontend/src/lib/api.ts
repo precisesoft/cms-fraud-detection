@@ -132,6 +132,21 @@ export interface ProviderDetail {
   [key: string]: unknown;
 }
 
+export interface ProviderScoreDetails {
+  npi: string;
+  explainable_risk_score: number | null;
+  explainable_risk_band: RiskBand | null;
+  anomaly_score: number | null;
+  ml_suspicion_max: number | null;
+  ml_suspicion_avg: number | null;
+  hybrid_composite_max: number | null;
+  hybrid_composite_avg: number | null;
+  hybrid_risk_label: "low" | "medium" | "high" | "critical" | null;
+  service_line_scored_count: number;
+  model_name: string | null;
+  model_version: string | null;
+}
+
 export interface Signal {
   name: string;
   category: string;
@@ -212,6 +227,19 @@ export interface ClaimListResponse {
   meta: PaginationMeta;
 }
 
+export interface ClaimScoreDetails {
+  case_id: string;
+  npi: string;
+  explainable_risk_score: number | null;
+  explainable_risk_band: RiskBand | null;
+  anomaly_score: number | null;
+  ml_predicted_probability: number | null;
+  hybrid_composite_score: number | null;
+  hybrid_risk_label: "low" | "medium" | "high" | "critical" | null;
+  model_name: string | null;
+  model_version: string | null;
+}
+
 export interface ClaimSimulationRequest {
   npi: string;
   hcpcs_cd: string;
@@ -243,6 +271,7 @@ export interface ClaimSimulationResult {
   state: string | null;
   narrative: string | null;
   anomaly_score: number | null;
+  ml_predicted_probability?: number | null;
 }
 
 export interface HeatmapEntry {
@@ -391,6 +420,9 @@ export interface ScoreResult {
   signals: Signal[];
   narrative: string | null;
   anomaly_score: number | null;
+  ml_predicted_probability?: number | null;
+  composite_score?: number | null;
+  composite_risk_label?: "low" | "medium" | "high" | "critical" | null;
 }
 
 export interface HealthResponse {
@@ -453,6 +485,10 @@ export function getProviderDetail(npi: string) {
   return request<ProviderDetail>(`/api/providers/${npi}`);
 }
 
+export function getProviderScoreDetails(npi: string) {
+  return request<ProviderScoreDetails>(`/api/providers/${npi}/score-details`);
+}
+
 export function getProviderSignals(npi: string) {
   return request<Signal[]>(`/api/providers/${npi}/signals`);
 }
@@ -500,8 +536,12 @@ export function getClaim(caseId: string) {
   return request<Claim>(`/api/claims/${encodeURIComponent(caseId)}`);
 }
 
+export function getClaimScoreDetails(caseId: string) {
+  return request<ClaimScoreDetails>(`/api/claims/${encodeURIComponent(caseId)}/score-details`);
+}
+
 export function simulateClaim(payload: ClaimSimulationRequest) {
-  return request<ClaimSimulationResult>("/api/claims/simulate", {
+  return request<ClaimSimulationResult>("/api/v2/claims/simulate", {
     method: "POST",
     body: payload,
   });
@@ -513,7 +553,7 @@ export function scoreClaim(payload: {
   tot_srvcs?: number;
   avg_submitted_charge?: number;
 }) {
-  return request<ScoreResult>("/api/score", {
+  return request<ScoreResult>("/api/v2/score", {
     method: "POST",
     body: payload,
   });

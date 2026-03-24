@@ -3,8 +3,8 @@ import { ArrowLeft, MapPin, Stethoscope, AlertCircle, CheckCircle2, Activity, Do
 import { Link, useParams } from 'react-router-dom';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { cn } from '../lib/utils';
-import { getProviderDetail, getProviderPeers, getProviderNetwork, getProviderSignals, getProviderRadar, getProviderGraph } from '../lib/api';
-import type { ProviderDetail as ProviderDetailType, PeerLine, Signal, RadarDimension, NetworkRiskResponse, GraphResponse } from '../lib/api';
+import { getProviderDetail, getProviderPeers, getProviderNetwork, getProviderSignals, getProviderRadar, getProviderGraph, getProviderScoreDetails } from '../lib/api';
+import type { ProviderDetail as ProviderDetailType, PeerLine, Signal, RadarDimension, NetworkRiskResponse, GraphResponse, ProviderScoreDetails } from '../lib/api';
 import { StatusBadge } from '../components/StatusBadge';
 import { AssistantDrawer } from '../components/AssistantDrawer';
 import { EvidenceGraph } from '../components/EvidenceGraph';
@@ -19,6 +19,7 @@ export function ProviderDetail() {
   const [radar, setRadar] = React.useState<RadarDimension[]>([]);
   const [network, setNetwork] = React.useState<NetworkRiskResponse | null>(null);
   const [graph, setGraph] = React.useState<GraphResponse | null>(null);
+  const [scoreDetails, setScoreDetails] = React.useState<ProviderScoreDetails | null>(null);
 
   React.useEffect(() => {
     if (!npi) return;
@@ -29,6 +30,7 @@ export function ProviderDetail() {
     getProviderRadar(npi).then((d) => active && setRadar(d.dimensions)).catch(() => {});
     getProviderNetwork(npi).then((d) => active && setNetwork(d)).catch(() => {});
     getProviderGraph(npi).then((d) => active && setGraph(d)).catch(() => {});
+    getProviderScoreDetails(npi).then((d) => active && setScoreDetails(d)).catch(() => {});
     return () => { active = false; };
   }, [npi]);
 
@@ -91,6 +93,39 @@ export function ProviderDetail() {
       </div>
 
       {/* KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {[
+          {
+            name: 'Explainable Risk',
+            value: scoreDetails?.explainable_risk_score ?? detail.max_seed_risk_score,
+            sub: 'Primary transparent score',
+          },
+          {
+            name: 'Provider Anomaly',
+            value: scoreDetails?.anomaly_score,
+            sub: 'Isolation-forest provider anomaly',
+          },
+          {
+            name: 'ML Suspicion Max',
+            value: scoreDetails?.ml_suspicion_max,
+            sub: scoreDetails?.service_line_scored_count ? `${scoreDetails.service_line_scored_count} scored service lines` : 'Latest model not available',
+          },
+          {
+            name: 'Hybrid Composite Max',
+            value: scoreDetails?.hybrid_composite_max,
+            sub: scoreDetails?.hybrid_risk_label ? `Latest model · ${scoreDetails.hybrid_risk_label}` : 'Assistive hybrid layer',
+          },
+        ].map((card) => (
+          <div key={card.name} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{card.name}</p>
+            <p className={cn('text-3xl font-black leading-none', scoreColor(typeof card.value === 'number' ? card.value : null))}>
+              {typeof card.value === 'number' ? card.value.toFixed(1).replace(/\.0$/, '') : '—'}
+            </p>
+            <p className="text-[10px] text-slate-500 mt-2 font-medium">{card.sub}</p>
+          </div>
+        ))}
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { name: 'Service Lines', value: String(detail.service_line_count ?? 0), sub: 'Unique service observations', icon: Activity },

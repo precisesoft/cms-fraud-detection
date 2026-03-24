@@ -58,15 +58,19 @@ def create_app() -> FastAPI:
     from src.api.routes.network import router as network_router
     from src.api.routes.providers import router as providers_router
     from src.api.routes.score import router as score_router
+    from src.api.routes.score_v2 import router as score_v2_router
     from src.api.routes.signals import router as signals_router
     from src.api.routes.simulate import router as simulate_router
+    from src.api.routes.simulate_v2 import router as simulate_v2_router
     from src.api.routes.validation import router as validation_router
 
     app.include_router(providers_router, prefix="/api", dependencies=_auth)
     app.include_router(cases_router, prefix="/api", dependencies=_auth)
     app.include_router(claims_router, prefix="/api", dependencies=_auth)
     app.include_router(score_router, prefix="/api", dependencies=_auth)
+    app.include_router(score_v2_router, prefix="/api", dependencies=_auth)
     app.include_router(simulate_router, prefix="/api", dependencies=_auth)
+    app.include_router(simulate_v2_router, prefix="/api", dependencies=_auth)
     app.include_router(fairness_router, prefix="/api", dependencies=_auth)
     app.include_router(signals_router, prefix="/api", dependencies=_auth)
     app.include_router(dashboard_router, prefix="/api", dependencies=_auth)

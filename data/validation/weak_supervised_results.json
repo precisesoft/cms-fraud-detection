@@ -1,0 +1,8 @@
+{
+  "train_rows": 4776,
+  "test_rows": 1195,
+  "positive_rate_train": 0.144263,
+  "positive_rate_test": 0.14477,
+  "roc_auc": 1.0,
+  "average_precision": 1.0
+}
