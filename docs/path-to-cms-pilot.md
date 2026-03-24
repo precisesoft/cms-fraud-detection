@@ -62,14 +62,15 @@ The system is designed so the **MVP maps directly to a pilot** with minimal rewo
 
 ### Pilot Phase (6 months)
 
-| Change                    | What It Takes                                                                                                                                                                                    |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Connect real CMS data** | Replace public datasets with internal claim feeds. Same schema, same scoring engine — only the data source changes.                                                                              |
-| **FedRAMP compliance**    | Deploy to AWS GovCloud. Bedrock is already FedRAMP High. Standard ATO process for the application layer.                                                                                         |
-| **RBAC + audit trail**    | Add role-based access and action logging. Framework is ready (FastAPI middleware).                                                                                                               |
-| **Reviewer workflow**     | Add case assignment, disposition tracking, and status management.                                                                                                                                |
-| **Real-time scoring**     | The system already demonstrates real-time scoring at sub-50ms latency via SSE streaming. Connecting to a live CMS claims feed (SQS/Kafka) is a configuration change, not an architecture change. |
-| **Feedback loop**         | Reviewer decisions (true positive, false positive) feed back into signal weight tuning.                                                                                                          |
+| Change                           | What It Takes                                                                                                                                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Connect real CMS data**        | Replace public datasets with internal claim feeds. Same schema, same scoring engine — only the data source changes.                                                                              |
+| **FedRAMP compliance**           | Deploy to AWS GovCloud. Bedrock is already FedRAMP High. Standard ATO process for the application layer.                                                                                         |
+| **RBAC + audit trail**           | Add role-based access and action logging. Framework is ready (FastAPI middleware).                                                                                                               |
+| **Reviewer workflow**            | Add case assignment, disposition tracking, and status management.                                                                                                                                |
+| **Real-time scoring**            | The system already demonstrates real-time scoring at sub-50ms latency via SSE streaming. Connecting to a live CMS claims feed (SQS/Kafka) is a configuration change, not an architecture change. |
+| **Multi-year temporal analysis** | Connect 3-5 years of Part B data to detect year-over-year growth, billing acceleration, and code-mix shifts.                                                                                     |
+| **Feedback loop**                | Reviewer decisions (true positive, false positive) feed back into signal weight tuning.                                                                                                          |
 
 ### Production Scale (12 months)
 
