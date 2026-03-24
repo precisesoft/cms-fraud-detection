@@ -825,7 +825,7 @@ capabilities. Production-ready with proper error handling, CORS, health checks.
 
 ## Epic 6: Frontend — Dashboard, Claims Simulator, Fairness
 
-**Goal**: Next.js frontend with three views: (1) overview dashboard with risk heatmap,
+**Goal**: React frontend with three views: (1) overview dashboard with risk heatmap,
 (2) claims simulator with scoring and transparency, (3) fairness dashboard proving
 responsible AI. Provider search available from every view.
 
@@ -851,7 +851,7 @@ responsible AI. Provider search available from every view.
 
 **Stories**:
 
-1. Scaffold Next.js 16 + TypeScript + shadcn/ui project
+1. Scaffold Vite + React 19 + TypeScript project
 2. Build overview dashboard page (stat cards, top flagged list)
 3. Build risk heatmap component (US choropleth map)
 4. Build provider search with autocomplete

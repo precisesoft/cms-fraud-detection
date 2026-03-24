@@ -169,18 +169,18 @@
 
 ## Architecture
 
-| Component      | Technology                           | Deployment            |
-| -------------- | ------------------------------------ | --------------------- |
-| API            | FastAPI + async psycopg pool         | EKS, 2 replicas       |
-| Frontend       | Next.js 16 + Tailwind v4 + shadcn/ui | EKS, 2 replicas       |
-| Database       | PostgreSQL 16                        | EKS StatefulSet, 20Gi |
-| Graph          | Neo4j 5 Community                    | EKS StatefulSet, 10Gi |
-| AI (chat)      | Claude Haiku 4.5 via Bedrock         | us-east-1             |
-| AI (narrative) | Claude Sonnet 4.6 via Bedrock        | us-east-1             |
-| ML             | Isolation Forest (scikit-learn)      | Bundled in API image  |
-| CI/CD          | GitHub Actions + ArgoCD              | 7 workflows           |
-| Infra          | Terraform + EKS                      | us-east-1             |
-| Domain         | argus.precise-lab.com                | Route53 + Istio NLB   |
+| Component      | Technology                      | Deployment            |
+| -------------- | ------------------------------- | --------------------- |
+| API            | FastAPI + async psycopg pool    | EKS, 2 replicas       |
+| Frontend       | Vite + React 19 + Tailwind v4   | EKS, 2 replicas       |
+| Database       | PostgreSQL 16                   | EKS StatefulSet, 20Gi |
+| Graph          | Neo4j 5 Community               | EKS StatefulSet, 10Gi |
+| AI (chat)      | Claude Haiku 4.5 via Bedrock    | us-east-1             |
+| AI (narrative) | Claude Sonnet 4.6 via Bedrock   | us-east-1             |
+| ML             | Isolation Forest (scikit-learn) | Bundled in API image  |
+| CI/CD          | GitHub Actions + ArgoCD         | 7 workflows           |
+| Infra          | Terraform + EKS                 | us-east-1             |
+| Domain         | argus.precise-lab.com           | Route53 + Istio NLB   |
 
 ---
 
