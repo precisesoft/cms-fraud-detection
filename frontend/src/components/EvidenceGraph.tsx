@@ -1,14 +1,20 @@
-import type { GraphNode, GraphEdge } from '../lib/api';
+import type { GraphNode, GraphEdge } from "../lib/api";
 
 const TYPE_COLORS: Record<string, string> = {
-  provider: '#6366f1',
-  hcpcs: '#f59e0b',
-  signal: '#f43f5e',
-  location: '#22c55e',
-  organization: '#3b82f6',
+  provider: "#6366f1",
+  case: "#f59e0b",
+  signal: "#f43f5e",
+  peergroup: "#22c55e",
+  source: "#3b82f6",
 };
 
-export function EvidenceGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphEdge[] }) {
+export function EvidenceGraph({
+  nodes,
+  edges,
+}: {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}) {
   if (!nodes.length) {
     return (
       <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
@@ -23,7 +29,7 @@ export function EvidenceGraph({ nodes, edges }: { nodes: GraphNode[]; edges: Gra
   const cy = height / 2;
 
   const providerIndex = Math.max(
-    nodes.findIndex((node) => node.type === 'provider'),
+    nodes.findIndex((node) => node.type.toLowerCase() === "provider"),
     0,
   );
   const providerNode = nodes[providerIndex];
@@ -34,7 +40,8 @@ export function EvidenceGraph({ nodes, edges }: { nodes: GraphNode[]; edges: Gra
   positions.set(providerNode.id, { x: cx, y: cy });
 
   outerNodes.forEach((node, index) => {
-    const angle = (2 * Math.PI * index) / Math.max(outerNodes.length, 1) - Math.PI / 2;
+    const angle =
+      (2 * Math.PI * index) / Math.max(outerNodes.length, 1) - Math.PI / 2;
     positions.set(node.id, {
       x: cx + outerRadius * Math.cos(angle),
       y: cy + outerRadius * Math.sin(angle),
@@ -44,7 +51,7 @@ export function EvidenceGraph({ nodes, edges }: { nodes: GraphNode[]; edges: Gra
   const wrapLabel = (label: string) => {
     const words = label.split(/\s+/);
     const lines: string[] = [];
-    let current = '';
+    let current = "";
 
     for (const word of words) {
       const candidate = current ? `${current} ${word}` : word;
@@ -75,7 +82,10 @@ export function EvidenceGraph({ nodes, edges }: { nodes: GraphNode[]; edges: Gra
   };
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto min-h-[320px]">
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="w-full h-auto min-h-[320px]"
+    >
       {edges.map((edge, i) => {
         const source = positions.get(edge.source);
         const target = positions.get(edge.target);
@@ -103,39 +113,39 @@ export function EvidenceGraph({ nodes, edges }: { nodes: GraphNode[]; edges: Gra
         const isProvider = node.id === providerNode.id;
 
         return (
-        <g key={node.id}>
-          <title>{node.label}</title>
-          <circle
-            cx={position.x}
-            cy={position.y}
-            r={isProvider ? 16 : 12}
-            fill={TYPE_COLORS[node.type] ?? '#94a3b8'}
-            opacity={0.9}
-          />
-          <rect
-            x={position.x - 46}
-            y={position.y + (isProvider ? 22 : 20)}
-            width={92}
-            height={labelLines.length > 1 ? 26 : 16}
-            rx={6}
-            fill="white"
-            fillOpacity={0.92}
-            stroke="#e2e8f0"
-          />
-          {labelLines.map((line, index) => (
-            <text
-              key={`${node.id}-${index}`}
-              x={position.x}
-              y={position.y + (isProvider ? 33 : 31) + index * 10}
-              textAnchor="middle"
-              fontSize={9}
-              fontWeight={600}
-              fill="#475569"
-            >
-              {line}
-            </text>
-          ))}
-        </g>
+          <g key={node.id}>
+            <title>{node.label}</title>
+            <circle
+              cx={position.x}
+              cy={position.y}
+              r={isProvider ? 16 : 12}
+              fill={TYPE_COLORS[node.type.toLowerCase()] ?? "#94a3b8"}
+              opacity={0.9}
+            />
+            <rect
+              x={position.x - 46}
+              y={position.y + (isProvider ? 22 : 20)}
+              width={92}
+              height={labelLines.length > 1 ? 26 : 16}
+              rx={6}
+              fill="white"
+              fillOpacity={0.92}
+              stroke="#e2e8f0"
+            />
+            {labelLines.map((line, index) => (
+              <text
+                key={`${node.id}-${index}`}
+                x={position.x}
+                y={position.y + (isProvider ? 33 : 31) + index * 10}
+                textAnchor="middle"
+                fontSize={9}
+                fontWeight={600}
+                fill="#475569"
+              >
+                {line}
+              </text>
+            ))}
+          </g>
         );
       })}
     </svg>

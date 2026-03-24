@@ -58,6 +58,7 @@ def create_app() -> FastAPI:
     from src.api.routes.cases import router as cases_router
     from src.api.routes.chat import router as chat_router
     from src.api.routes.claims import router as claims_router
+    from src.api.routes.cluster import router as cluster_router
     from src.api.routes.dashboard import router as dashboard_router
     from src.api.routes.fairness import router as fairness_router
     from src.api.routes.graph import router as graph_router
@@ -82,6 +83,7 @@ def create_app() -> FastAPI:
     app.include_router(dashboard_router, prefix="/api", dependencies=_auth)
     app.include_router(graph_router, prefix="/api", dependencies=_auth)
     app.include_router(network_router, prefix="/api", dependencies=_auth)
+    app.include_router(cluster_router, prefix="/api", dependencies=_auth)
     app.include_router(chat_router, prefix="/api", dependencies=_auth)
     app.include_router(validation_router, prefix="/api", dependencies=_auth)
 
