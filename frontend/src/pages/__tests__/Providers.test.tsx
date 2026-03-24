@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { Providers } from "../Providers";
 import { getProviders } from "../../lib/api";
 
@@ -270,6 +270,31 @@ describe("Providers", () => {
     unmount();
     rejectApi(new Error("stale"));
     await new Promise((r) => setTimeout(r, 0));
+  });
+
+  it("clicking a provider row navigates to provider detail", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <MemoryRouter initialEntries={["/providers"]}>
+        <Routes>
+          <Route path="/providers" element={<Providers />} />
+          <Route
+            path="/providers/:npi"
+            element={<div data-testid="provider-detail">Detail</div>}
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await waitFor(() => {
+      expect(screen.getByText("Acme Clinic")).toBeInTheDocument();
+    });
+    // Click the table row (not the link inside)
+    const row = container.querySelector("tbody tr");
+    expect(row).not.toBeNull();
+    await user.click(row!);
+    await waitFor(() => {
+      expect(screen.getByTestId("provider-detail")).toBeInTheDocument();
+    });
   });
 
   it("clicking Previous goes back a page when page > 1", async () => {

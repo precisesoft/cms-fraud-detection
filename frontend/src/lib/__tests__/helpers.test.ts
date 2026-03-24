@@ -7,6 +7,7 @@ import {
   formatUSD,
   formatCompactUSD,
   formatNumber,
+  formatCaseId,
   providerDisplayName,
 } from "../helpers";
 
@@ -216,6 +217,24 @@ describe("formatNumber", () => {
 
   it("formats zero correctly", () => {
     expect(formatNumber(0)).toBe("0");
+  });
+});
+
+describe("formatCaseId", () => {
+  it("formats pipe-delimited case ID as NPI — HCPCS", () => {
+    expect(formatCaseId("1821387911|90677|O")).toBe("1821387911 — 90677");
+  });
+
+  it("handles two-part case IDs", () => {
+    expect(formatCaseId("1234567890|99213")).toBe("1234567890 — 99213");
+  });
+
+  it("returns raw string when no pipe delimiter", () => {
+    expect(formatCaseId("CASE-001")).toBe("CASE-001");
+  });
+
+  it("returns raw string for empty input", () => {
+    expect(formatCaseId("")).toBe("");
   });
 });
 
