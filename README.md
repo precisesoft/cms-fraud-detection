@@ -4,20 +4,35 @@
 
 **Hackathon**: Government AI Hackathon — 14-day sprint
 **Challenge**: Proactive Program Integrity (CMS)
-**Live App**: [argus.precise-lab.com](https://argus.precise-lab.com)
+**Demo**: See [Demo Script](docs/demo-script.md) for walkthrough
 **Submission Deadline**: March 25, 2026 at 5:00 PM ET
 
 ## Start Here
 
-- [Hackathon kickoff brief](docs/hackathon-kickoff.md)
-- [Orientation meeting notes](docs/orientation-meeting-notes.md)
-- [Team kickoff brief](docs/team-kickoff-brief.md)
 - [Problem statement](docs/problem-statement.md)
-- [Demo data research and graph strategy](docs/demo-data-research-plan.md)
-- [Open questions for the project lead](docs/open-questions.md)
-- [Official source register](docs/source-register.md)
-- [Challenge research brief](docs/challenge-research.md)
-- [Public dataset catalog](docs/dataset-catalog.md)
+- [Architecture (v3)](docs/architecture-v3.md)
+- [Demo script](docs/demo-script.md)
+- [Development process](docs/development-process.md)
+- [AI/OSS disclosure](docs/ai-oss-disclosure.md)
+- [Path to CMS pilot](docs/path-to-cms-pilot.md)
+- [Risk scoring methodology](docs/risk-scoring-methodology.md)
+- [Responsible AI considerations](docs/responsible-ai-considerations.md)
+- [Model card — Isolation Forest](docs/model-card-isolation-forest.md)
+- [User personas](docs/personas.md)
+
+<details>
+<summary>Pre-sprint research (historical)</summary>
+
+- [Hackathon kickoff brief](docs/research/hackathon-kickoff.md)
+- [Orientation meeting notes](docs/research/orientation-meeting-notes.md)
+- [Team kickoff brief](docs/research/team-kickoff-brief.md)
+- [Demo data research and graph strategy](docs/research/demo-data-research-plan.md)
+- [Open questions for the project lead](docs/research/open-questions.md)
+- [Official source register](docs/research/source-register.md)
+- [Challenge research brief](docs/research/challenge-research.md)
+- [Public dataset catalog](docs/research/dataset-catalog.md)
+
+</details>
 
 ## Hackathon Envelope
 
@@ -61,7 +76,7 @@ CMS loses an estimated $60B+ annually to improper payments across Medicare and M
 
 ## Judge Resources
 
-**Live App**: [argus.precise-lab.com](https://argus.precise-lab.com) | **Validation Endpoint**: [/api/validation](/api/validation)
+**Demo**: See [Demo Script](docs/demo-script.md) for walkthrough | **Validation Endpoint**: [/api/validation](/api/validation)
 
 | Deliverable                     | Document                                                                       |
 | ------------------------------- | ------------------------------------------------------------------------------ |
@@ -153,7 +168,7 @@ All datasets are publicly available and currently downloadable. No PHI is used.
 
 ```bash
 # Clone
-git clone git@github.com:precisesoft/cms-fraud-detection.git
+git clone https://github.com/arunsanna/cms-fraud-detection.git
 cd cms-fraud-detection
 
 # Start all services (Postgres, Neo4j, API, Frontend)
