@@ -599,6 +599,14 @@ class DetectionByReason(BaseModel):
     rate: float
 
 
+class ProviderLevelBreakdown(BaseModel):
+    """Provider-level label breakdown from blind scoring."""
+
+    high_risk: int = 0
+    review: int = 0
+    stable: int = 0
+
+
 class ValidationReport(BaseModel):
     """Retrospective validation results: detection rate on revoked providers."""
 
@@ -610,6 +618,16 @@ class ValidationReport(BaseModel):
     detection_by_reason: list[DetectionByReason]
     baseline_flagging_rate: float = Field(
         description="Fraction of non-revoked providers that were also flagged"
+    )
+    avg_blind_risk_revoked: float = Field(
+        description="Average blind risk score for revoked providers"
+    )
+    avg_risk_non_revoked: float = Field(description="Average risk score for non-revoked providers")
+    detection_lift: float = Field(
+        description="Ratio of revoked flagging rate to non-revoked flagging rate"
+    )
+    provider_level: ProviderLevelBreakdown = Field(
+        description="Provider-level blind label breakdown"
     )
     methodology: str
 
