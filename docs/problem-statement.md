@@ -23,6 +23,8 @@ That creates three operational problems:
 3. Publicly understandable, cross-program context is fragmented across billing, enrollment,
    sanctions, and financial-relationship data.
 
+CMS operates the Fraud Prevention System (FPS) for claim-level pre-payment screening, but FPS does not provide the provider-behavioral explainability that investigators need to build evidence cases.
+
 ## The Opportunity
 
 Public CMS and HHS data already contain enough signal to build a proactive decision-support layer

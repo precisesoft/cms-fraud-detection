@@ -12,7 +12,7 @@ Argus sits at the payment gate. It scores every claim against peer baselines, fl
 
 ### 1. Claims Processing Analyst — "Sarah"
 
-**Role**: GS-9 Program Analyst, CMS Center for Program Integrity
+**Role**: GS-9 Program Analyst, UPIC
 
 **Day-to-day**: Reviews 200+ claims per day from the flagged queue. Makes binary decisions: pay or flag for investigation. Works under time pressure — the payment cycle doesn't wait.
 
@@ -27,6 +27,7 @@ Argus sits at the payment gate. It scores every claim against peer baselines, fl
 - Current tools show raw data with no context — she has to manually compare charges against fee schedules
 - No explanation of _why_ a claim is suspicious — just a number
 - Switching between 4 different systems to get the full picture
+- FPS flags claims but doesn't explain why a provider's overall billing pattern is suspicious
 
 **What Argus gives her**:
 
@@ -43,7 +44,7 @@ Argus sits at the payment gate. It scores every claim against peer baselines, fl
 
 ### 2. Special Investigations Unit (SIU) Investigator — "Marcus"
 
-**Role**: GS-12 Fraud Investigator, Zone Program Integrity Contractor (ZPIC)
+**Role**: GS-12 Fraud Investigator, UPIC
 
 **Day-to-day**: Receives escalated cases from analysts. Builds evidence packages for administrative action or law enforcement referral. Each case takes 2-8 hours with current tools.
 
@@ -58,6 +59,7 @@ Argus sits at the payment gate. It scores every claim against peer baselines, fl
 - Evidence is scattered across multiple databases — Medicare claims, enrollment, revocation lists
 - No way to visualize provider relationships without manual diagramming
 - Writing case narratives from scratch every time
+- FPS leads arrive as risk scores without provider-level behavioral context
 
 **What Argus gives him**:
 
