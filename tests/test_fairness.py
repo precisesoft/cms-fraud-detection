@@ -277,8 +277,7 @@ class TestComputeParity:
         ]
         spd, di = _compute_parity(cohorts)
         assert spd == 0.2  # 0.2 - 0.0
-        assert di == 0.0   # 0.0 / 0.2 — must not be dropped as falsy
-
+        assert di == 0.0  # 0.0 / 0.2 — must not be dropped as falsy
 
         cohorts = [
             CohortFairness(
