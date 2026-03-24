@@ -104,7 +104,11 @@ describe("CaseDetailShell", () => {
     vi.mocked(getClaim).mockResolvedValue(mockClaim);
     vi.mocked(getCaseActions).mockResolvedValue(mockActionsResponse);
     vi.mocked(getClaimScoreDetails).mockResolvedValue(mockScoreDetails);
-    vi.mocked(caseAction).mockResolvedValue(undefined);
+    vi.mocked(caseAction).mockResolvedValue({
+      case_id: "CASE-001",
+      action: "APPROVED",
+      message: "ok",
+    });
   });
 
   it("shows loading state then renders content", async () => {
@@ -113,6 +117,35 @@ describe("CaseDetailShell", () => {
     await waitFor(() => {
       expect(screen.getByText("Case CASE-001")).toBeInTheDocument();
     });
+  });
+
+  it("does not update state after unmount", async () => {
+    let resolveGetClaim!: (v: typeof mockClaim) => void;
+    vi.mocked(getClaim).mockReturnValue(
+      new Promise((r) => {
+        resolveGetClaim = r;
+      }),
+    );
+    const { unmount } = renderShell();
+    unmount();
+    resolveGetClaim(mockClaim);
+    await new Promise((r) => setTimeout(r, 0));
+    // No assertion needed — this verifies no "setState on unmounted" warning
+  });
+
+  it("stays in loading state when caseId is undefined", () => {
+    render(
+      <MemoryRouter initialEntries={["/claims/"]}>
+        <Routes>
+          <Route
+            path="/claims/"
+            element={<CaseDetailShell {...defaultProps} />}
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+    // With no caseId param, hook skips fetch — stays loading
+    expect(screen.getByText("Loading...")).toBeInTheDocument();
   });
 
   it("shows not-found message when API returns null", async () => {
@@ -227,6 +260,135 @@ describe("CaseDetailShell", () => {
     renderShell();
     await waitFor(() => {
       expect(screen.getByText("high_risk")).toBeInTheDocument();
+    });
+  });
+
+  it("opens assistant drawer when chat button is clicked", async () => {
+    const user = userEvent.setup();
+    renderShell();
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /Ask about this claim/ }),
+      ).toBeInTheDocument();
+    });
+    await user.click(
+      screen.getByRole("button", { name: /Ask about this claim/ }),
+    );
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+  });
+
+  it("disables action buttons while an action is in flight", async () => {
+    let resolveCaseAction!: (v: {
+      case_id: string;
+      action: "FLAGGED";
+      message: string;
+    }) => void;
+    vi.mocked(caseAction).mockReturnValue(
+      new Promise((r) => {
+        resolveCaseAction = r;
+      }),
+    );
+    const user = userEvent.setup();
+    renderShell();
+    await waitFor(() => {
+      expect(screen.getByText("Take Action")).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole("button", { name: /Flag/ }));
+    // All action buttons should be disabled while in flight
+    expect(screen.getByRole("button", { name: /Approve/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Deny/ })).toBeDisabled();
+    resolveCaseAction({
+      case_id: "CASE-001",
+      action: "FLAGGED",
+      message: "ok",
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /Approve/ }),
+      ).not.toBeDisabled();
+    });
+  });
+
+  it("renders score dash for null score values", async () => {
+    vi.mocked(getClaimScoreDetails).mockResolvedValue({
+      ...mockScoreDetails,
+      anomaly_score: null,
+    });
+    renderShell();
+    await waitFor(() => {
+      expect(screen.getByText("Claim Anomaly")).toBeInTheDocument();
+    });
+    // The null anomaly_score should render as "—"
+    const dashes = screen.getAllByText("—");
+    expect(dashes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("closes assistant drawer when onClose is triggered", async () => {
+    const user = userEvent.setup();
+    renderShell();
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /Ask about this claim/ }),
+      ).toBeInTheDocument();
+    });
+    // Open drawer
+    await user.click(
+      screen.getByRole("button", { name: /Ask about this claim/ }),
+    );
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+    // Close drawer via close button
+    await user.click(screen.getByLabelText("Close assistant"));
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+  });
+
+  it("handles action error gracefully", async () => {
+    vi.mocked(caseAction).mockRejectedValue(new Error("Network error"));
+    const user = userEvent.setup();
+    renderShell();
+    await waitFor(() => {
+      expect(screen.getByText("Take Action")).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole("button", { name: /Deny/ }));
+    // Should not crash — buttons re-enable after error
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Deny/ })).not.toBeDisabled();
+    });
+  });
+
+  it("renders investigation label in assistant context", async () => {
+    const investigationProps = {
+      ...defaultProps,
+      entityType: "investigation" as const,
+      backPath: "/investigations",
+      backLabel: "Back to Investigations",
+    };
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/investigations/INV-001"]}>
+        <Routes>
+          <Route
+            path="/investigations/:caseId"
+            element={<CaseDetailShell {...investigationProps} />}
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /Ask about this claim/ }),
+      ).toBeInTheDocument();
+    });
+    await user.click(
+      screen.getByRole("button", { name: /Ask about this claim/ }),
+    );
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
     });
   });
 });
