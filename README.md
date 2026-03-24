@@ -4,7 +4,7 @@
 
 **Hackathon**: Government AI Hackathon — 10-day sprint (Mar 14–24, 2026)
 **Challenge**: Proactive Program Integrity (CMS)
-**Live App**: [argus.precise-lab.com](https://argus.precise-lab.com)
+**Demo**: See [Demo Script](docs/demo-script.md) for walkthrough
 **Submission Deadline**: March 25, 2026 at 5:00 PM ET
 
 ### By the Numbers
@@ -168,7 +168,7 @@ All datasets are publicly available and currently downloadable. No PHI is used.
 
 ```bash
 # Clone
-git clone git@github.com:precisesoft/cms-fraud-detection.git
+git clone https://github.com/arunsanna/cms-fraud-detection.git
 cd cms-fraud-detection
 
 # Start all services (Postgres, Neo4j, API, Frontend)
