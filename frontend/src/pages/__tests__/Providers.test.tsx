@@ -215,4 +215,80 @@ describe("Providers", () => {
     const select = screen.getByRole("combobox");
     expect(select).toHaveValue("high_risk");
   });
+
+  it("renders fallback dashes when provider fields are null", async () => {
+    vi.mocked(getProviders).mockResolvedValue({
+      data: [
+        {
+          npi: "3333333333",
+          provider_name: "Null Fields Corp",
+          provider_type: null,
+          state: null,
+          city: null,
+          entity_code: null,
+          max_seed_risk_score: null,
+          risk_band: "stable" as const,
+          total_estimated_payment: 0,
+          service_line_count: null,
+          revoked_2026: null,
+        },
+      ],
+      meta: { total: 1, page: 1, per_page: 50, pages: 1 },
+    });
+    renderProviders();
+    await waitFor(() => {
+      expect(screen.getByText("Null Fields Corp")).toBeInTheDocument();
+    });
+    // provider_type ?? '—' and max_seed_risk_score ?? '—' render standalone
+    const dashes = screen.getAllByText("—");
+    expect(dashes.length).toBeGreaterThanOrEqual(2);
+    // city ?? '—', state ?? '—' render as "—, —" in a single node
+    expect(screen.getByText("—, —")).toBeInTheDocument();
+  });
+
+  it("does not update state after unmount (success path)", async () => {
+    let resolveApi!: (v: typeof mockProviderList) => void;
+    vi.mocked(getProviders).mockReturnValue(
+      new Promise((r) => {
+        resolveApi = r;
+      }),
+    );
+    const { unmount } = renderProviders();
+    unmount();
+    resolveApi(mockProviderList);
+    await new Promise((r) => setTimeout(r, 0));
+  });
+
+  it("does not update state after unmount (error path)", async () => {
+    let rejectApi!: (e: Error) => void;
+    vi.mocked(getProviders).mockReturnValue(
+      new Promise((_, r) => {
+        rejectApi = r;
+      }),
+    );
+    const { unmount } = renderProviders();
+    unmount();
+    rejectApi(new Error("stale"));
+    await new Promise((r) => setTimeout(r, 0));
+  });
+
+  it("clicking Previous goes back a page when page > 1", async () => {
+    vi.mocked(getProviders).mockResolvedValue({
+      data: mockProviderList.data,
+      meta: { total: 100, page: 2, per_page: 50, pages: 2 },
+    });
+    const user = userEvent.setup();
+    renderProviders();
+    await waitFor(() => {
+      expect(screen.getByText("Acme Clinic")).toBeInTheDocument();
+    });
+    const prevBtn = screen.getByRole("button", { name: "Previous" });
+    expect(prevBtn).not.toBeDisabled();
+    const callsBefore = vi.mocked(getProviders).mock.calls.length;
+    await user.click(prevBtn);
+    await waitFor(() => {
+      const calls = vi.mocked(getProviders).mock.calls.slice(callsBefore);
+      expect(calls.some((c) => c[0]?.page === 1)).toBe(true);
+    });
+  });
 });

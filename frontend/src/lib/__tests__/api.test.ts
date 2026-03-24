@@ -293,6 +293,18 @@ describe("getClaims — query params", () => {
     const [url] = fetchMock.mock.calls[0] as [string];
     expect(url).toContain("provider_type=Cardiology");
   });
+
+  it("appends page param", async () => {
+    await getClaims({ page: 3 });
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toContain("page=3");
+  });
+
+  it("appends per_page param", async () => {
+    await getClaims({ per_page: 25 });
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toContain("per_page=25");
+  });
 });
 
 /* ── scoreClaim POST body ──────────────────────────────────── */

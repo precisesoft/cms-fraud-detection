@@ -339,4 +339,50 @@ describe("Simulate", () => {
     });
     expect(screen.queryByText("Peer Comparisons")).not.toBeInTheDocument();
   });
+
+  it("hides provider info line when provider_name is null", async () => {
+    vi.mocked(simulateClaim).mockResolvedValue({
+      ...mockResult,
+      provider_name: null,
+    });
+    const user = userEvent.setup();
+    renderSimulate();
+
+    await user.type(screen.getByPlaceholderText("1234567890"), "1234567890");
+    await user.type(screen.getByPlaceholderText("99213"), "99213");
+    await user.click(screen.getByRole("button", { name: /Run Simulation/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("72")).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/Test Provider/)).not.toBeInTheDocument();
+  });
+
+  it("shows normal styling for z-score within ±2", async () => {
+    vi.mocked(simulateClaim).mockResolvedValue({
+      ...mockResult,
+      peer_comparisons: [
+        {
+          metric: "Low Z Metric",
+          provider_value: 90,
+          peer_mean: 85,
+          z_score: 0.5,
+          percentile: 60,
+          peer_count: 100,
+        },
+      ],
+    });
+    const user = userEvent.setup();
+    renderSimulate();
+
+    await user.type(screen.getByPlaceholderText("1234567890"), "1234567890");
+    await user.type(screen.getByPlaceholderText("99213"), "99213");
+    await user.click(screen.getByRole("button", { name: /Run Simulation/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Low Z Metric")).toBeInTheDocument();
+    });
+    // z_score 0.5 → text-slate-700 (not text-rose-600)
+    expect(screen.getByText("0.50")).toBeInTheDocument();
+  });
 });

@@ -191,4 +191,64 @@ describe("Dashboard", () => {
     // 50/(50+200+984) = 4.1%, 200/1234 = 16.2%, 984/1234 = 79.7%
     expect(screen.getByText("4.1%")).toBeInTheDocument();
   });
+
+  it("shows fallback text when provider fields are null", async () => {
+    vi.mocked(getDashboard).mockResolvedValue({
+      ...mockStats,
+      top_providers: [
+        {
+          npi: "9999999999",
+          provider_name: "Null Fields Provider",
+          provider_type: null,
+          state: null,
+          city: null,
+          entity_code: null,
+          max_seed_risk_score: null,
+          risk_band: "review" as const,
+          total_estimated_payment: 100,
+          service_line_count: null,
+          revoked_2026: null,
+        },
+      ],
+    });
+    renderDashboard();
+    await waitFor(() => {
+      expect(screen.getByText("Null Fields Provider")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Unknown/)).toBeInTheDocument();
+  });
+
+  it("shows 0% when risk distribution totals zero", async () => {
+    vi.mocked(getDashboard).mockResolvedValue({
+      ...mockStats,
+      risk_distribution: { high_risk: 0, review: 0, stable: 0 },
+    });
+    renderDashboard();
+    await waitFor(() => {
+      expect(screen.getByText("Risk Distribution")).toBeInTheDocument();
+    });
+    const zeros = screen.getAllByText("0%");
+    expect(zeros.length).toBe(3);
+  });
+
+  it("shows fallback text when pending case fields are null", async () => {
+    vi.mocked(getPendingCases).mockResolvedValue([
+      {
+        case_id: "NULL001",
+        npi: "8888888888",
+        provider_last_org_name: null,
+        hcpcs_cd: "99213",
+        hcpcs_desc: null,
+        seed_risk_score: null,
+        seed_case_label: null,
+        avg_submitted_charge: 200,
+        tot_srvcs: null,
+      },
+    ]);
+    renderDashboard();
+    await waitFor(() => {
+      // Falls back to npi when provider_last_org_name is null
+      expect(screen.getByText("8888888888")).toBeInTheDocument();
+    });
+  });
 });

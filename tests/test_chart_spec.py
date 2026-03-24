@@ -274,3 +274,80 @@ def test_best_numeric_excludes_specified_cols():
     """Excluded columns must not be returned."""
     result = _best_numeric(["year", "total_payment"], exclude={"year"})
     assert result == "total_payment"
+
+
+# ---------------------------------------------------------------------------
+# Fallback branch: columns[0] is not numeric (line 70-71)
+# ---------------------------------------------------------------------------
+
+
+def test_fallback_bar_first_col_non_numeric():
+    """When first col has all-None values (not numeric, not categorical),
+    fallback picks num_cols[0] as y_key → bar chart."""
+    columns = ["unknown_col", "val"]
+    rows = [
+        {"unknown_col": None, "val": 10},
+        {"unknown_col": None, "val": 20},
+    ]
+    spec = generate_chart_spec(columns, rows)
+    assert spec is not None
+    assert spec["type"] == "bar"
+    assert spec["xKey"] == "unknown_col"
+    assert spec["yKey"] == "val"
+
+
+# ---------------------------------------------------------------------------
+# Fallback branch: single numeric == first col → y_key=None → return None
+# (lines 75, 79)
+# ---------------------------------------------------------------------------
+
+
+def test_fallback_returns_none_single_numeric_as_first_col():
+    """Only numeric col IS columns[0] → no y_key → None."""
+    columns = ["val", "empty_col"]
+    rows = [
+        {"val": 10, "empty_col": None},
+        {"val": 20, "empty_col": None},
+    ]
+    spec = generate_chart_spec(columns, rows)
+    assert spec is None
+
+
+# ---------------------------------------------------------------------------
+# Branch miss 49→53: time_cols present but _best_numeric returns None
+# ---------------------------------------------------------------------------
+
+
+def test_time_col_only_numeric_skips_line_chart():
+    """When the time column is the only numeric column, _best_numeric returns
+    None (excluded), so the line-chart branch is skipped."""
+    columns = ["year", "empty_col"]
+    rows = [
+        {"year": 2020, "empty_col": None},
+        {"year": 2021, "empty_col": None},
+    ]
+    # time_cols = ["year"], num_cols = ["year"], _best_numeric(exclude={"year"}) → None
+    # Falls through all branches → return None
+    spec = generate_chart_spec(columns, rows)
+    assert spec is None
+
+
+# ---------------------------------------------------------------------------
+# Branch miss 65→69: cat_cols present but _best_numeric returns None
+# ---------------------------------------------------------------------------
+
+
+def test_categorical_col_also_numeric_skips_bar_chart():
+    """A column named 'type' with integer values is both categorical (by name)
+    and numeric (by value). When it's the only numeric, _best_numeric(exclude=
+    {x_key}) returns None → bar-chart branch skipped."""
+    columns = ["type", "empty_col"]
+    rows = [
+        {"type": 1, "empty_col": None},
+        {"type": 2, "empty_col": None},
+    ]
+    # cat_cols = ["type"], num_cols = ["type"]
+    # _best_numeric(["type"], exclude={"type"}) → None → skip bar
+    # Fallback: columns[0]="type" == num_cols[0]="type", len=1 → y_key=None → None
+    spec = generate_chart_spec(columns, rows)
+    assert spec is None
