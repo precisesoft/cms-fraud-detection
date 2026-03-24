@@ -347,6 +347,29 @@ export interface NetworkRiskResponse {
   zip_risk_summary: Record<string, unknown> | null;
 }
 
+export interface ClusterMember {
+  npi: string;
+  provider_name: string | null;
+  provider_type: string | null;
+  state: string | null;
+  zip5: string | null;
+  risk_score: number | null;
+  risk_band: RiskBand | null;
+  revoked: boolean;
+  link_type: string;
+  hops: number;
+}
+
+export interface FraudClusterResponse {
+  npi: string;
+  cluster_id: string;
+  members: ClusterMember[];
+  cluster_size: number;
+  high_risk_count: number;
+  revoked_count: number;
+  truncated: boolean;
+}
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -534,6 +557,10 @@ export function getProviderExplain(npi: string) {
 
 export function getProviderGraph(npi: string) {
   return request<GraphResponse>(`/api/graph/${npi}`);
+}
+
+export function getProviderCluster(npi: string) {
+  return request<FraudClusterResponse>(`/api/cluster/${npi}`);
 }
 
 export function getClaims(params?: {
