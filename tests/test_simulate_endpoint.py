@@ -40,6 +40,23 @@ PEER_ROW = {
     "std_charge": 40.0,
 }
 
+FEATURES_ROW = {
+    "mean_volume_z": 1.0,
+    "mean_intensity_z": 0.5,
+    "mean_charge_z": 0.8,
+    "mean_payment_z": 0.3,
+    "service_hhi": 0.2,
+    "top_code_share": 0.4,
+    "top3_code_share": 0.6,
+    "n_volume_outlier_lines": 1,
+    "n_intensity_outlier_lines": 0,
+    "n_charge_outlier_lines": 0,
+    "frac_volume_outlier_lines": 0.1,
+    "charge_cv": 0.5,
+    "risk_legitimacy_gap": 10,
+    "max_seed_risk_score": 40,
+}
+
 
 class _SimulateCursor:
     """Returns canned results from a shared result queue.
@@ -67,12 +84,20 @@ class _SimulateCursor:
 class _FakeConn:
     """Fake connection with shared result queue across cursor() calls.
 
-    Query order: 1. provider lookup (fetchone), 2. peer baselines (fetchone).
+    Query order: 1. provider lookup (fetchone), 2. peer baselines (fetchone),
+    3. features row (fetchone for anomaly scorer).
     Keep in sync with simulate.py:simulate_claim.
     """
 
-    def __init__(self, provider: dict | None = PROVIDER_ROW, peers: dict | None = PEER_ROW):
+    def __init__(
+        self,
+        provider: dict | None = PROVIDER_ROW,
+        peers: dict | None = PEER_ROW,
+        features: dict | None = None,
+    ):
         self._results: list = [provider, peers]
+        # Third cursor call is always present (features query)
+        self._results.append(features)
 
     def cursor(self, row_factory=None):
         return _SimulateCursor(self._results)
@@ -81,6 +106,7 @@ class _FakeConn:
 def _make_app(
     provider: dict | None = PROVIDER_ROW,
     peers: dict | None = PEER_ROW,
+    features: dict | None = None,
 ) -> FastAPI:
     @asynccontextmanager
     async def _noop_lifespan(app: FastAPI):
@@ -89,7 +115,7 @@ def _make_app(
     test_app = FastAPI(lifespan=_noop_lifespan)
     test_app.include_router(router, prefix="/api")
 
-    conn = _FakeConn(provider, peers)
+    conn = _FakeConn(provider, peers, features)
 
     async def fake_db():
         yield conn
@@ -332,3 +358,36 @@ async def test_simulate_validation_rejects_bad_input(mock_narrative: AsyncMock):
     ) as client:
         resp = await client.post("/api/claims/simulate", json={"npi": "123"})
     assert resp.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Anomaly score path (line 202: features_row is not None)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+@patch("src.api.routes.simulate.generate_narrative", new_callable=AsyncMock, return_value=None)
+async def test_simulate_anomaly_score_computed_when_features_present(mock_narrative: AsyncMock):
+    """When the third DB cursor returns a features row, score_provider is called
+    and anomaly_score is a float (covers line 202)."""
+    app = _make_app(features=FEATURES_ROW)
+    with patch("src.api.routes.simulate.score_provider", return_value=0.77):
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.post("/api/claims/simulate", json=VALID_REQUEST)
+    assert resp.status_code == 200
+    assert resp.json()["anomaly_score"] == 0.77
+
+
+@pytest.mark.anyio
+@patch("src.api.routes.simulate.generate_narrative", new_callable=AsyncMock, return_value=None)
+async def test_simulate_anomaly_score_none_when_no_features(mock_narrative: AsyncMock):
+    """When the features query returns None, anomaly_score is null."""
+    app = _make_app(features=None)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.post("/api/claims/simulate", json=VALID_REQUEST)
+    assert resp.status_code == 200
+    assert resp.json()["anomaly_score"] is None

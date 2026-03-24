@@ -285,6 +285,41 @@ class TestListProviders:
 
         assert resp.status_code == 422  # exceeds le=200
 
+    async def test_risk_band_filter_review(self):
+        """risk_band=review should add the BETWEEN condition (lines 54-55)."""
+        row = _summary_row({"max_seed_risk_score": 40})
+        app = _make_app([row])
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/providers?risk_band=review")
+
+        assert resp.status_code == 200
+
+    async def test_risk_band_filter_stable(self):
+        """risk_band=stable should add the <= 30 condition (lines 56-57)."""
+        row = _summary_row({"max_seed_risk_score": 15})
+        app = _make_app([row])
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/providers?risk_band=stable")
+
+        assert resp.status_code == 200
+        assert resp.json()["data"][0]["risk_band"] == "stable"
+
+    async def test_search_query_filter(self):
+        """q= parameter should produce an ILIKE condition (lines 58-61)."""
+        row = _summary_row()
+        app = _make_app([row])
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/providers?q=ACME")
+
+        assert resp.status_code == 200
+        assert resp.json()["data"][0]["npi"] == "1234567890"
+
 
 # ---------------------------------------------------------------------------
 # Tests — detail endpoint
@@ -380,3 +415,28 @@ class TestGetProviderRadar:
             resp = await client.get("/api/providers/0000000000/radar")
 
         assert resp.status_code == 404
+
+    async def test_radar_null_z_scores_default_to_50(self):
+        """None z-scores should map to 50.0 (peer average) via _z_to_scale."""
+        row = {
+            **SAMPLE_ROW,
+            "mean_volume_z": None,
+            "mean_intensity_z": None,
+            "mean_charge_z": None,
+            "mean_payment_z": None,
+            "service_hhi": None,
+            "top_code_share": None,
+            "provider_total_benes": None,
+            "enrolled_2025": 0,  # not enrolled → Enrollment = 100
+        }
+        app = _make_app([row], detail=True)
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/providers/1234567890/radar")
+
+        assert resp.status_code == 200
+        dims = {d["dimension"]: d for d in resp.json()["dimensions"]}
+        assert dims["Volume"]["provider"] == 50.0
+        assert dims["Concentration"]["provider"] == 0.0  # None ratio → 0.0
+        assert dims["Enrollment"]["provider"] == 100.0  # not enrolled → high risk

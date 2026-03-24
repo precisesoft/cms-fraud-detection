@@ -1,8 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { Dashboard } from "../Dashboard";
 import { getDashboard, getPendingCases } from "../../lib/api";
+
+const mockNavigate = vi.fn();
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual("react-router-dom");
+  return { ...actual, useNavigate: () => mockNavigate };
+});
 
 vi.mock("../../contexts/AuthContext", () => ({
   useAuth: () => ({
@@ -70,6 +77,7 @@ function renderDashboard() {
 describe("Dashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockNavigate.mockReset();
     vi.mocked(getDashboard).mockResolvedValue(mockStats);
     vi.mocked(getPendingCases).mockResolvedValue(mockPending);
   });
@@ -136,5 +144,51 @@ describe("Dashboard", () => {
     // "Review" and "Stable" may also appear in multiple sections
     expect(screen.getAllByText("Review").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Stable").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("clicking a KPI card navigates to its href", async () => {
+    const user = userEvent.setup();
+    renderDashboard();
+    await waitFor(() => {
+      expect(screen.getByText("Total Providers")).toBeInTheDocument();
+    });
+    const card = screen.getByText("Total Providers").closest("button")!;
+    await user.click(card);
+    expect(mockNavigate).toHaveBeenCalledWith("/providers");
+  });
+
+  it("clicking High Risk KPI navigates with risk_band param", async () => {
+    const user = userEvent.setup();
+    renderDashboard();
+    await waitFor(() => {
+      expect(screen.getByText("1,234")).toBeInTheDocument();
+    });
+    // Find High Risk KPI button by its label
+    const allHighRisk = screen.getAllByText("High Risk");
+    const kpiCard = allHighRisk
+      .find((el) => el.closest("button"))
+      ?.closest("button");
+    expect(kpiCard).toBeTruthy();
+    await user.click(kpiCard!);
+    expect(mockNavigate).toHaveBeenCalledWith("/providers?risk_band=high_risk");
+  });
+
+  it("shows empty state when no pending cases", async () => {
+    vi.mocked(getPendingCases).mockResolvedValue([]);
+    renderDashboard();
+    await waitFor(() => {
+      expect(
+        screen.getByText("No cases are currently pending review."),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("renders risk distribution percentages", async () => {
+    renderDashboard();
+    await waitFor(() => {
+      expect(screen.getByText("Risk Distribution")).toBeInTheDocument();
+    });
+    // 50/(50+200+984) = 4.1%, 200/1234 = 16.2%, 984/1234 = 79.7%
+    expect(screen.getByText("4.1%")).toBeInTheDocument();
   });
 });

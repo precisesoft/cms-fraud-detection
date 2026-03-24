@@ -84,4 +84,4 @@ branch = true
 omit = ["src/data/build_demo_case_csv.py"]
 
 [tool.coverage.report]
-fail_under = 75
+fail_under = 95

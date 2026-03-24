@@ -6,9 +6,10 @@ from contextlib import asynccontextmanager
 
 import bcrypt
 import httpx
+import jwt
 from fastapi import Depends, FastAPI
 
-from src.api.auth import get_current_user
+from src.api.auth import JWT_ALGORITHM, JWT_SECRET, create_access_token, get_current_user
 from src.api.deps import get_db
 from src.api.routes.auth import router as auth_router
 from src.api.routes.providers import router as providers_router
@@ -234,3 +235,61 @@ class TestRouteProtection:
 
         assert resp.status_code == 200
         assert resp.json()["status"] == "ok"
+
+
+# ---------------------------------------------------------------------------
+# Tests — get_current_user direct coverage (lines 48, 60)
+# ---------------------------------------------------------------------------
+
+
+class TestGetCurrentUserEdgeCases:
+    async def test_token_with_no_sub_claim_returns_401(self):
+        """A valid JWT that has no 'sub' field should raise 401 (line 48)."""
+        # Create a token without "sub"
+        token_no_sub = jwt.encode(
+            {"role": "admin"},  # deliberately omit "sub"
+            JWT_SECRET,
+            algorithm=JWT_ALGORITHM,
+        )
+        app = _make_auth_app()
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get(
+                "/api/auth/me",
+                headers={"Authorization": f"Bearer {token_no_sub}"},
+            )
+
+        assert resp.status_code == 401
+        assert resp.json()["detail"] == "Invalid token"
+
+    async def test_token_for_inactive_user_returns_401(self):
+        """A valid JWT for an inactive user should raise 401 at line 60."""
+        # Build a token for "inactive" directly — bypass login which also rejects it
+        token = create_access_token({"sub": "inactive"})
+        app = _make_auth_app()
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get(
+                "/api/auth/me",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        assert resp.status_code == 401
+        assert resp.json()["detail"] == "User not found"
+
+    async def test_token_for_missing_user_returns_401(self):
+        """A valid JWT for a user that does not exist in DB should raise 401 (line 60)."""
+        token = create_access_token({"sub": "ghost_user"})
+        app = _make_auth_app()
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get(
+                "/api/auth/me",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        assert resp.status_code == 401
+        assert resp.json()["detail"] == "User not found"

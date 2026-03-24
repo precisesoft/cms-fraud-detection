@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import MagicMock, call, patch
 
 import polars as pl
 import pytest
@@ -15,7 +16,9 @@ from src.pipeline.build_features import (
     build_provider_metadata,
     build_risk_seed_features,
     build_volume_features,
+    main,
     read_demo_csv,
+    save_features,
 )
 
 DEMO_CSV = (
@@ -169,3 +172,267 @@ class TestFullPipeline:
         df = build_provider_features(DEMO_CSV)
         assert df.shape[0] > 10000
         assert df["npi"].n_unique() == df.shape[0]  # One row per NPI
+
+
+# ---------------------------------------------------------------------------
+# TestSaveFeatures
+# ---------------------------------------------------------------------------
+
+
+class TestSaveFeatures:
+    def test_save_features_creates_parent_dir(self, tmp_path: Path):
+        """save_features creates the parent directory before writing."""
+        output_path = tmp_path / "nested" / "dir" / "features.parquet"
+        df = pl.DataFrame({"npi": [1111111111], "value": [1.0]})
+
+        result = save_features(df, output_path)
+
+        assert output_path.parent.exists()
+        assert result == output_path
+
+    def test_save_features_writes_parquet(self, tmp_path: Path):
+        """save_features writes a readable Parquet file with expected content."""
+        output_path = tmp_path / "features.parquet"
+        df = pl.DataFrame({"npi": [1111111111, 2222222222], "score": [10, 80]})
+
+        save_features(df, output_path)
+
+        assert output_path.exists()
+        loaded = pl.read_parquet(output_path)
+        assert loaded.shape == df.shape
+        assert loaded["npi"].to_list() == df["npi"].to_list()
+
+    def test_save_features_returns_path(self, tmp_path: Path):
+        """save_features returns the output path it was given."""
+        output_path = tmp_path / "out.parquet"
+        df = pl.DataFrame({"npi": [1]})
+        result = save_features(df, output_path)
+        assert result == output_path
+
+    def test_save_features_empty_dataframe(self, tmp_path: Path):
+        """save_features handles an empty DataFrame without error."""
+        output_path = tmp_path / "empty.parquet"
+        df = pl.DataFrame({"npi": [], "score": []})
+        result = save_features(df, output_path)
+        assert result == output_path
+        loaded = pl.read_parquet(output_path)
+        assert loaded.shape[0] == 0
+
+    def test_save_features_mocked_io(self):
+        """save_features calls mkdir and write_parquet on the correct objects."""
+        fake_df = MagicMock(spec=pl.DataFrame)
+        fake_path = MagicMock(spec=Path)
+        fake_parent = MagicMock(spec=Path)
+        fake_path.parent = fake_parent
+
+        save_features(fake_df, fake_path)
+
+        fake_parent.mkdir.assert_called_once_with(parents=True, exist_ok=True)
+        fake_df.write_parquet.assert_called_once_with(fake_path)
+
+
+# ---------------------------------------------------------------------------
+# TestMain (build_features)
+# ---------------------------------------------------------------------------
+
+
+class TestBuildFeaturesMain:
+    """Tests for main() in build_features — covers lines 207-234."""
+
+    def _make_fake_df(self, n_providers: int = 2) -> pl.DataFrame:
+        """Build a minimal DataFrame that satisfies all main() column accesses."""
+        return pl.DataFrame(
+            {
+                "npi": list(range(1000000000, 1000000000 + n_providers)),
+                "revoked_2026": [1, 0][:n_providers],
+                "n_high_risk_lines": [1, 0][:n_providers],
+                "service_hhi": [0.8, 0.5][:n_providers],
+                "std_submitted_charge": [0.0] * n_providers,
+                "mean_submitted_charge": [100.0] * n_providers,
+                "max_submitted_charge": [200.0] * n_providers,
+                "min_seed_legitimacy_score": [20] * n_providers,
+                "n_volume_outlier_lines": [1, 0][:n_providers],
+                "service_line_count": [2, 3][:n_providers],
+            }
+        )
+
+    def test_main_calls_build_provider_features(self):
+        """main() calls build_provider_features() and save_features()."""
+        fake_df = self._make_fake_df()
+
+        with (
+            patch(
+                "src.pipeline.build_features.build_provider_features",
+                return_value=fake_df,
+            ) as mock_build,
+            patch(
+                "src.pipeline.build_features.save_features",
+                return_value=Path("/fake/provider_features.parquet"),
+            ) as mock_save,
+            patch("builtins.print"),
+        ):
+            main()
+
+        mock_build.assert_called_once_with()
+        mock_save.assert_called_once_with(fake_df)
+
+    def test_main_prints_shape(self):
+        """main() prints a line containing the provider count and feature count."""
+        fake_df = self._make_fake_df(n_providers=2)
+        printed: list[str] = []
+
+        with (
+            patch(
+                "src.pipeline.build_features.build_provider_features",
+                return_value=fake_df,
+            ),
+            patch(
+                "src.pipeline.build_features.save_features",
+                return_value=Path("/fake/out.parquet"),
+            ),
+            patch(
+                "builtins.print",
+                side_effect=lambda *a, **k: printed.append(str(a[0]) if a else ""),
+            ),
+        ):
+            main()
+
+        combined = "\n".join(printed)
+        assert "2" in combined  # n_providers
+        assert str(fake_df.shape[1]) in combined  # n_features
+
+    def test_main_prints_unique_npis(self):
+        """main() prints the unique NPI count in the sanity-check block."""
+        fake_df = self._make_fake_df(n_providers=2)
+        printed: list[str] = []
+
+        with (
+            patch(
+                "src.pipeline.build_features.build_provider_features",
+                return_value=fake_df,
+            ),
+            patch(
+                "src.pipeline.build_features.save_features",
+                return_value=Path("/fake/out.parquet"),
+            ),
+            patch(
+                "builtins.print",
+                side_effect=lambda *a, **k: printed.append(str(a[0]) if a else ""),
+            ),
+        ):
+            main()
+
+        combined = "\n".join(printed)
+        assert "Unique NPIs" in combined
+
+    def test_main_prints_revoked_count(self):
+        """main() prints the revoked provider count."""
+        fake_df = self._make_fake_df(n_providers=2)
+        printed: list[str] = []
+
+        with (
+            patch(
+                "src.pipeline.build_features.build_provider_features",
+                return_value=fake_df,
+            ),
+            patch(
+                "src.pipeline.build_features.save_features",
+                return_value=Path("/fake/out.parquet"),
+            ),
+            patch(
+                "builtins.print",
+                side_effect=lambda *a, **k: printed.append(str(a[0]) if a else ""),
+            ),
+        ):
+            main()
+
+        combined = "\n".join(printed)
+        assert "Revoked providers" in combined
+
+    def test_main_prints_saved_path(self):
+        """main() prints the path that save_features returned."""
+        fake_df = self._make_fake_df()
+        saved_path = Path("/fake/provider_features.parquet")
+        printed: list[str] = []
+
+        with (
+            patch(
+                "src.pipeline.build_features.build_provider_features",
+                return_value=fake_df,
+            ),
+            patch(
+                "src.pipeline.build_features.save_features",
+                return_value=saved_path,
+            ),
+            patch(
+                "builtins.print",
+                side_effect=lambda *a, **k: printed.append(str(a[0]) if a else ""),
+            ),
+        ):
+            main()
+
+        combined = "\n".join(printed)
+        assert str(saved_path) in combined
+
+    def test_main_prints_null_counts_when_present(self):
+        """main() prints null-column info when columns have nulls."""
+        # Build a DataFrame with one null in 'service_hhi'
+        fake_df = pl.DataFrame(
+            {
+                "npi": [1000000000, 2000000000],
+                "revoked_2026": [1, 0],
+                "n_high_risk_lines": [1, 0],
+                "service_hhi": [None, 0.5],
+                "std_submitted_charge": [0.0, 0.0],
+                "mean_submitted_charge": [100.0, 100.0],
+                "max_submitted_charge": [200.0, 200.0],
+                "min_seed_legitimacy_score": [20, 20],
+                "n_volume_outlier_lines": [1, 0],
+                "service_line_count": [2, 3],
+            }
+        )
+        printed: list[str] = []
+
+        with (
+            patch(
+                "src.pipeline.build_features.build_provider_features",
+                return_value=fake_df,
+            ),
+            patch(
+                "src.pipeline.build_features.save_features",
+                return_value=Path("/fake/out.parquet"),
+            ),
+            patch(
+                "builtins.print",
+                side_effect=lambda *a, **k: printed.append(str(a[0]) if a else ""),
+            ),
+        ):
+            main()
+
+        combined = "\n".join(printed)
+        assert "service_hhi" in combined
+
+    def test_main_no_null_counts_skipped_silently(self):
+        """main() does not print null info when all columns are complete."""
+        fake_df = self._make_fake_df()
+        printed: list[str] = []
+
+        with (
+            patch(
+                "src.pipeline.build_features.build_provider_features",
+                return_value=fake_df,
+            ),
+            patch(
+                "src.pipeline.build_features.save_features",
+                return_value=Path("/fake/out.parquet"),
+            ),
+            patch(
+                "builtins.print",
+                side_effect=lambda *a, **k: printed.append(str(a[0]) if a else ""),
+            ),
+        ):
+            main()
+
+        # "Null counts:" header is printed but no column-specific null lines follow
+        combined = "\n".join(printed)
+        assert "Null counts" in combined
