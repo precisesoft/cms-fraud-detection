@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
@@ -33,9 +34,14 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    cors_origins = os.getenv(
+        "CORS_ORIGINS",
+        "https://argus.precise-lab.com,http://localhost:3000",
+    ).split(",")
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # tighten for prod
+        allow_origins=cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
