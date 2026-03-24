@@ -60,7 +60,7 @@ export function Claims() {
             <option value="review">Review</option>
             <option value="stable">Stable</option>
           </select>
-          <input type="number" placeholder="Min risk score" value={riskMin} onChange={(e) => { setRiskMin(e.target.value); setPage(1); }} className="w-32 px-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+          <input type="number" placeholder="Min score" value={riskMin} onChange={(e) => { setRiskMin(e.target.value); setPage(1); }} className="w-32 px-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
         </div>
       </div>
 
