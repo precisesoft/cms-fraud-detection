@@ -1,13 +1,26 @@
-# CMS Proactive Program Integrity
+# Argus — CMS Proactive Program Integrity
 
 > Detecting anomalous provider behavior to prevent fraud, waste, and abuse before improper payments occur.
 
-**Hackathon**: Government AI Hackathon — 14-day sprint
+**Hackathon**: Government AI Hackathon — 10-day sprint (Mar 14–24, 2026)
 **Challenge**: Proactive Program Integrity (CMS)
 **Demo**: See [Demo Script](docs/demo-script.md) for walkthrough
 **Submission Deadline**: March 25, 2026 at 5:00 PM ET
 
-## Start Here
+### By the Numbers
+
+| Metric                    | Value                                                                         |
+| ------------------------- | ----------------------------------------------------------------------------- |
+| Revocation detection rate | **91%** from billing patterns alone                                           |
+| Explainable signals       | 13 (6 risk + 7 legitimacy)                                                    |
+| API endpoints             | 14                                                                            |
+| Frontend pages            | 12 interactive views                                                          |
+| Test coverage             | 99% backend, 98% frontend                                                     |
+| Issues delivered          | 181 issues, 162 PRs, 179 commits                                              |
+| CI/CD pipeline            | 8-stage unified (Gate → Security → Quality → Build → Scan → Release → Deploy) |
+| Infrastructure            | AWS EKS + Istio + ArgoCD (GitOps)                                             |
+
+## Documentation
 
 - [Problem statement](docs/problem-statement.md)
 - [Architecture (v3)](docs/architecture-v3.md)
@@ -27,7 +40,7 @@
 - [Orientation meeting notes](docs/research/orientation-meeting-notes.md)
 - [Team kickoff brief](docs/research/team-kickoff-brief.md)
 - [Demo data research and graph strategy](docs/research/demo-data-research-plan.md)
-- [Open questions for the project lead](docs/research/open-questions.md)
+- [Open questions](docs/research/open-questions.md)
 - [Official source register](docs/research/source-register.md)
 - [Challenge research brief](docs/research/challenge-research.md)
 - [Public dataset catalog](docs/research/dataset-catalog.md)
@@ -36,23 +49,9 @@
 
 ## Hackathon Envelope
 
-- Team formation, use-case, and environment lock: March 6-March 11, 2026
-- Solutioning sprint: March 12-March 25, 2026
-- Submission lock: Wednesday, March 25, 2026 at 5:00 PM
-- Technical evaluation: Thursday, March 26, 2026 based on orientation Q&A
-- Demo day and judging: Friday, March 27, 2026 in Reston, Virginia
-- Team rules: 2-5 members with at least one designated team lead
-- Submission access: code may stay private if judges and the AI working group can review it
-- Submission materials: must include enough for evaluation, such as a demo, README, or presentation
-- AI tool usage is allowed but must be disclosed
-- Public datasets only; no PHI
-- Only original work created during the hackathon is eligible
-- Open-source tools and libraries must be disclosed
-- Explainability is required, not optional
-- Cloud-native architecture is encouraged
-- Final package must include submitted solution artifacts by March 25 plus a working demo,
-  architecture diagram, risk-scoring explanation, responsible AI considerations, and a 5-minute
-  "Path to CMS Pilot" briefing
+- Sprint: March 12–25, 2026 | Demo day: March 27, Reston, VA
+- Public datasets only, no PHI | AI usage disclosed | Explainability required
+- Deliverables: working demo, architecture diagrams, risk-scoring methodology, responsible AI considerations, 5-min "Path to CMS Pilot" briefing
 
 ## Sprint Timeline
 
@@ -76,7 +75,7 @@ CMS loses an estimated $60B+ annually to improper payments across Medicare and M
 
 ## Judge Resources
 
-**Demo**: See [Demo Script](docs/demo-script.md) for walkthrough | **Validation Endpoint**: [/api/validation](/api/validation)
+**Live App**: [argus.precise-lab.com](https://argus.precise-lab.com) | **Validation Endpoint**: [/api/validation](https://argus.precise-lab.com/api/validation)
 
 | Deliverable                     | Document                                                                       |
 | ------------------------------- | ------------------------------------------------------------------------------ |
@@ -86,6 +85,7 @@ CMS loses an estimated $60B+ annually to improper payments across Medicare and M
 | Path to CMS Pilot (5-min brief) | [docs/path-to-cms-pilot.md](docs/path-to-cms-pilot.md)                         |
 | Demo Script (5-7 min)           | [docs/demo-script.md](docs/demo-script.md)                                     |
 | Isolation Forest Model Card     | [docs/model-card-isolation-forest.md](docs/model-card-isolation-forest.md)     |
+| Development Process             | [docs/development-process.md](docs/development-process.md)                     |
 | Architecture Diagrams           | [docs/diagrams/](docs/diagrams/)                                               |
 
 ## Key Principles
@@ -158,7 +158,7 @@ All datasets are publicly available and currently downloadable. No PHI is used.
 | Backend  | Python 3.12 + FastAPI + psycopg                                                   | Live   |
 | Database | PostgreSQL 16 (EKS StatefulSet)                                                   | Live   |
 | Graph    | Neo4j 5 Community (EKS StatefulSet)                                               | Live   |
-| Scoring  | Rule-based taxonomy (14 signals) + Isolation Forest + per-provider explainability | Live   |
+| Scoring  | Rule-based taxonomy (13 signals) + Isolation Forest + per-provider explainability | Live   |
 | AI       | AWS Bedrock (Claude) — narratives, text-to-SQL, chat                              | Live   |
 | ETL      | DuckDB + Polars                                                                   | Done   |
 | CI/CD    | GitHub Actions (unified pipeline) + ECR + ArgoCD                                  | Live   |
@@ -191,4 +191,5 @@ npm test                               # Run frontend tests
 
 ## Team
 
-- Arun Sanna — AI/ML Engineering, Architecture
+- Arun Sanna — Lead, AI/ML Engineering, Architecture
+- Bibek Poudel — Backend, Infrastructure
