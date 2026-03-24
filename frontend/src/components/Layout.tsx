@@ -72,7 +72,7 @@ export function Layout() {
               <button
                 onClick={logout}
                 className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                title="Sign out"
+                aria-label="Sign out"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -81,6 +81,9 @@ export function Layout() {
           <button
             className="md:hidden p-2 text-slate-500"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="sidebar-nav"
           >
             {isMobileMenuOpen ? (
               <X className="w-6 h-6" />
@@ -92,14 +95,24 @@ export function Layout() {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
+        {/* Mobile backdrop */}
+        {isMobileMenuOpen && (
+          <div
+            className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm md:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+
         {/* Sidebar Navigation */}
         <aside
+          id="sidebar-nav"
+          role="navigation"
           className={cn(
-            "fixed inset-y-14 left-0 z-40 w-64 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static",
+            "fixed inset-y-14 left-0 z-40 w-64 bg-white border-r border-slate-200 flex flex-col transform transition-transform duration-200 ease-in-out md:translate-x-0 md:sticky md:top-14 md:h-[calc(100vh-3.5rem)]",
             isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
           )}
         >
-          <nav className="p-4 space-y-1">
+          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
             {navigation.map((item) => (
               <NavLink
                 key={item.name}
@@ -114,20 +127,26 @@ export function Layout() {
                 }
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <item.icon
-                  className={cn(
-                    "w-5 h-5 transition-colors",
-                    "group-hover:text-indigo-600",
-                  )}
-                />
-                {item.name}
+                {({ isActive }) => (
+                  <>
+                    <item.icon
+                      className={cn(
+                        "w-5 h-5 transition-colors",
+                        isActive
+                          ? "text-indigo-700"
+                          : "group-hover:text-indigo-600",
+                      )}
+                    />
+                    {item.name}
+                  </>
+                )}
               </NavLink>
             ))}
           </nav>
 
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-100 space-y-3">
+          <div className="shrink-0 p-4 border-t border-slate-100 space-y-3">
             <div className="bg-slate-50 rounded-lg p-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                 Current Program
               </p>
               <select className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-indigo-500 outline-none">

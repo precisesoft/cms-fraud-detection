@@ -176,7 +176,7 @@ export function ProviderDetail() {
             </button>
             <div className="flex items-center gap-8 px-8 py-4 bg-slate-50 rounded-xl border border-slate-100">
               <div className="text-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
                   Risk Score
                 </p>
                 <p
@@ -190,7 +190,7 @@ export function ProviderDetail() {
               </div>
               <div className="w-px h-12 bg-slate-200" />
               <div className="text-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
                   ML Anomaly
                 </p>
                 <p
@@ -204,7 +204,7 @@ export function ProviderDetail() {
               </div>
               <div className="w-px h-12 bg-slate-200" />
               <div className="text-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
                   Revoked
                 </p>
                 <p className="text-lg font-bold leading-none">
@@ -250,7 +250,7 @@ export function ProviderDetail() {
             key={card.name}
             className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm"
           >
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
               {card.name}
             </p>
             <p
@@ -263,7 +263,7 @@ export function ProviderDetail() {
                 ? card.value.toFixed(1).replace(/\.0$/, "")
                 : "—"}
             </p>
-            <p className="text-[10px] text-slate-500 mt-2 font-medium">
+            <p className="text-xs text-slate-500 mt-2 font-medium">
               {card.sub}
             </p>
           </div>
@@ -310,9 +310,7 @@ export function ProviderDetail() {
               </span>
             </div>
             <p className="text-2xl font-bold text-slate-900">{kpi.value}</p>
-            <p className="text-[10px] text-slate-400 mt-1 font-medium">
-              {kpi.sub}
-            </p>
+            <p className="text-xs text-slate-400 mt-1 font-medium">{kpi.sub}</p>
           </div>
         ))}
       </div>
@@ -379,7 +377,7 @@ export function ProviderDetail() {
                         {signal.description}
                       </p>
                       {signal.value != null && (
-                        <p className="text-[10px] text-rose-600 mt-1">
+                        <p className="text-xs text-rose-600 mt-1">
                           Value: {signal.value.toFixed(2)} (threshold:{" "}
                           {signal.threshold?.toFixed(2) ?? "—"})
                         </p>
@@ -558,7 +556,7 @@ export function ProviderDetail() {
                 <Activity className="w-4 h-4 text-violet-500" /> ML Anomaly
                 Explanation
               </h3>
-              <p className="text-[10px] text-slate-500 mb-4">
+              <p className="text-xs text-slate-500 mb-4">
                 Independent unsupervised signal — higher values indicate more
                 unusual billing patterns relative to all providers.
               </p>
@@ -614,12 +612,12 @@ export function ProviderDetail() {
                     return (
                       <div key={f.name}>
                         <div className="flex items-center justify-between mb-0.5">
-                          <span className="text-[10px] font-medium text-slate-600 truncate">
+                          <span className="text-xs font-medium text-slate-600 truncate">
                             {f.name.replace(/_/g, " ")}
                           </span>
                           <span
                             className={cn(
-                              "text-[10px] font-bold",
+                              "text-xs font-bold",
                               isRisk ? "text-rose-600" : "text-emerald-600",
                             )}
                           >
@@ -757,32 +755,32 @@ export function ProviderDetail() {
             </h3>
             <div className="space-y-4 text-sm">
               <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase">
+                <p className="text-xs text-slate-400 font-bold uppercase">
                   Entity Code
                 </p>
                 <p>{detail.entity_code ?? "—"}</p>
               </div>
               <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase">
+                <p className="text-xs text-slate-400 font-bold uppercase">
                   Medicare Participating
                 </p>
                 <p>{detail.medicare_participating ?? "—"}</p>
               </div>
               <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase">
+                <p className="text-xs text-slate-400 font-bold uppercase">
                   Enrolled 2025
                 </p>
                 <p>{detail.enrolled_2025 ? "Yes" : "No"}</p>
               </div>
               <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase">
+                <p className="text-xs text-slate-400 font-bold uppercase">
                   Revoked 2026
                 </p>
                 <p>{detail.revoked_2026 ? "Yes" : "No"}</p>
               </div>
               {detail.revocation_reason && (
                 <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase">
+                  <p className="text-xs text-slate-400 font-bold uppercase">
                     Revocation Reason
                   </p>
                   <p>{detail.revocation_reason}</p>

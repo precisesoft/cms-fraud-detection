@@ -19,7 +19,7 @@ describe("StatusBadge", () => {
     const badge = container.querySelector("span")!;
     expect(badge.className).toContain("px-2");
     expect(badge.className).toContain("py-0.5");
-    expect(badge.className).toContain("text-[10px]");
+    expect(badge.className).toContain("text-xs");
   });
 
   it("applies md (default) size classes", () => {

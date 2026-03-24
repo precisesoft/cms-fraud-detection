@@ -140,7 +140,7 @@ export function RiskMap() {
             )}
 
             {/* Legend */}
-            <div className="flex items-center gap-4 mt-3 text-[10px] font-bold text-slate-500">
+            <div className="flex items-center gap-4 mt-3 text-xs font-bold text-slate-500">
               <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: '#86efac' }} /> Low (&lt;20)</div>
               <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: '#facc15' }} /> Moderate (20-35)</div>
               <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: '#fb923c' }} /> Elevated (35-50)</div>
@@ -160,9 +160,9 @@ export function RiskMap() {
                   className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black text-slate-400 w-5">{i + 1}.</span>
+                    <span className="text-xs font-black text-slate-400 w-5">{i + 1}.</span>
                     <span className="text-sm font-bold text-slate-800">{entry.state}</span>
-                    <span className="text-[10px] text-slate-400">{entry.provider_count} providers</span>
+                    <span className="text-xs text-slate-400">{entry.provider_count} providers</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-slate-500">{entry.flagged_count} flagged</span>

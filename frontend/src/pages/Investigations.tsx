@@ -92,7 +92,7 @@ export function Investigations() {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
                       Risk
                     </p>
                     <p
