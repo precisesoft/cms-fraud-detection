@@ -389,18 +389,17 @@ export function LiveMonitor() {
                     <motion.circle
                       r={6}
                       fill={labelColor(evt.case_label)}
-                      opacity={0.9}
-                      initial={{ r: 0, opacity: 0 }}
-                      animate={{ r: [0, 10, 6], opacity: [0, 1, 0.9] }}
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: [0, 1.6, 1], opacity: [0, 1, 0.9] }}
                       transition={{ duration: 0.6, ease: "easeOut" }}
                     />
                     <motion.circle
-                      r={6}
+                      r={8}
                       fill="none"
                       stroke={labelColor(evt.case_label)}
                       strokeWidth={1.5}
-                      opacity={0}
-                      animate={{ r: [6, 18], opacity: [0.6, 0] }}
+                      initial={{ scale: 1, opacity: 0.6 }}
+                      animate={{ scale: [1, 2.5], opacity: [0.6, 0] }}
                       transition={{
                         duration: 1.5,
                         repeat: Infinity,
