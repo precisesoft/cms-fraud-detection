@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import time
 from datetime import UTC, datetime
 
+import psycopg
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 from psycopg.rows import dict_row
@@ -23,6 +25,8 @@ from src.models.anomaly_scorer import score_provider
 from src.scoring.score import score_case
 from src.scoring.taxonomy import SignalDirection
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/live", tags=["live"])
 
 # ---------------------------------------------------------------------------
@@ -30,15 +34,20 @@ router = APIRouter(prefix="/live", tags=["live"])
 # ---------------------------------------------------------------------------
 
 _RANDOM_CLAIM_SQL = """
-SELECT case_id, npi, provider_name, state, city,
+SELECT case_id, npi,
+       COALESCE(provider_last_org_name, '') ||
+           CASE WHEN provider_first_name IS NOT NULL
+                THEN ', ' || provider_first_name
+                ELSE '' END AS provider_name,
+       provider_state AS state,
+       provider_city AS city,
        hcpcs_cd, hcpcs_desc, place_of_service, provider_type,
        avg_submitted_charge, tot_srvcs, tot_benes,
        present_in_2025_enrollment_file, present_in_2026_revocation_file,
        medicare_participating_ind, provider_total_benes,
        peer_scope, peer_case_count, peer_avg_tot_srvcs,
        service_volume_peer_z, services_per_bene_peer_z,
-       submitted_to_allowed_peer_z, payment_peer_z,
-       top_code_share, service_hhi
+       submitted_to_allowed_peer_z, payment_peer_z
 FROM provider_service_cases
 ORDER BY RANDOM()
 LIMIT 1
@@ -127,9 +136,13 @@ async def stream_claims(
                     yield f"data: {json.dumps(event)}\n\n"
                     count += 1
 
-                except Exception:
-                    # Connection lost or DB error — stop gracefully
+                except (asyncio.CancelledError, psycopg.OperationalError):
+                    # Client disconnected or DB connection lost — stop gracefully
                     break
+                except Exception:
+                    logger.exception("live stream: unexpected error scoring claim — skipping")
+                    await asyncio.sleep(interval)
+                    continue
 
                 await asyncio.sleep(interval)
 
