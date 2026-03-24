@@ -17,7 +17,7 @@ Identifies anomalous Medicare billing patterns using peer comparison, determinis
 - **Scoring**: Deterministic rule engine (`src/scoring/`) — `taxonomy.py` (signals/weights), `score.py`, `extract.py`
 - **AI Layer**: AWS Bedrock Claude (`src/ai/`) — `text_to_sql.py` (NL→SQL with guardrails), `narrative.py` (risk briefs), `bedrock.py` (client)
 - **Pipeline**: Polars feature engineering (`src/pipeline/build_features.py`)
-- **Frontend**: Next.js 16 + Tailwind v4 + shadcn/ui + Recharts (`frontend/`)
+- **Frontend**: Vite + React 19 + Tailwind v4 + shadcn/ui + Recharts (`frontend/`)
 - **DB**: PostgreSQL 16 (`provider_features` 63 cols, `provider_service_cases`) + Neo4j 5 (network risk)
 - **Tests**: pytest + pytest-asyncio in `tests/` — 24 test files, all mocked (no live DB)
 

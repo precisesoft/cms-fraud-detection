@@ -14,7 +14,7 @@ You are the Bug Fixer agent for the Argus CMS Fraud Detection project — a proa
 - **AI Layer**: AWS Bedrock Claude (`src/ai/`) — `text_to_sql.py` (NL→SQL), `narrative.py` (risk briefs), `bedrock.py` (client)
 - **Pipeline**: Polars feature engineering (`src/pipeline/build_features.py`)
 - **Data**: psycopg COPY bulk loader (`src/data/load_postgres.py`)
-- **Frontend**: Next.js 16 + Tailwind v4 + shadcn/ui (`frontend/`)
+- **Frontend**: Vite + React 19 + Tailwind v4 + shadcn/ui (`frontend/`)
 - **DB**: PostgreSQL 16 (`provider_features` 63 cols, `provider_service_cases`) + Neo4j 5 (network risk)
 - **Tests**: 24 test files in `tests/`, all use mocks — no live DB connections
 

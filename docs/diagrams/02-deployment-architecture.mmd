@@ -23,7 +23,7 @@ graph LR
     subgraph EKS["Amazon EKS Cluster"]
         direction TB
         subgraph NS["Namespace: cms-fraud-detection"]
-            FE_DEP["Frontend<br/><i>Next.js standalone<br/>2 replicas</i>"]
+            FE_DEP["Frontend<br/><i>Vite + React 19<br/>2 replicas</i>"]
             BE_DEP["Backend<br/><i>FastAPI + Uvicorn<br/>2 replicas</i>"]
             PG_SS["PostgreSQL 16<br/><i>StatefulSet + PVC</i>"]
             NEO_SS["Neo4j 5<br/><i>StatefulSet + PVC</i>"]
