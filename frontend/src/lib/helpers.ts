@@ -26,6 +26,16 @@ export function scoreColor(score: number | null | undefined): string {
   return 'text-emerald-600';
 }
 
+export function caseLabelDisplay(label: string | null | undefined): string {
+  if (!label) return '—';
+  switch (label.toLowerCase()) {
+    case 'high_risk': return 'High Risk';
+    case 'review': return 'Review';
+    case 'stable': return 'Stable';
+    default: return label;
+  }
+}
+
 export function caseLabelColor(label: string | null | undefined) {
   if (!label) return { bg: 'bg-slate-100', text: 'text-slate-600' };
   const l = label.toLowerCase();

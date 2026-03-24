@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { getClaim, getCaseActions, caseAction, getClaimScoreDetails } from '../lib/api';
 import type { Claim, CaseActionRecord, ClaimScoreDetails } from '../lib/api';
 import { cn } from '../lib/utils';
-import { formatUSD, scoreColor } from '../lib/helpers';
+import { formatUSD, scoreColor, caseLabelDisplay } from '../lib/helpers';
 import { Timeline } from '../components/Timeline';
 
 import { AssistantDrawer } from '../components/AssistantDrawer';
@@ -83,7 +83,7 @@ export function ClaimDetail() {
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-slate-900">Case {caseId}</h1>
               <span className={cn('px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase', claim.seed_case_label?.includes('high') ? 'bg-rose-100 text-rose-700' : claim.seed_case_label?.includes('review') ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700')}>
-                {claim.seed_case_label ?? 'Unknown'}
+                {claim.seed_case_label ? caseLabelDisplay(claim.seed_case_label) : 'Unknown'}
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-2 text-sm text-slate-500">

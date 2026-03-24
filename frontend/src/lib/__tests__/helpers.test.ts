@@ -3,6 +3,7 @@ import {
   riskBandLabel,
   riskBandColor,
   scoreColor,
+  caseLabelDisplay,
   caseLabelColor,
   formatUSD,
   formatCompactUSD,
@@ -110,6 +111,36 @@ describe("scoreColor", () => {
 
   it("returns emerald for score below 31", () => {
     expect(scoreColor(0)).toBe("text-emerald-600");
+  });
+});
+
+describe("caseLabelDisplay", () => {
+  it("returns High Risk for high_risk", () => {
+    expect(caseLabelDisplay("high_risk")).toBe("High Risk");
+  });
+
+  it("returns High Risk for HIGH_RISK (uppercase)", () => {
+    expect(caseLabelDisplay("HIGH_RISK")).toBe("High Risk");
+  });
+
+  it("returns Review for review", () => {
+    expect(caseLabelDisplay("review")).toBe("Review");
+  });
+
+  it("returns Stable for stable", () => {
+    expect(caseLabelDisplay("stable")).toBe("Stable");
+  });
+
+  it("returns em dash for null", () => {
+    expect(caseLabelDisplay(null)).toBe("—");
+  });
+
+  it("returns em dash for undefined", () => {
+    expect(caseLabelDisplay(undefined)).toBe("—");
+  });
+
+  it("passes through unknown values unchanged", () => {
+    expect(caseLabelDisplay("custom_label")).toBe("custom_label");
   });
 });
 

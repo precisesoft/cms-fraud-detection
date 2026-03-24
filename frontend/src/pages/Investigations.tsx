@@ -4,7 +4,7 @@ import { ClipboardList, AlertTriangle, ChevronRight } from 'lucide-react';
 import { getPendingCases } from '../lib/api';
 import type { PendingCase } from '../lib/api';
 import { cn } from '../lib/utils';
-import { scoreColor, formatUSD } from '../lib/helpers';
+import { scoreColor, formatUSD, caseLabelDisplay } from '../lib/helpers';
 
 export function Investigations() {
   const [cases, setCases] = React.useState<PendingCase[]>([]);
@@ -51,7 +51,7 @@ export function Investigations() {
                   <div className="flex items-center gap-3 mb-2">
                     <span className="text-sm font-bold text-indigo-600 font-mono">{c.case_id}</span>
                     <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-bold uppercase', c.seed_case_label?.includes('high') ? 'bg-rose-100 text-rose-700' : c.seed_case_label?.includes('review') ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700')}>
-                      {c.seed_case_label ?? '—'}
+                      {caseLabelDisplay(c.seed_case_label)}
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-slate-500">

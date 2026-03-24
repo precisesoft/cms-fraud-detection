@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { getClaims } from '../lib/api';
 import type { Claim, PaginationMeta } from '../lib/api';
 import { cn } from '../lib/utils';
-import { formatUSD, scoreColor } from '../lib/helpers';
+import { formatUSD, scoreColor, caseLabelDisplay } from '../lib/helpers';
 
 export function Claims() {
   const [claims, setClaims] = React.useState<Claim[]>([]);
@@ -101,7 +101,7 @@ export function Claims() {
                   <td className={cn('px-5 py-3 text-xs text-right font-bold', scoreColor(claim.seed_risk_score))}>{claim.seed_risk_score ?? '—'}</td>
                   <td className="px-5 py-3">
                     <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-bold uppercase', claim.seed_case_label?.includes('high') ? 'bg-rose-100 text-rose-700' : claim.seed_case_label?.includes('review') ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700')}>
-                      {claim.seed_case_label ?? '—'}
+                      {caseLabelDisplay(claim.seed_case_label)}
                     </span>
                   </td>
                   <td className="px-5 py-3">
