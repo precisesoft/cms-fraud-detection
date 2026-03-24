@@ -1,4 +1,4 @@
-# Demo Script — CMS Proactive Program Integrity
+# Demo Script — Argus: CMS Proactive Program Integrity
 
 > 5-7 minute demo for judges. March 27, 2026 — Reston, Virginia.
 
@@ -14,7 +14,7 @@ This is the visual hook — start here.
 
 1. "This is our real-time payment monitor." Press **Start**.
 2. Claims begin streaming across the US map — dots pulse at state centroids.
-3. Narrate: "Every claim is scored by our 14-signal engine in under 50 milliseconds. No batch jobs, no overnight processing — proactive detection as payments arrive."
+3. Narrate: "Every claim is scored by our 13-signal engine in under 50 milliseconds. No batch jobs, no overnight processing — proactive detection as payments arrive."
 4. Wait for a red-flagged claim to appear (~6% of claims trigger high-risk).
 5. Point at it: "This provider in [state] just triggered [N] risk signals. Let's investigate."
 6. **Click the flagged claim** in the live feed — transition to Provider Detail.
@@ -35,6 +35,7 @@ Walk through the provider detail page:
 3. **Peer comparison chart** — "We don't just flag outliers — we show you exactly how far they deviate from specialty peers"
 4. **Evidence graph** — "The Neo4j graph connects this provider to their cases, signals, peer groups, and data sources. Every edge is traceable."
 5. **Network risk** — "This provider shares a zip code with 3 other flagged providers — a common pattern in fraud rings"
+6. **Anomaly score + ML explainability** — "Our Isolation Forest model independently flagged this provider. Here are the top features driving the anomaly — per-provider feature importance, not a global average."
 
 **Key line**: "An investigator sees the evidence, not a black box score. They decide what to do next."
 
@@ -92,7 +93,7 @@ Ask a few natural-language questions:
 - Architecture diagram: EKS deployment, CI/CD pipeline, data flow
 - Signal taxonomy: all 13 signals with weights and thresholds
 - Anomaly model: feature importance, correlation with rule scores
-- Load test results: throughput under concurrent users
+- Per-provider ML feature importance: top anomaly drivers per provider
 - Full retrospective validation breakdown by revocation reason
 
 ## Key Numbers to Remember
