@@ -31,7 +31,7 @@ Argus sits at the payment gate. It scores every claim against peer baselines, fl
 **What Argus gives her**:
 
 - Prioritized inbox sorted by risk score
-- One-click verdict: APPROVE / REVIEW / DENY with confidence level
+- Triage labels: HIGH RISK / REVIEW / STABLE — analyst decides what action to take
 - Plain-English explanation: "This provider charges 4.2x the peer average for CPT 99215 in Florida"
 - Peer comparison chart inline — no system-switching
 
@@ -138,7 +138,7 @@ Argus sits at the payment gate. It scores every claim against peer baselines, fl
 
 ### Journey 1: Analyst Daily Triage (Primary Demo Flow)
 
-This is the "hero" journey for the hackathon demo. It shows Argus's core value proposition: real-time claim scoring with explainable verdicts.
+This is the "hero" journey for the hackathon demo. It shows Argus's core value proposition: real-time claim scoring with explainable evidence for human reviewers.
 
 ```
 1. LOGIN
@@ -150,7 +150,7 @@ This is the "hero" journey for the hackathon demo. It shows Argus's core value p
 
 3. CLICK TOP CLAIM → INVESTIGATION VIEW
    - Risk gauge: 71/100 (red zone)
-   - Verdict: DENY — confidence HIGH
+   - Case label: HIGH RISK (analyst reviews evidence before deciding action)
    - Signals:
      ⚠ Submitted charge 4.2x peer average (z-score: 3.8)
      ⚠ Single HCPCS code accounts for 100% of billing (HHI: 1.0)
