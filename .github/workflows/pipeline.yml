@@ -20,6 +20,7 @@ concurrency:
 
 env:
   ECR_REGISTRY: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
   contents: read
@@ -156,7 +157,7 @@ jobs:
 
       - name: Test
         env:
-          JWT_SECRET_KEY: test-secret-for-ci-only
+          JWT_SECRET_KEY: test-secret-for-ci-only-must-be-32-bytes!
         run: pytest --cov=src --cov-branch --cov-report=xml --cov-report=html --cov-report=term-missing -q
 
       - name: Coverage threshold check
