@@ -132,3 +132,38 @@ Every scored case carries:
 - The peer baseline value for context
 
 This enables reviewers to understand exactly why a provider was flagged and trace every point back to a specific data source and comparison methodology.
+
+## ML Anomaly Score & Feature Importance
+
+In addition to the rule-based scoring engine, each provider receives an independent **anomaly score** from an Isolation Forest model (see [model-card-isolation-forest.md](model-card-isolation-forest.md)). The anomaly score (0-100) captures statistically unusual billing patterns that may not trigger explicit threshold-based rules.
+
+### Per-Provider Feature Importance
+
+The system provides per-provider feature importance via a **leave-one-out approximation** (`GET /api/providers/{npi}/explain`). For each of the 49 model features:
+
+1. Zero the feature value
+2. Re-score through the Isolation Forest
+3. Measure the delta from the baseline anomaly score
+
+Positive delta = the feature was pushing the score higher (risk-increasing). Negative delta = the feature was protective. The top contributing features are returned ranked by absolute contribution.
+
+This approach avoids a runtime dependency on SHAP while giving directionally identical results for tree-based models in under 100ms.
+
+### Score Agreement Indicator
+
+The Provider Detail page displays a **Score Agreement** indicator comparing the rule-based risk score and the ML anomaly score:
+
+| Agreement    | Condition                                | Meaning                                   |
+| ------------ | ---------------------------------------- | ----------------------------------------- |
+| Corroborated | Both scores >= 51                        | Independent signals agree on high risk    |
+| Divergent    | One >= 51, the other < 51                | Signals disagree — warrants investigation |
+| Consistent   | Both scores < 31                         | Both signals agree on low risk            |
+| Mixed        | Both in the 31-50 range, or one moderate | Moderate range — routine review           |
+
+This dual-signal design adds investigative depth: corroborated cases are highest priority, while divergent cases surface patterns that one method alone would miss.
+
+## Limitations
+
+### Single-Year Data
+
+The current scoring engine operates on CMS Part B data from a single year (2022). It detects **cross-sectional anomalies** (providers who are outliers relative to peers) but cannot detect **temporal anomalies** (providers whose billing is growing abnormally over time). Multi-year data (2020-2024) would enable year-over-year growth signals that integrate directly into the existing taxonomy framework. See [Responsible AI Considerations — Temporal Analysis](./responsible-ai-considerations.md#7-temporal-analysis--current-limitations) for the full analysis and proposed signal definitions.

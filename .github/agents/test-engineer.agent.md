@@ -20,7 +20,7 @@ Identifies anomalous Medicare billing patterns using peer comparison, determinis
 - **Data**: psycopg COPY bulk loader (`src/data/load_postgres.py`)
 - **Models**: Isolation Forest anomaly detection (`src/models/anomaly.py`)
 - **Validation**: Retrospective testing (`src/validation/retrospective.py`)
-- **Frontend**: Next.js 16 (`frontend/`) — not tested by Python CI
+- **Frontend**: Vite + React 19 (`frontend/`) — not tested by Python CI
 
 ### External Dependencies to Mock
 

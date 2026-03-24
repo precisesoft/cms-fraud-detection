@@ -1,6 +1,7 @@
 name: Pipeline
 
 on:
+  workflow_dispatch:
   pull_request:
     paths-ignore:
       - "docs/**"
@@ -18,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  ECR_REGISTRY: 376567172837.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REGISTRY: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
 
 permissions:
   contents: read
@@ -154,6 +155,8 @@ jobs:
         run: mypy src/
 
       - name: Test
+        env:
+          JWT_SECRET_KEY: test-secret-for-ci-only
         run: pytest --cov=src --cov-branch --cov-report=xml --cov-report=html --cov-report=term-missing -q
 
       - name: Coverage threshold check
@@ -222,6 +225,12 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     needs: [security, quality-backend, quality-frontend]
+    # Explicit check: default success() skips when dependencies ran via always()
+    if: |
+      always() &&
+      needs.security.result == 'success' &&
+      needs.quality-backend.result == 'success' &&
+      needs.quality-frontend.result == 'success'
     steps:
       - uses: actions/checkout@v4
 
@@ -292,6 +301,7 @@ jobs:
     name: Scan
     runs-on: ubuntu-latest
     needs: [build]
+    if: always() && needs.build.result == 'success'
     steps:
       - name: Download API image
         uses: actions/download-artifact@v4
@@ -341,7 +351,11 @@ jobs:
   release:
     name: Release
     needs: [scan]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: |
+      always() &&
+      needs.scan.result == 'success' &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -352,7 +366,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: us-east-1
 
       - uses: aws-actions/amazon-ecr-login@v2
 
@@ -377,7 +391,11 @@ jobs:
   deploy:
     name: Deploy
     needs: [release]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: |
+      always() &&
+      needs.release.result == 'success' &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -386,24 +404,21 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: us-east-1
 
       - name: Update kubeconfig
-        run: aws eks update-kubeconfig --name 508aas-platform-dev-cluster --region us-east-1
+        run: aws eks update-kubeconfig --name ${{ vars.EKS_CLUSTER_NAME }} --region us-east-1
 
-      - name: Update manifest image tags
+      - name: Deploy to EKS
         env:
           SHA: ${{ github.sha }}
         run: |
-          git clone https://x-access-token:${{ secrets.MANIFEST_REPO_TOKEN }}@github.com/precisesoft/precise-manifests.git /tmp/manifests
-          cd /tmp/manifests/k8s/cms-fraud
-          sed -i "s|cms-fraud-detection-api:.*|cms-fraud-detection-api:${SHA}|" api.yaml
-          sed -i "s|cms-fraud-detection-frontend:.*|cms-fraud-detection-frontend:${SHA}|" frontend.yaml
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "deploy: update images to ${SHA}" || echo "No changes"
-          git push
+          kubectl set image deployment/api \
+            api=${{ env.ECR_REGISTRY }}/cms-fraud-detection-api:${SHA} \
+            -n cms-fraud
+          kubectl set image deployment/frontend \
+            frontend=${{ env.ECR_REGISTRY }}/cms-fraud-detection-frontend:${SHA} \
+            -n cms-fraud
 
       - name: Wait for rollout
         run: |

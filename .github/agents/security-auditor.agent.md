@@ -25,7 +25,7 @@ Identifies anomalous Medicare billing patterns using peer comparison, determinis
   - `narrative.py` — risk narrative generation (output displayed to users)
 - **Scoring** (`src/scoring/`) — deterministic, no AI involvement in scoring logic
 - **DB**: PostgreSQL 16 (psycopg parameterized queries) + Neo4j 5 (bolt protocol)
-- **Frontend**: Next.js 16 (`frontend/`) — server components, API calls via `fetch`
+- **Frontend**: Vite + React 19 (`frontend/`) — server components, API calls via `fetch`
 
 ### Known Security Decisions
 

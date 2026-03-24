@@ -4,13 +4,14 @@
 
 ## AI Tools Used
 
-| Tool                    | Provider                  | Purpose                                                                     |
-| ----------------------- | ------------------------- | --------------------------------------------------------------------------- |
-| Claude (Sonnet / Haiku) | Anthropic via AWS Bedrock | Risk narrative generation, text-to-SQL query translation, AI chat interface |
-| GitHub Copilot          | GitHub / OpenAI           | Developer productivity — code completion and suggestions during development |
-| Claude (API)            | Anthropic                 | Architecture review, documentation drafting, code review assistance         |
+| Tool                     | Provider                  | Purpose                                                                                                                          |
+| ------------------------ | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Claude (Sonnet / Haiku)  | Anthropic via AWS Bedrock | Risk narrative generation, text-to-SQL query translation, AI chat interface                                                      |
+| Claude Code (CLI)        | Anthropic                 | Agile orchestrator — issue planning, Copilot agent assignment, PR review (BASSPC), merge, post-merge cleanup, documentation      |
+| GitHub Copilot           | GitHub / OpenAI           | Developer productivity — code completion and suggestions during development                                                      |
+| GitHub Copilot SWE Agent | GitHub                    | Autonomous coding agent — assigned issues via Claude Code, implemented code on branches, opened draft PRs (43 PRs, 27% of total) |
 
-All AI-generated code and content was reviewed, tested, and validated by the development team before inclusion. No AI output was accepted without human review.
+All AI-generated code and content was reviewed, tested, and validated by the development team before inclusion. No AI output was accepted without human review. Claude Code orchestrated the workflow by assigning issues to the Copilot SWE Agent, monitoring CI, reviewing PRs, and merging — but all final merge decisions were human-approved.
 
 ## Open-Source Libraries
 
@@ -55,8 +56,20 @@ All AI-generated code and content was reviewed, tested, and validated by the dev
 | Docker            | Apache-2.0         | Containerization             |
 | Kubernetes (EKS)  | Apache-2.0         | Container orchestration      |
 | Terraform         | BSL-1.1            | Infrastructure as code       |
+| Istio             | Apache-2.0         | Service mesh and routing     |
 | ArgoCD            | Apache-2.0         | GitOps continuous deployment |
 | GitHub Actions    | GitHub ToS         | CI/CD pipelines              |
+
+### Security & Compliance Tools
+
+| Tool      | License    | Purpose                                |
+| --------- | ---------- | -------------------------------------- |
+| gitleaks  | MIT        | Secret detection in git history        |
+| bandit    | Apache-2.0 | Python static analysis (SAST)          |
+| pip-audit | Apache-2.0 | Python dependency CVE scanning         |
+| npm audit | npm ToS    | JavaScript dependency CVE scanning     |
+| CycloneDX | Apache-2.0 | SBOM generation (backend + frontend)   |
+| Trivy     | Apache-2.0 | Container image vulnerability scanning |
 
 ## Data Sources
 

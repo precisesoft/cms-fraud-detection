@@ -50,7 +50,7 @@ Implement features and enhancements from issue requirements. You write productio
 - **Validation**: Retrospective testing (`src/validation/`)
 - **Models**: ML models like Isolation Forest (`src/models/`)
 
-### Frontend (Next.js 16 + TypeScript)
+### Frontend (Vite + React 19 + TypeScript)
 
 - Located in `frontend/`
 - Tailwind v4 + shadcn/ui + Recharts + react-force-graph-2d

@@ -30,7 +30,23 @@ data "aws_iam_policy_document" "ci_ecr" {
       "ecr:PutImage",
       "ecr:UploadLayerPart",
     ]
-    resources = [aws_ecr_repository.api.arn]
+    resources = [
+      aws_ecr_repository.api.arn,
+      aws_ecr_repository.frontend.arn,
+    ]
+  }
+}
+
+data "aws_iam_policy_document" "ci_eks" {
+  statement {
+    sid    = "EKSDescribe"
+    effect = "Allow"
+    actions = [
+      "eks:DescribeCluster",
+    ]
+    resources = [
+      "arn:aws:eks:${var.aws_region}:${var.aws_account_id}:cluster/*",
+    ]
   }
 }
 
@@ -38,6 +54,12 @@ resource "aws_iam_user_policy" "ci_ecr" {
   name   = "${var.project_name}-ci-ecr"
   user   = aws_iam_user.ci.name
   policy = data.aws_iam_policy_document.ci_ecr.json
+}
+
+resource "aws_iam_user_policy" "ci_eks" {
+  name   = "${var.project_name}-ci-eks"
+  user   = aws_iam_user.ci.name
+  policy = data.aws_iam_policy_document.ci_eks.json
 }
 
 data "aws_iam_policy_document" "ci_terraform" {

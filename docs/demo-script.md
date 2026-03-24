@@ -1,23 +1,29 @@
-# Demo Script — CMS Proactive Program Integrity
+# Demo Script — Argus: CMS Proactive Program Integrity
 
 > 5-7 minute demo for judges. March 27, 2026 — Reston, Virginia.
 
 ## Opening (30s)
 
-"CMS loses over $60 billion a year to improper payments, and most detection happens after the money is already out the door. We built a system that catches suspicious billing patterns before they scale — and we validated it: **our scoring detected 91% of eventually-revoked providers from billing patterns alone**, before CMS acted on revocation."
+"CMS loses over $60 billion a year to improper payments, and most detection happens after the money is already out the door. We built a system that catches suspicious billing patterns before they scale — proactive detection, not pay-and-chase."
 
-## 1. Dashboard Overview (60s)
+## 1. Live Payment Monitor (60-90s)
 
-**Show**: `https://argus.precise-lab.com`
+**Navigate**: `https://argus.precise-lab.com/live`
 
-- Point out the three risk bands: stable, review, high-risk
-- Highlight total providers (10K+) and cases scored
-- Show the geographic heatmap — clusters of high-risk activity in FL, TX, CA
-- "Every number you see here traces back to specific public CMS data with full provenance"
+This is the visual hook — start here.
+
+1. "This is our real-time payment monitor." Press **Start**.
+2. Claims begin streaming across the US map — dots pulse at state centroids.
+3. Narrate: "Every claim is scored by our 13-signal engine in under 50 milliseconds. No batch jobs, no overnight processing — proactive detection as payments arrive."
+4. Wait for a red-flagged claim to appear (~6% of claims trigger high-risk).
+5. Point at it: "This provider in [state] just triggered [N] risk signals. Let's investigate."
+6. **Click the flagged claim** in the live feed — transition to Provider Detail.
+
+**Key stat visible**: Flag rate, average scoring latency, claims processed.
 
 ## 2. Provider Deep-Dive — A High-Risk Case (90s)
 
-**Navigate**: Click a high-risk provider from the dashboard
+**Navigate**: Arrived from the live monitor click (or pick from dashboard)
 
 Walk through the provider detail page:
 
@@ -29,6 +35,7 @@ Walk through the provider detail page:
 3. **Peer comparison chart** — "We don't just flag outliers — we show you exactly how far they deviate from specialty peers"
 4. **Evidence graph** — "The Neo4j graph connects this provider to their cases, signals, peer groups, and data sources. Every edge is traceable."
 5. **Network risk** — "This provider shares a zip code with 3 other flagged providers — a common pattern in fraud rings"
+6. **Anomaly score + ML explainability** — "Our Isolation Forest model independently flagged this provider. Here are the top features driving the anomaly — per-provider feature importance, not a global average."
 
 **Key line**: "An investigator sees the evidence, not a black box score. They decide what to do next."
 
@@ -63,6 +70,8 @@ Ask a few natural-language questions:
 
 "The scoring engine uses 13 explainable signals across 4 categories. We also trained an isolation forest anomaly detection model that correlates with our rule-based scores and independently identifies the same high-risk providers."
 
+"And remember what you saw in the live monitor — that same engine scores every claim in under 50 milliseconds. This isn't a research prototype; it's a production-ready system."
+
 ## 6. Responsible AI (30s)
 
 - "We built a fairness dashboard that measures statistical parity and disparate impact across states and specialties"
@@ -84,7 +93,7 @@ Ask a few natural-language questions:
 - Architecture diagram: EKS deployment, CI/CD pipeline, data flow
 - Signal taxonomy: all 13 signals with weights and thresholds
 - Anomaly model: feature importance, correlation with rule scores
-- Load test results: throughput under concurrent users
+- Per-provider ML feature importance: top anomaly drivers per provider
 - Full retrospective validation breakdown by revocation reason
 
 ## Key Numbers to Remember
@@ -106,3 +115,4 @@ Ask a few natural-language questions:
 - Don't claim "national scale" — say "designed for scale, validated on 10K providers"
 - Don't spend time on infrastructure — judges care about the insight, not the K8s cluster
 - Don't rush the validation story — it's the strongest evidence you have
+- Don't skip the live monitor opening — it's the strongest visual hook

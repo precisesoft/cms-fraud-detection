@@ -2,9 +2,9 @@
 
 > Judge-facing version for the CMS Proactive Program Integrity hackathon.
 
-STATUS: draft
+STATUS: approved
 created: 2026-03-12
-updated: 2026-03-12
+updated: 2026-03-24
 
 ---
 
@@ -51,27 +51,27 @@ Each case answers one question:
 
 ![System Architecture](diagrams/01-system-architecture.png)
 
-We will build an explainable provider evidence graph that combines:
+We built an explainable provider evidence graph that combines:
 
 - Medicare Part B utilization and payment behavior
 - provider identity and enrollment context
 - revocation and exclusion context
 - peer-group baselines by specialty and geography
-- optional enrichment from Part D, DME, and Open Payments
 
-For every scored case, the system will output:
+For every scored case, the system outputs:
 
-- a risk score
-- a review band
-- the top signals contributing to suspicion
-- the top signals contributing to legitimacy
-- the source provenance behind each conclusion
+- a risk score (0–100) with review band (stable / review / high-risk)
+- 13 explainable signals (6 risk + 7 legitimacy) with source provenance
+- an Isolation Forest anomaly score with per-provider feature importance
+- an AI-generated risk narrative explaining the findings in plain English
 
 ![Scoring Engine](diagrams/04-scoring-engine.png)
 
+The platform includes 14 API endpoints, 12 interactive frontend pages, a live payment monitor with SSE streaming, an AI chat sidebar for natural language investigation (text-to-SQL), and a retrospective validation module that confirmed 91% revocation detection from billing patterns alone.
+
 ## Why This Matters
 
-This approach makes the system useful to real operators, not just judges.
+This approach makes the system useful to real operators, not just hackathon judges.
 
 - Analysts get a shorter path from anomaly to evidence.
 - Investigators get transparent, auditable reasoning instead of a black-box score.

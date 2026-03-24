@@ -638,6 +638,24 @@ class TokenResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Explainability
+# ---------------------------------------------------------------------------
+
+
+class FeatureContribution(BaseModel):
+    name: str
+    contribution: float
+    actual_value: float
+    direction: str  # "risk" | "protective" | "neutral"
+
+
+class ExplainResponse(BaseModel):
+    npi: str
+    anomaly_score: float | None = None
+    top_features: list[FeatureContribution] = []
+
+
+# ---------------------------------------------------------------------------
 # Health
 # ---------------------------------------------------------------------------
 
