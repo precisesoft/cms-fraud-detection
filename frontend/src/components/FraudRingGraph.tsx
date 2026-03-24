@@ -23,23 +23,27 @@ export function FraudRingGraph({ seed, members }: FraudRingGraphProps) {
     );
   }
 
-  const width = 720;
-  const height = 400;
+  // Scale canvas to cluster size
+  const n = members.length;
+  const width = 500;
+  const height = Math.max(280, Math.min(500, 140 + n * 70));
   const cx = width / 2;
   const cy = height / 2;
 
-  // Layout: seed at center, members in concentric rings by hop distance
   const maxHop = Math.max(...members.map((m) => m.hops));
-  const ringSpacing = Math.min(width, height) / 2 / (maxHop + 1) - 20;
+  const outerRadius = Math.min(cx, cy) - 60;
 
   const positions = new Map<string, { x: number; y: number }>();
   positions.set(seed, { x: cx, y: cy });
 
   for (let hop = 1; hop <= maxHop; hop++) {
     const ring = members.filter((m) => m.hops === hop);
-    const radius = ringSpacing * hop + 40;
+    const radius = (outerRadius * hop) / maxHop;
+    // Offset angle per ring to avoid overlap
+    const baseAngle = hop % 2 === 0 ? Math.PI / ring.length : 0;
     ring.forEach((m, i) => {
-      const angle = (2 * Math.PI * i) / Math.max(ring.length, 1) - Math.PI / 2;
+      const angle =
+        baseAngle + (2 * Math.PI * i) / Math.max(ring.length, 1) - Math.PI / 2;
       positions.set(m.npi, {
         x: cx + radius * Math.cos(angle),
         y: cy + radius * Math.sin(angle),
@@ -47,13 +51,12 @@ export function FraudRingGraph({ seed, members }: FraudRingGraphProps) {
     });
   }
 
-  // Build edges: each member links to seed (hop=1) or to any member in hop-1 sharing zip/org
+  // Build edges
   const edges: { from: string; to: string; type: string }[] = [];
   for (const m of members) {
     if (m.hops === 1) {
       edges.push({ from: seed, to: m.npi, type: m.link_type });
     } else {
-      // Connect to first member in previous hop with shared zip or org
       const prev = members.find(
         (p) =>
           p.hops === m.hops - 1 &&
@@ -65,18 +68,20 @@ export function FraudRingGraph({ seed, members }: FraudRingGraphProps) {
     }
   }
 
-  const nodeRadius = (score: number | null) => {
-    if (!score) return 14;
-    if (score >= 51) return 18;
-    if (score >= 31) return 16;
-    return 14;
+  const nodeR = (score: number | null) => {
+    if (!score) return 20;
+    if (score >= 51) return 24;
+    if (score >= 31) return 22;
+    return 20;
+  };
+
+  const trimLabel = (name: string | null, npi: string) => {
+    const raw = name ?? npi;
+    return raw.length > 20 ? `${raw.slice(0, 18)}…` : raw;
   };
 
   return (
-    <svg
-      viewBox={`0 0 ${width} ${height}`}
-      className="w-full h-auto min-h-[300px]"
-    >
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto">
       {/* Edges */}
       {edges.map((e, i) => {
         const from = positions.get(e.from);
@@ -92,26 +97,25 @@ export function FraudRingGraph({ seed, members }: FraudRingGraphProps) {
               x2={to.x}
               y2={to.y}
               stroke={e.type === "SAME_ZIP" ? "#6366f1" : "#3b82f6"}
-              strokeWidth={1.5}
-              strokeOpacity={0.5}
-              strokeDasharray={e.type === "SAME_ORG" ? "4 3" : "none"}
+              strokeWidth={2}
+              strokeOpacity={0.4}
+              strokeDasharray={e.type === "SAME_ORG" ? "6 4" : "none"}
             />
             <rect
-              x={mx - 16}
-              y={my - 7}
-              width={32}
-              height={14}
-              rx={4}
+              x={mx - 20}
+              y={my - 10}
+              width={40}
+              height={20}
+              rx={6}
               fill="white"
-              fillOpacity={0.9}
               stroke="#e2e8f0"
             />
             <text
               x={mx}
-              y={my + 3}
+              y={my + 4}
               textAnchor="middle"
-              fontSize={8}
-              fontWeight={600}
+              fontSize={11}
+              fontWeight={700}
               fill="#64748b"
             >
               {e.type === "SAME_ZIP" ? "ZIP" : "ORG"}
@@ -121,22 +125,22 @@ export function FraudRingGraph({ seed, members }: FraudRingGraphProps) {
       })}
 
       {/* Seed node */}
-      <g className="cursor-pointer">
-        <circle cx={cx} cy={cy} r={22} fill="#4f46e5" opacity={0.9} />
+      <g>
+        <circle cx={cx} cy={cy} r={28} fill="#4f46e5" opacity={0.9} />
         <circle
           cx={cx}
           cy={cy}
-          r={22}
+          r={28}
           fill="none"
           stroke="#4f46e5"
-          strokeWidth={3}
-          strokeOpacity={0.3}
+          strokeWidth={4}
+          strokeOpacity={0.25}
         />
         <text
           x={cx}
-          y={cy + 4}
+          y={cy + 5}
           textAnchor="middle"
-          fontSize={9}
+          fontSize={12}
           fontWeight={700}
           fill="white"
         >
@@ -148,13 +152,9 @@ export function FraudRingGraph({ seed, members }: FraudRingGraphProps) {
       {members.map((m) => {
         const pos = positions.get(m.npi);
         if (!pos) return null;
-        const r = nodeRadius(m.risk_score);
+        const r = nodeR(m.risk_score);
         const color = BAND_COLORS[m.risk_band ?? ""] ?? "#94a3b8";
-        const label = m.provider_name
-          ? m.provider_name.length > 14
-            ? `${m.provider_name.slice(0, 12)}…`
-            : m.provider_name
-          : m.npi;
+        const label = trimLabel(m.provider_name, m.npi);
         return (
           <g
             key={m.npi}
@@ -165,47 +165,51 @@ export function FraudRingGraph({ seed, members }: FraudRingGraphProps) {
               {m.provider_name ?? m.npi} — Risk: {m.risk_score ?? "?"} (
               {m.risk_band ?? "unknown"})
             </title>
-            <circle cx={pos.x} cy={pos.y} r={r} fill={color} opacity={0.85} />
+            {/* Glow ring */}
+            <circle
+              cx={pos.x}
+              cy={pos.y}
+              r={r + 4}
+              fill="none"
+              stroke={color}
+              strokeWidth={3}
+              strokeOpacity={0.25}
+            />
+            <circle cx={pos.x} cy={pos.y} r={r} fill={color} opacity={0.9} />
+            {/* Score inside node */}
+            <text
+              x={pos.x}
+              y={pos.y + (m.revoked ? -2 : 5)}
+              textAnchor="middle"
+              fontSize={12}
+              fontWeight={800}
+              fill="white"
+            >
+              {m.risk_score ?? "?"}
+            </text>
             {m.revoked && (
               <text
                 x={pos.x}
-                y={pos.y + 4}
+                y={pos.y + 12}
                 textAnchor="middle"
-                fontSize={10}
+                fontSize={8}
                 fontWeight={700}
                 fill="white"
+                opacity={0.8}
               >
-                !
+                REVOKED
               </text>
             )}
-            <rect
-              x={pos.x - 46}
-              y={pos.y + r + 4}
-              width={92}
-              height={16}
-              rx={6}
-              fill="white"
-              fillOpacity={0.92}
-              stroke="#e2e8f0"
-            />
+            {/* Label below node */}
             <text
               x={pos.x}
-              y={pos.y + r + 15}
+              y={pos.y + r + 18}
               textAnchor="middle"
-              fontSize={8}
+              fontSize={11}
               fontWeight={600}
-              fill="#475569"
+              fill="#334155"
             >
               {label}
-            </text>
-            <text
-              x={pos.x}
-              y={pos.y + r + 30}
-              textAnchor="middle"
-              fontSize={8}
-              fill="#94a3b8"
-            >
-              {m.risk_score ?? "?"}
             </text>
           </g>
         );
