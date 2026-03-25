@@ -1,8 +1,27 @@
+"""DuckDB-based demo case CSV builder.
+
+.. deprecated::
+    This module is **deprecated** and will be removed in a future release.
+    Use :mod:`src.pipeline.etl` instead, which reads from the Postgres
+    ``raw_*`` tables and upserts results directly into
+    ``provider_service_cases``.
+
+    The new pipeline is invoked via :func:`src.pipeline.etl.run_pipeline`
+    and no longer requires DuckDB or raw CSV files.
+"""
+
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 
 import duckdb
+
+warnings.warn(
+    "src.data.build_demo_case_csv is deprecated. Use src.pipeline.etl.run_pipeline instead.",
+    DeprecationWarning,
+    stacklevel=1,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = ROOT / "data" / "raw" / "public_sources" / "cms"

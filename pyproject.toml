@@ -59,7 +59,9 @@ select = ["E", "F", "I", "N", "W", "UP"]
 [tool.ruff.lint.per-file-ignores]
 "src/data/build_demo_case_csv.py" = ["E501"]  # embedded SQL strings
 "src/data/load_postgres.py" = ["E501"]  # formatted output strings
+"src/pipeline/etl.py" = ["E501"]  # embedded SQL strings
 "tests/test_build_features.py" = ["E501"]  # embedded CSV test data
+"tests/test_etl.py" = ["E501"]  # long taxonomy assertion expressions
 
 [tool.mypy]
 python_version = "3.12"
