@@ -51,7 +51,9 @@ def test_init_sql_raw_zip_column_name():
     """provider_zip5 must be used consistently — not provider_zip."""
     sql = _read(INIT_SQL)
     assert "provider_zip5" in sql, "raw tables must use provider_zip5 (not provider_zip)"
-    assert "    provider_zip " not in sql, "provider_zip (without 5) found — rename to provider_zip5"
+    assert "    provider_zip " not in sql, (
+        "provider_zip (without 5) found — rename to provider_zip5"
+    )
 
 
 def test_init_sql_raw_medicare_column_name():
@@ -112,7 +114,9 @@ def test_init_sql_partial_index_pipeline_runs():
 
 
 def test_migration_001_exists():
-    assert MIGRATION_001.exists(), "db/migrations/001_add_raw_tables_pipeline_tracking.sql must exist"
+    assert MIGRATION_001.exists(), (
+        "db/migrations/001_add_raw_tables_pipeline_tracking.sql must exist"
+    )
 
 
 def test_migration_001_idempotent_create():
@@ -144,9 +148,7 @@ def test_migration_001_contains_all_tables():
         "data_source_versions",
         "pipeline_runs",
     ):
-        assert f"CREATE TABLE IF NOT EXISTS {table}" in sql, (
-            f"{table} missing from migration 001"
-        )
+        assert f"CREATE TABLE IF NOT EXISTS {table}" in sql, f"{table} missing from migration 001"
 
 
 def test_migration_001_alter_idempotent():
