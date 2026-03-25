@@ -405,7 +405,7 @@ function RecalibrateSection({
     let cancelled = false;
     async function poll() {
       try {
-        const r = await getPipelineRun(activeRunId!);
+        const r = await getPipelineRun(activeRunId);
         if (!cancelled) {
           setRun(r);
           if (r.status === "running" || r.status === "pending") {

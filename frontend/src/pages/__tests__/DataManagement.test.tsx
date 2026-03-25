@@ -47,17 +47,19 @@ const analystUser = {
   full_name: "Analyst User",
 };
 
+const MS_PER_DAY = 86_400_000;
+
 const mockSources = [
   {
     source_type: "Part B Service",
     version: "2024",
-    uploaded_at: new Date(Date.now() - 10 * 86_400_000).toISOString(),
+    uploaded_at: new Date(Date.now() - 10 * MS_PER_DAY).toISOString(),
     row_count: 1_500_000,
   },
   {
     source_type: "Part B Provider",
     version: "2024",
-    uploaded_at: new Date(Date.now() - 10 * 86_400_000).toISOString(),
+    uploaded_at: new Date(Date.now() - 10 * MS_PER_DAY).toISOString(),
     row_count: 10_282,
   },
 ];
