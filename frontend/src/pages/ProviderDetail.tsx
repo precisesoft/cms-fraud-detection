@@ -48,6 +48,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { AssistantDrawer } from "../components/AssistantDrawer";
 import { EvidenceGraph } from "../components/EvidenceGraph";
 import { FraudRingGraph } from "../components/FraudRingGraph";
+import { InfoButton } from "../components/InfoButton";
 import { formatUSD, scoreColor, providerDisplayName } from "../lib/helpers";
 
 export function ProviderDetail() {
@@ -150,6 +151,9 @@ export function ProviderDetail() {
                   {providerDisplayName(detail)}
                 </h1>
                 <StatusBadge band={detail.risk_band} size="sm" />
+                <InfoButton title="Provider Risk Profile">
+                  Provider identity with three key scores: the rule-based risk score (fully transparent and deterministic), the ML anomaly score (unsupervised Isolation Forest), and CMS revocation status. The rule-based score is the primary classification — ML serves as an independent corroboration signal.
+                </InfoButton>
               </div>
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-2 text-sm text-slate-500">
                 <div className="font-mono font-medium text-slate-700">
@@ -225,11 +229,19 @@ export function ProviderDetail() {
               scoreDetails?.explainable_risk_score ??
               detail.max_seed_risk_score,
             sub: "Primary transparent score",
+            info: {
+              title: "Explainable Risk Score",
+              desc: "Primary transparent score computed from deterministic rules. This is the official risk classification score — fully explainable with no black-box components. Based on peer-comparison z-scores, enrollment signals, and billing pattern rules.",
+            },
           },
           {
             name: "Provider Anomaly",
             value: scoreDetails?.anomaly_score,
             sub: "Isolation-forest provider anomaly",
+            info: {
+              title: "Provider Anomaly Score",
+              desc: "Isolation Forest anomaly score computed at the provider level across all service lines. Measures how unusual the provider's overall billing patterns are compared to the full provider population. Independent from the rule-based score.",
+            },
           },
           {
             name: "ML Suspicion Max",
@@ -237,6 +249,10 @@ export function ProviderDetail() {
             sub: scoreDetails?.service_line_scored_count
               ? `${scoreDetails.service_line_scored_count} scored service lines`
               : "Latest model not available",
+            info: {
+              title: "ML Suspicion Maximum",
+              desc: "Peak weakly supervised fraud probability across all scored service lines for this provider. Trained on Isolation Forest labels, not human labels. Used as an assistive signal to complement rule-based scoring — never used alone.",
+            },
           },
           {
             name: "Hybrid Composite Max",
@@ -244,15 +260,22 @@ export function ProviderDetail() {
             sub: scoreDetails?.hybrid_risk_label
               ? `Latest model · ${scoreDetails.hybrid_risk_label}`
               : "Assistive hybrid layer",
+            info: {
+              title: "Hybrid Composite Maximum",
+              desc: "Maximum score combining rule-based and ML signals across all service lines. Represents the strongest composite signal for this provider. Used as an assistive layer to surface cases where rule-based and ML signals converge.",
+            },
           },
         ].map((card) => (
           <div
             key={card.name}
             className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm"
           >
-            <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2">
-              {card.name}
-            </p>
+            <div className="flex items-center gap-1 mb-2">
+              <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">
+                {card.name}
+              </p>
+              <InfoButton title={card.info.title}>{card.info.desc}</InfoButton>
+            </div>
             <p
               className={cn(
                 "text-3xl font-black leading-none",
@@ -277,24 +300,31 @@ export function ProviderDetail() {
             value: String(detail.service_line_count ?? 0),
             sub: "Unique service observations",
             icon: Activity,
+            info: undefined,
           },
           {
             name: "Beneficiaries",
             value: String(detail.total_benes ?? 0),
             sub: "Total beneficiaries served",
             icon: UsersIcon,
+            info: undefined,
           },
           {
             name: "Est. Payment",
             value: formatUSD(detail.total_estimated_payment),
             sub: "Total estimated payment",
             icon: DollarSign,
+            info: undefined,
           },
           {
             name: "High-Risk Lines",
             value: String(detail.n_high_risk_lines ?? 0),
             sub: "Lines above risk threshold",
             icon: ShieldAlert,
+            info: {
+              title: "High-Risk Service Lines",
+              desc: "Number of this provider's service lines that individually scored 51 or above (high-risk threshold). Providers with multiple high-risk lines across different procedure codes present a broader pattern of anomalous billing.",
+            },
           },
         ].map((kpi) => (
           <div
@@ -308,6 +338,9 @@ export function ProviderDetail() {
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 {kpi.name}
               </span>
+              {kpi.info && (
+                <InfoButton title={kpi.info.title}>{kpi.info.desc}</InfoButton>
+              )}
             </div>
             <p className="text-2xl font-bold text-slate-900">{kpi.value}</p>
             <p className="text-xs text-slate-500 mt-1 font-medium">{kpi.sub}</p>
@@ -319,7 +352,12 @@ export function ProviderDetail() {
         <div className="lg:col-span-2 space-y-6">
           {/* Profile Metrics */}
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h2 className="font-bold text-slate-800 mb-6">Profile Metrics</h2>
+            <h2 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
+              Profile Metrics
+              <InfoButton title="Provider Profile Metrics">
+                Summary billing statistics: unique HCPCS procedure codes billed, average submitted charge, average risk score, service concentration (HHI — Herfindahl-Hirschman Index, where 1.0 means all billing is one code), and top-code dominance share.
+              </InfoButton>
+            </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
                 ["Unique HCPCS", String(detail.unique_hcpcs_codes ?? 0)],
@@ -357,6 +395,9 @@ export function ProviderDetail() {
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-rose-500">
               <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
                 <AlertCircle className="w-4 h-4 text-rose-500" /> Risk Signals
+                <InfoButton title="Risk Signals">
+                  Specific risk factors detected by the scoring taxonomy for this provider. Each signal has a category (billing, enrollment, peer), description, measured value, and the threshold that triggered it. Risk signals increase the provider's score.
+                </InfoButton>
               </h2>
               <div className="space-y-3">
                 {riskSignals.length ? (
@@ -396,6 +437,9 @@ export function ProviderDetail() {
               <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Legitimacy
                 Signals
+                <InfoButton title="Legitimacy Signals">
+                  Protective factors that reduce the risk score. These represent normal billing patterns, consistent Medicare participation, or other compliance indicators that counterbalance risk signals. A provider with many legitimacy signals is less likely to be truly anomalous.
+                </InfoButton>
               </h2>
               <div className="space-y-3">
                 {legitimacySignals.length ? (
@@ -428,8 +472,11 @@ export function ProviderDetail() {
 
           {/* Peer Lines */}
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-800 mb-4">
+            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
               Service Line Peer Comparison
+              <InfoButton title="Service Line Peer Comparison">
+                How this provider's service lines compare to peers billing the same HCPCS codes in the same specialty and state. Volume Z compares service count; higher z-scores indicate greater deviation. Z {'>'} 2 means the provider is a statistical outlier for that service.
+              </InfoButton>
             </h3>
             {peers.length ? (
               <div className="overflow-x-auto rounded-xl border border-slate-200" tabIndex={0} aria-label="Peer comparison table">
@@ -515,7 +562,12 @@ export function ProviderDetail() {
           {/* Radar Chart */}
           {radarData.length > 0 && (
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-              <h3 className="font-bold text-slate-800 mb-6">Risk Radar</h3>
+              <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
+                Risk Radar
+                <InfoButton title="Risk Radar Chart">
+                  Spider chart comparing this provider (red area) to peer averages (gray area) across multiple billing dimensions. Larger red areas extending beyond the gray indicate greater deviation from peer norms. Dimensions include volume, charges, beneficiary concentration, and service diversity.
+                </InfoButton>
+              </h3>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart
@@ -555,6 +607,9 @@ export function ProviderDetail() {
               <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3">
                 <Activity className="w-4 h-4 text-violet-500" /> ML Anomaly
                 Explanation
+                <InfoButton title="ML Anomaly Explanation">
+                  Feature importance breakdown showing which billing metrics contributed most to the Isolation Forest anomaly score. Red bars indicate risk-increasing features; green bars are protective. The agreement badge shows whether rule-based and ML scores converge (corroborated) or diverge (warrants investigation).
+                </InfoButton>
               </h3>
               <p className="text-xs text-slate-500 mb-4">
                 Independent unsupervised signal — higher values indicate more
@@ -655,6 +710,9 @@ export function ProviderDetail() {
             <div className="flex items-center gap-2 mb-4">
               <Network className="w-4 h-4 text-sky-500" />
               <h3 className="font-bold text-slate-800">Network Context</h3>
+              <InfoButton title="Network Context">
+                Other flagged providers sharing the same ZIP code or organization name. Geographic and organizational clusters of high-risk providers may indicate coordinated fraud schemes such as billing mills or phantom clinics operating from shared addresses.
+              </InfoButton>
             </div>
             <div className="space-y-3">
               {(network?.same_zip_flagged ?? []).slice(0, 5).map((n) => (
@@ -724,6 +782,9 @@ export function ProviderDetail() {
               <div className="flex items-center gap-2 mb-4">
                 <ShieldAlert className="w-4 h-4 text-red-500" />
                 <h3 className="font-bold text-slate-800">Fraud Ring</h3>
+                <InfoButton title="Fraud Ring Detection">
+                  Graph visualization of providers connected through shared characteristics (ZIP code, organization, overlapping billing patterns) that form a potential fraud ring cluster. Shows cluster size and count of high-risk and revoked members. Powered by Neo4j graph analytics.
+                </InfoButton>
                 <span className="ml-auto text-xs text-slate-500">
                   {cluster.cluster_size} providers &middot;{" "}
                   {cluster.high_risk_count} high-risk
@@ -743,15 +804,23 @@ export function ProviderDetail() {
           {/* Evidence Graph */}
           {graph && graph.nodes.length > 0 && (
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-              <h3 className="font-bold text-slate-800 mb-4">Evidence Graph</h3>
+              <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                Evidence Graph
+                <InfoButton title="Evidence Graph">
+                  Neo4j knowledge graph showing relationships between this provider and other entities — locations, organizations, procedure codes, and risk signals. Reveals non-obvious connections that may not be visible from tabular data alone.
+                </InfoButton>
+              </h3>
               <EvidenceGraph nodes={graph.nodes} edges={graph.edges} />
             </div>
           )}
 
           {/* Enrollment */}
           <div className="bg-slate-900 text-white p-6 rounded-xl shadow-xl">
-            <h3 className="font-bold text-indigo-300 text-xs uppercase tracking-widest mb-4">
+            <h3 className="font-bold text-indigo-300 text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
               Enrollment Context
+              <InfoButton title="Enrollment Context">
+                CMS enrollment metadata providing regulatory context: entity type (individual vs. organization), Medicare participation status, current enrollment status, and revocation information including reason if applicable.
+              </InfoButton>
             </h3>
             <div className="space-y-4 text-sm">
               <div>
