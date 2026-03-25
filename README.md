@@ -4,7 +4,8 @@
 
 CMS loses an estimated **$60 billion annually** to improper payments across Medicare and Medicaid. Current detection is largely reactive — fraud is identified after payments are made, forcing a costly "pay-and-chase" cycle. Argus is a decision-support system that identifies anomalous provider billing patterns, surfaces evidence-backed risk cases, and provides explainable scores that human reviewers can act on **proactively, in real time**.
 
-**Live App**: [argus.precise-lab.com](https://argus.precise-lab.com) | **Demo Script**: [docs/demo-script.md](docs/demo-script.md) | **Hackathon**: Government AI Hackathon (Mar 14–25, 2026)
+**Live App**: [argus.precise-lab.com](https://argus.precise-lab.com) | **GitHub**: [precisesoft/cms-fraud-detection](https://github.com/precisesoft/cms-fraud-detection) | **CI/CD Pipeline**: [Actions](https://github.com/precisesoft/cms-fraud-detection/actions) | **Issues & PRs**: [181 issues](https://github.com/precisesoft/cms-fraud-detection/issues?q=is%3Aissue) / [162 PRs](https://github.com/precisesoft/cms-fraud-detection/pulls?q=is%3Apr)
+**Demo Script**: [docs/demo-script.md](docs/demo-script.md) | **Hackathon**: Government AI Hackathon (Mar 14–25, 2026)
 
 ![Dashboard](screenshots/01-dashboard.png)
 
