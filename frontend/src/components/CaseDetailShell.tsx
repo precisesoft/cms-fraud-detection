@@ -52,7 +52,10 @@ export function CaseDetailShell({
     return (
       <div className="space-y-4">
         {backLink}
-        <p className="text-sm text-slate-400">Loading...</p>
+        <div role="status" aria-label="Loading case details" className="flex items-center gap-3 text-sm text-slate-400">
+          <span aria-hidden="true" className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+          Loading...
+        </div>
       </div>
     );
   }
@@ -61,7 +64,7 @@ export function CaseDetailShell({
     return (
       <div className="space-y-4">
         {backLink}
-        <p className="text-sm text-slate-400">{notFoundLabel}</p>
+        <p className="text-sm text-slate-500">{notFoundLabel}</p>
       </div>
     );
   }
@@ -76,13 +79,13 @@ export function CaseDetailShell({
       action: "approve",
       label: "Approve",
       icon: <ClipboardCheck className="w-4 h-4" />,
-      colors: "bg-emerald-600 hover:bg-emerald-700 text-white",
+      colors: "bg-emerald-700 hover:bg-emerald-800 text-white",
     },
     {
       action: "flag",
       label: "Flag",
       icon: <AlertTriangle className="w-4 h-4" />,
-      colors: "bg-amber-500 hover:bg-amber-600 text-white",
+      colors: "bg-amber-700 hover:bg-amber-800 text-white",
     },
     {
       action: "deny",
@@ -141,7 +144,7 @@ export function CaseDetailShell({
             </button>
             <div className="flex items-center gap-6 px-6 py-4 bg-slate-50 rounded-xl border border-slate-100">
               <div className="text-center">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
+                <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">
                   Risk Score
                 </p>
                 <p
@@ -167,7 +170,7 @@ export function CaseDetailShell({
                 key={card.name}
                 className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm"
               >
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
+                <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2">
                   {card.name}
                 </p>
                 <p
@@ -197,7 +200,7 @@ export function CaseDetailShell({
 
           {/* Actions */}
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-800 mb-4">Take Action</h3>
+            <h2 className="font-bold text-slate-800 mb-4">Take Action</h2>
             <div className="flex flex-wrap gap-3">
               {actionButtons.map((btn) => (
                 <button
@@ -210,7 +213,7 @@ export function CaseDetailShell({
                   )}
                 >
                   {ctx.actionLoading === btn.action ? (
-                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    <span aria-hidden="true" className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                   ) : (
                     btn.icon
                   )}
@@ -224,7 +227,7 @@ export function CaseDetailShell({
         {/* Sidebar - Timeline */}
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-800 mb-4">Action History</h3>
+            <h2 className="font-bold text-slate-800 mb-4">Action History</h2>
             {ctx.actions.length > 0 ? (
               <Timeline events={ctx.actions} />
             ) : (

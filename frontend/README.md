@@ -67,9 +67,12 @@ frontend/src/
 The frontend connects to the FastAPI backend. In development, configure the API URL:
 
 ```bash
-# Default: http://localhost:8000
-VITE_API_URL=http://localhost:8000
+# Dev server proxy target
+VITE_API_BASE_URL=https://argus.precise-lab.com
 ```
+
+When running `npm run dev`, API requests stay same-origin and are proxied by Vite
+to `VITE_API_BASE_URL`. Production builds use `VITE_API_BASE_URL` directly.
 
 ## Docker
 

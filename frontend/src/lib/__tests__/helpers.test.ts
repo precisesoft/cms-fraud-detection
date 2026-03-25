@@ -90,27 +90,27 @@ describe("scoreColor", () => {
   });
 
   it("returns emerald for score at 30 (stable boundary)", () => {
-    expect(scoreColor(30)).toBe("text-emerald-600");
+    expect(scoreColor(30)).toBe("text-emerald-700");
   });
 
   it("returns amber for score at 31 (review boundary)", () => {
-    expect(scoreColor(31)).toBe("text-amber-600");
+    expect(scoreColor(31)).toBe("text-amber-700");
   });
 
   it("returns amber for score at 50 (review upper boundary)", () => {
-    expect(scoreColor(50)).toBe("text-amber-600");
+    expect(scoreColor(50)).toBe("text-amber-700");
   });
 
   it("returns rose for score at 51 (high risk boundary)", () => {
-    expect(scoreColor(51)).toBe("text-rose-600");
+    expect(scoreColor(51)).toBe("text-rose-700");
   });
 
   it("returns rose for score above 51", () => {
-    expect(scoreColor(100)).toBe("text-rose-600");
+    expect(scoreColor(100)).toBe("text-rose-700");
   });
 
   it("returns emerald for score below 31", () => {
-    expect(scoreColor(0)).toBe("text-emerald-600");
+    expect(scoreColor(0)).toBe("text-emerald-700");
   });
 });
 

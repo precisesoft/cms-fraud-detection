@@ -45,9 +45,9 @@ export function riskBandColor(band: RiskBand | null | undefined) {
 
 export function scoreColor(score: number | null | undefined): string {
   if (score == null) return "text-slate-500";
-  if (score >= 51) return "text-rose-600";
-  if (score >= 31) return "text-amber-600";
-  return "text-emerald-600";
+  if (score >= 51) return "text-rose-700";
+  if (score >= 31) return "text-amber-700";
+  return "text-emerald-700";
 }
 
 export function caseLabelColor(label: string | null | undefined) {

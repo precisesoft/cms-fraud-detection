@@ -134,8 +134,8 @@ export function Investigations() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <span className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+        <div role="status" aria-label="Loading investigations" className="flex items-center justify-center py-16">
+          <span aria-hidden="true" className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
         </div>
       ) : cases.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-dashed border-slate-200">

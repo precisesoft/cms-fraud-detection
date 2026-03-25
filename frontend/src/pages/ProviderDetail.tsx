@@ -176,7 +176,7 @@ export function ProviderDetail() {
             </button>
             <div className="flex items-center gap-8 px-8 py-4 bg-slate-50 rounded-xl border border-slate-100">
               <div className="text-center">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
+                <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">
                   Risk Score
                 </p>
                 <p
@@ -190,7 +190,7 @@ export function ProviderDetail() {
               </div>
               <div className="w-px h-12 bg-slate-200" />
               <div className="text-center">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
+                <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">
                   ML Anomaly
                 </p>
                 <p
@@ -204,7 +204,7 @@ export function ProviderDetail() {
               </div>
               <div className="w-px h-12 bg-slate-200" />
               <div className="text-center">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
+                <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">
                   Revoked
                 </p>
                 <p className="text-lg font-bold leading-none">
@@ -250,7 +250,7 @@ export function ProviderDetail() {
             key={card.name}
             className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm"
           >
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
+            <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2">
               {card.name}
             </p>
             <p
@@ -310,7 +310,7 @@ export function ProviderDetail() {
               </span>
             </div>
             <p className="text-2xl font-bold text-slate-900">{kpi.value}</p>
-            <p className="text-xs text-slate-400 mt-1 font-medium">{kpi.sub}</p>
+            <p className="text-xs text-slate-500 mt-1 font-medium">{kpi.sub}</p>
           </div>
         ))}
       </div>
@@ -319,7 +319,7 @@ export function ProviderDetail() {
         <div className="lg:col-span-2 space-y-6">
           {/* Profile Metrics */}
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-800 mb-6">Profile Metrics</h3>
+            <h2 className="font-bold text-slate-800 mb-6">Profile Metrics</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
                 ["Unique HCPCS", String(detail.unique_hcpcs_codes ?? 0)],
@@ -355,9 +355,9 @@ export function ProviderDetail() {
           {/* Signals */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-rose-500">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
+              <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
                 <AlertCircle className="w-4 h-4 text-rose-500" /> Risk Signals
-              </h3>
+              </h2>
               <div className="space-y-3">
                 {riskSignals.length ? (
                   riskSignals.map((signal) => (
@@ -369,7 +369,7 @@ export function ProviderDetail() {
                         <span className="text-xs font-bold text-rose-900">
                           {signal.name}
                         </span>
-                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 bg-rose-200 text-rose-700 rounded">
+                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 bg-rose-200 text-rose-800 rounded">
                           {signal.category}
                         </span>
                       </div>
@@ -377,7 +377,7 @@ export function ProviderDetail() {
                         {signal.description}
                       </p>
                       {signal.value != null && (
-                        <p className="text-xs text-rose-600 mt-1">
+                        <p className="text-xs text-rose-700 mt-1">
                           Value: {signal.value.toFixed(2)} (threshold:{" "}
                           {signal.threshold?.toFixed(2) ?? "—"})
                         </p>
@@ -393,10 +393,10 @@ export function ProviderDetail() {
             </div>
 
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-emerald-500">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
+              <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Legitimacy
                 Signals
-              </h3>
+              </h2>
               <div className="space-y-3">
                 {legitimacySignals.length ? (
                   legitimacySignals.map((signal) => (
@@ -408,7 +408,7 @@ export function ProviderDetail() {
                         <span className="text-xs font-bold text-emerald-900">
                           {signal.name}
                         </span>
-                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 bg-emerald-200 text-emerald-700 rounded">
+                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 bg-emerald-200 text-emerald-800 rounded">
                           {signal.category}
                         </span>
                       </div>
@@ -432,7 +432,7 @@ export function ProviderDetail() {
               Service Line Peer Comparison
             </h3>
             {peers.length ? (
-              <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <div className="overflow-x-auto rounded-xl border border-slate-200" tabIndex={0} aria-label="Peer comparison table">
                 <table className="min-w-full divide-y divide-slate-200 text-xs">
                   <thead className="bg-slate-50">
                     <tr>

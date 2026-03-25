@@ -67,7 +67,7 @@ export function Layout() {
                 <p className="text-sm font-medium text-slate-700">
                   {user.full_name ?? user.username}
                 </p>
-                <p className="text-xs text-slate-400 capitalize">{user.role}</p>
+                <p className="text-xs text-slate-600 capitalize">{user.role}</p>
               </div>
               <button
                 onClick={logout}
@@ -112,7 +112,7 @@ export function Layout() {
             isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
           )}
         >
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+          <nav aria-label="Primary" className="flex-1 overflow-y-auto p-4 space-y-1">
             {navigation.map((item) => (
               <NavLink
                 key={item.name}
@@ -172,8 +172,8 @@ export function Layout() {
           <div className="max-w-7xl mx-auto">
             <Suspense
               fallback={
-                <div className="flex items-center justify-center h-64">
-                  <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                <div role="status" aria-label="Loading page content" className="flex items-center justify-center h-64">
+                  <div aria-hidden="true" className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
                 </div>
               }
             >

@@ -51,62 +51,62 @@ export function Simulate() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">NPI</label>
+                <label htmlFor="simulate-npi" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">NPI</label>
                 <div className="relative">
                   <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input type="text" value={form.npi} onChange={(e) => setField('npi', e.target.value)} required className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-300 transition-all font-mono" placeholder="1234567890" />
+                  <input id="simulate-npi" type="text" value={form.npi} onChange={(e) => setField('npi', e.target.value)} required className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-300 transition-all font-mono" placeholder="1234567890" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">HCPCS Code</label>
+                <label htmlFor="simulate-hcpcs" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">HCPCS Code</label>
                 <div className="relative">
                   <Stethoscope className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input type="text" value={form.hcpcs_cd} onChange={(e) => setField('hcpcs_cd', e.target.value)} required className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-300 transition-all font-mono" placeholder="99213" />
+                  <input id="simulate-hcpcs" type="text" value={form.hcpcs_cd} onChange={(e) => setField('hcpcs_cd', e.target.value)} required className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-300 transition-all font-mono" placeholder="99213" />
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Submitted Charge ($)</label>
+                <label htmlFor="simulate-charge" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Submitted Charge ($)</label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input type="number" value={form.submitted_charge} onChange={(e) => setField('submitted_charge', Number(e.target.value))} required className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-300 transition-all" />
+                  <input id="simulate-charge" type="number" value={form.submitted_charge} onChange={(e) => setField('submitted_charge', Number(e.target.value))} required className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-300 transition-all" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Services</label>
+                <label htmlFor="simulate-services" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Services</label>
                 <div className="relative">
                   <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input type="number" value={form.num_services} onChange={(e) => setField('num_services', Number(e.target.value))} required className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-300 transition-all" />
+                  <input id="simulate-services" type="number" value={form.num_services} onChange={(e) => setField('num_services', Number(e.target.value))} required className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-300 transition-all" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Beneficiaries</label>
+                <label htmlFor="simulate-beneficiaries" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Beneficiaries</label>
                 <div className="relative">
                   <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input type="number" value={form.num_benes} onChange={(e) => setField('num_benes', Number(e.target.value))} required className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-300 transition-all" />
+                  <input id="simulate-beneficiaries" type="number" value={form.num_benes} onChange={(e) => setField('num_benes', Number(e.target.value))} required className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-300 transition-all" />
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Place of Service</label>
+              <label htmlFor="simulate-place-of-service" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Place of Service</label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input type="text" value={form.place_of_service ?? ''} onChange={(e) => setField('place_of_service', e.target.value)} className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-300 transition-all" placeholder="11" />
+                <input id="simulate-place-of-service" type="text" value={form.place_of_service ?? ''} onChange={(e) => setField('place_of_service', e.target.value)} className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-300 transition-all" placeholder="11" />
               </div>
             </div>
 
             <button type="submit" disabled={loading} className="w-full py-3 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 transition-all shadow-sm hover:shadow-md disabled:opacity-50 flex items-center justify-center gap-2">
-              {loading ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Zap className="w-4 h-4" />}
+              {loading ? <span aria-hidden="true" className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Zap aria-hidden="true" className="w-4 h-4" />}
               {loading ? 'Scoring...' : 'Run Simulation'}
             </button>
           </form>
 
           {error && (
-            <div className="mt-4 p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700 flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" /> {error}
+            <div role="alert" className="mt-4 p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700 flex items-start gap-2">
+              <AlertTriangle aria-hidden="true" className="w-4 h-4 mt-0.5 flex-shrink-0" /> {error}
             </div>
           )}
         </div>

@@ -70,59 +70,61 @@ export function RiskMap() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <span className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+        <div role="status" aria-label="Loading risk map" className="flex items-center justify-center py-20">
+          <span aria-hidden="true" className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Choropleth Map */}
           <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative">
-            <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-2">
+            <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-2">
               <Map className="w-4 h-4 text-indigo-500" /> State Risk Choropleth
-            </h3>
+            </h2>
 
-            <ComposableMap
-              projection="geoAlbersUsa"
-              projectionConfig={{ scale: 1000 }}
-              width={800}
-              height={500}
-              style={{ width: '100%', height: 'auto' }}
-            >
-              <Geographies geography={GEO_URL}>
-                {({ geographies }) =>
-                  geographies.map((geo) => {
-                    const fips = geo.id as string;
-                    const abbr = FIPS_TO_ABBR[fips];
-                    const entry = abbr ? byState.get(abbr) : undefined;
-                    return (
-                      <Geography
-                        key={geo.rsmKey}
-                        geography={geo}
-                        fill={fillForRisk(entry?.avg_risk_score)}
-                        stroke="#fff"
-                        strokeWidth={0.5}
-                        style={{
-                          default: { outline: 'none' },
-                          hover: { outline: 'none', filter: 'brightness(0.96)', cursor: 'default' },
-                          pressed: { outline: 'none' },
-                        }}
-                        onMouseEnter={(evt) => {
-                          if (entry) {
-                            setTooltip({ entry, x: evt.clientX, y: evt.clientY });
-                          }
-                        }}
-                        onMouseMove={(evt) => {
-                          if (entry) {
-                            setTooltip({ entry, x: evt.clientX, y: evt.clientY });
-                          }
-                        }}
-                        onMouseLeave={() => setTooltip(null)}
-                      />
-                    );
-                  })
-                }
-              </Geographies>
-            </ComposableMap>
+            <div role="img" aria-label="United States choropleth map showing average provider risk scores by state">
+              <ComposableMap
+                projection="geoAlbersUsa"
+                projectionConfig={{ scale: 1000 }}
+                width={800}
+                height={500}
+                style={{ width: '100%', height: 'auto' }}
+              >
+                <Geographies geography={GEO_URL}>
+                  {({ geographies }) =>
+                    geographies.map((geo) => {
+                      const fips = geo.id as string;
+                      const abbr = FIPS_TO_ABBR[fips];
+                      const entry = abbr ? byState.get(abbr) : undefined;
+                      return (
+                        <Geography
+                          key={geo.rsmKey}
+                          geography={geo}
+                          fill={fillForRisk(entry?.avg_risk_score)}
+                          stroke="#fff"
+                          strokeWidth={0.5}
+                          style={{
+                            default: { outline: 'none' },
+                            hover: { outline: 'none', filter: 'brightness(0.96)', cursor: 'default' },
+                            pressed: { outline: 'none' },
+                          }}
+                          onMouseEnter={(evt) => {
+                            if (entry) {
+                              setTooltip({ entry, x: evt.clientX, y: evt.clientY });
+                            }
+                          }}
+                          onMouseMove={(evt) => {
+                            if (entry) {
+                              setTooltip({ entry, x: evt.clientX, y: evt.clientY });
+                            }
+                          }}
+                          onMouseLeave={() => setTooltip(null)}
+                        />
+                      );
+                    })
+                  }
+                </Geographies>
+              </ComposableMap>
+            </div>
 
             {/* Floating Tooltip */}
             {tooltip && (
@@ -133,7 +135,7 @@ export function RiskMap() {
                 <p className="font-bold text-sm">{tooltip.entry.state}</p>
                 <div className="flex gap-4 mt-1.5 text-slate-300">
                   <span>Providers: <b className="text-white">{tooltip.entry.provider_count}</b></span>
-                  <span>Avg Risk: <b className={scoreColor(tooltip.entry.avg_risk_score)}>{tooltip.entry.avg_risk_score.toFixed(1)}</b></span>
+                  <span>Avg Risk: <b className="text-white">{tooltip.entry.avg_risk_score.toFixed(1)}</b></span>
                   <span>Flagged: <b className="text-rose-400">{tooltip.entry.flagged_count}</b></span>
                 </div>
               </div>
@@ -151,7 +153,7 @@ export function RiskMap() {
 
           {/* Rankings */}
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4"><TrendingUp className="w-4 h-4 text-rose-500" /> Highest Risk States</h3>
+            <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-4"><TrendingUp className="w-4 h-4 text-rose-500" /> Highest Risk States</h2>
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
               {sortedByRisk.slice(0, 20).map((entry, i) => (
                 <Link
@@ -160,9 +162,9 @@ export function RiskMap() {
                   className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-black text-slate-400 w-5">{i + 1}.</span>
+                    <span className="text-xs font-black text-slate-600 w-5">{i + 1}.</span>
                     <span className="text-sm font-bold text-slate-800">{entry.state}</span>
-                    <span className="text-xs text-slate-400">{entry.provider_count} providers</span>
+                    <span className="text-xs text-slate-600">{entry.provider_count} providers</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-slate-500">{entry.flagged_count} flagged</span>

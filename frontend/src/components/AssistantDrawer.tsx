@@ -270,10 +270,10 @@ export function AssistantDrawer({
                 ))}
 
                 {loading && (
-                  <div className="flex justify-start">
+                  <div role="status" aria-label="Assistant is generating a response" className="flex justify-start">
                     <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
                       <div className="flex items-center gap-2 text-sm text-slate-500">
-                        <div className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                        <div aria-hidden="true" className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
                         Thinking...
                       </div>
                     </div>
@@ -311,6 +311,7 @@ export function AssistantDrawer({
                 <div className="flex items-end gap-3">
                   <textarea
                     ref={textareaRef}
+                    aria-label={`Ask about this ${context.type}`}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => {
@@ -326,9 +327,10 @@ export function AssistantDrawer({
                   <button
                     onClick={() => void handleSend()}
                     disabled={loading}
+                    aria-label="Send message"
                     className="inline-flex h-12 items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
                   >
-                    <Send className="h-4 w-4" />
+                    <Send aria-hidden="true" className="h-4 w-4" />
                   </button>
                 </div>
               </div>

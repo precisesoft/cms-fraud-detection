@@ -28,3 +28,9 @@ npm-debug.log*
 
 # Test coverage
 coverage/
+
+# Temporary accessibility audit scripts and artefacts
+.tmp-*.mjs
+cookies.txt
+test-output.json
+test-text.txt

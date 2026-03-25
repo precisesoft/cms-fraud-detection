@@ -21,7 +21,9 @@ import {
 import { cn } from "../lib/utils";
 import { formatUSD } from "../lib/helpers";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+const API_BASE = import.meta.env.DEV
+  ? ""
+  : import.meta.env.VITE_API_BASE_URL ?? "";
 const GEO_URL = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
 
 /* ── Types ──────────────────────────────────────────────────── */

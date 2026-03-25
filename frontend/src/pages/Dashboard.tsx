@@ -19,7 +19,7 @@ export function Dashboard() {
   }, []);
 
   if (error) {
-    return <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-rose-700">{error}</div>;
+    return <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-rose-700">{error}</div>;
   }
 
   const kpis = [
@@ -63,7 +63,7 @@ export function Dashboard() {
       {/* Risk Distribution */}
       {stats?.risk_distribution && (
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-900 mb-4">Risk Distribution</h3>
+          <h2 className="font-bold text-slate-900 mb-4">Risk Distribution</h2>
           <div className="grid grid-cols-3 gap-4">
             {[
               { label: 'High Risk', value: stats.risk_distribution.high_risk, color: 'bg-rose-500' },
@@ -81,7 +81,7 @@ export function Dashboard() {
                   <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div className={cn('h-full rounded-full', band.color)} style={{ width: `${pct}%` }} />
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">{pct}%</p>
+                  <p className="text-xs text-slate-500 mt-1">{pct}%</p>
                 </div>
               );
             })}
@@ -93,7 +93,7 @@ export function Dashboard() {
         {/* Top Providers */}
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="font-bold text-slate-900">Top Flagged Providers</h3>
+            <h2 className="font-bold text-slate-900">Top Flagged Providers</h2>
             <Link to="/providers" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
               View All
             </Link>
@@ -125,7 +125,7 @@ export function Dashboard() {
         {/* Pending Cases */}
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="font-bold text-slate-900">Pending Review Cases</h3>
+            <h2 className="font-bold text-slate-900">Pending Review Cases</h2>
             <Link to="/investigations" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
               View All
             </Link>
