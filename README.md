@@ -1,107 +1,265 @@
 # Argus — CMS Proactive Program Integrity
 
-> Detecting anomalous provider behavior to prevent fraud, waste, and abuse before improper payments occur.
+> **91% of eventually-revoked providers detected from billing patterns alone** — before CMS acted on revocation.
 
-**Hackathon**: Government AI Hackathon — 10-day sprint (Mar 14–24, 2026)
-**Challenge**: Proactive Program Integrity (CMS)
-**Demo**: See [Demo Script](docs/demo-script.md) for walkthrough
-**Submission Deadline**: March 25, 2026 at 5:00 PM ET
+CMS loses an estimated **$60 billion annually** to improper payments across Medicare and Medicaid. Current detection is largely reactive — fraud is identified after payments are made, forcing a costly "pay-and-chase" cycle. Argus is a decision-support system that identifies anomalous provider billing patterns, surfaces evidence-backed risk cases, and provides explainable scores that human reviewers can act on **proactively, in real time**.
 
-### By the Numbers
+**Live App**: [argus.precise-lab.com](https://argus.precise-lab.com) | **Demo Script**: [docs/demo-script.md](docs/demo-script.md) | **Hackathon**: Government AI Hackathon (Mar 14–25, 2026)
 
-| Metric                    | Value                                                                         |
-| ------------------------- | ----------------------------------------------------------------------------- |
-| Revocation detection rate | **91%** from billing patterns alone                                           |
-| Explainable signals       | 13 (6 risk + 7 legitimacy)                                                    |
-| API endpoints             | 14                                                                            |
-| Frontend pages            | 12 interactive views                                                          |
-| Test coverage             | 99% backend, 98% frontend                                                     |
-| Issues delivered          | 181 issues, 162 PRs, 179 commits                                              |
-| CI/CD pipeline            | 8-stage unified (Gate → Security → Quality → Build → Scan → Release → Deploy) |
-| Infrastructure            | AWS EKS + Istio + ArgoCD (GitOps)                                             |
+![Dashboard](screenshots/01-dashboard.png)
 
-## Documentation
+---
 
-- [Problem statement](docs/problem-statement.md)
-- [Architecture (v3)](docs/architecture-v3.md)
-- [Demo script](docs/demo-script.md)
-- [Development process](docs/development-process.md)
-- [AI/OSS disclosure](docs/ai-oss-disclosure.md)
-- [Path to CMS pilot](docs/path-to-cms-pilot.md)
-- [Risk scoring methodology](docs/risk-scoring-methodology.md)
-- [Responsible AI considerations](docs/responsible-ai-considerations.md)
-- [Model card — Isolation Forest](docs/model-card-isolation-forest.md)
-- [User personas](docs/personas.md)
+## How It Works
 
-<details>
-<summary>Pre-sprint research (historical)</summary>
+```
+  19GB real CMS data          13 explainable signals           Evidence-backed cases
+ (4 public datasets)    ──>  (risk + legitimacy scoring)  ──>  for human investigators
+                              + ML anomaly detection            + AI-generated narratives
+```
 
-- [Hackathon kickoff brief](docs/research/hackathon-kickoff.md)
-- [Orientation meeting notes](docs/research/orientation-meeting-notes.md)
-- [Team kickoff brief](docs/research/team-kickoff-brief.md)
-- [Demo data research and graph strategy](docs/research/demo-data-research-plan.md)
-- [Open questions](docs/research/open-questions.md)
-- [Official source register](docs/research/source-register.md)
-- [Challenge research brief](docs/research/challenge-research.md)
-- [Public dataset catalog](docs/research/dataset-catalog.md)
+1. **Ingest** — 19GB of real, public Medicare data: 9.66M service lines across 10,282 providers from [data.cms.gov](https://data.cms.gov). No PHI. No synthetic data.
+2. **Score** — Every provider-service case receives two independent scores: a **risk score** (how anomalous vs. peers) and a **legitimacy score** (how many trust indicators exist). 13 named signals, each with a threshold, weight, and data-source citation. Plus an independent Isolation Forest anomaly score with per-provider feature importance.
+3. **Investigate** — Analysts review flagged cases with full signal breakdowns, peer comparison charts, evidence graphs, and AI-generated narratives. The system explains; the human decides.
 
-</details>
+---
 
-## Hackathon Envelope
+## Validated Results
 
-- Sprint: March 12–25, 2026 | Demo day: March 27, Reston, VA
-- Public datasets only, no PHI | AI usage disclosed | Explainability required
-- Deliverables: working demo, architecture diagrams, risk-scoring methodology, responsible AI considerations, 5-min "Path to CMS Pilot" briefing
+We didn't just build a scoring system — we validated it. We took all 335 revoked providers in our dataset, **removed the revocation flag**, and re-scored them using only behavioral signals.
 
-## Sprint Timeline
+| Metric                                    | Result    |
+| ----------------------------------------- | --------- |
+| Overall detection rate (revocation-blind) | **91.3%** |
+| Billing abuse cases                       | **94%**   |
+| Felony-related revocations                | **100%**  |
+| Non-revoked provider baseline flagging    | 51.4%     |
 
-| Phase                    | Due    | Status   | Key Deliverables                                       |
-| ------------------------ | ------ | -------- | ------------------------------------------------------ |
-| Phase 0: Project Spine   | Mar 14 | **Done** | Monorepo, CI/CD, Dockerfiles, branch protection        |
-| Phase 1: Data Foundation | Mar 18 | **Done** | 19GB ETL, 13K cases + 10K providers, Neo4j graph       |
-| Phase 2: Scoring + API   | Mar 20 | **Done** | Scoring engine, all REST endpoints, peer baselines     |
-| Phase 3: AI Signals      | Mar 22 | **Done** | Text-to-SQL, risk narratives, anomaly detection        |
-| Phase 4: User Interface  | Mar 24 | **Done** | Claims simulator, investigation workflow, chat sidebar |
-| Phase 4b: Live Monitor   | Mar 24 | **Done** | SSE real-time payment monitor, ML explainability UI    |
-| Phase 5: Ship            | Mar 25 | **Done** | Demo script, AI/OSS disclosure, judge access           |
+**Methodology**: The retrospective validation endpoint (`/api/validation`) removes the `revoked_provider` signal (worth 25 points) and re-scores all providers using only peer z-scores, enrollment status, and billing patterns. This proves the behavioral signals alone have real discriminative power — the system doesn't just flag providers because they're already revoked.
 
-**Demo Day**: March 27, 2026 — Reston, Virginia
+**Try it live**: [argus.precise-lab.com/api/validation](https://argus.precise-lab.com/api/validation)
 
-## Problem Statement
+---
 
-CMS loses an estimated $60B+ annually to improper payments across Medicare and Medicaid. Current detection is largely reactive — fraud is identified after payments are made. This project builds a decision-support system that identifies anomalous provider billing patterns, surfaces evidence-backed risk cases, and provides explainable scores that human reviewers can act on in real time, proactively.
+## What Makes This Different
 
-**Validated result:** In retrospective testing, our scoring system detected **91% of eventually-revoked providers from billing patterns alone** — before CMS acted on revocation.
+### Dual Scoring — Risk AND Legitimacy
 
-## Judge Resources
+Traditional fraud detection produces a single risk score. Argus computes **two independent scores** for every case. A provider with high volume (risk signal) who is enrolled, Medicare-participating, and peer-aligned on all other metrics (legitimacy signals) won't be flagged — the legitimacy score contextualizes the risk. This reduces false positives and ensures providers aren't flagged on a single anomalous metric.
 
-**Live App**: [argus.precise-lab.com](https://argus.precise-lab.com) | **Validation Endpoint**: [/api/validation](https://argus.precise-lab.com/api/validation)
+### Per-Provider ML Explainability
 
-| Deliverable                     | Document                                                                       |
-| ------------------------------- | ------------------------------------------------------------------------------ |
-| Risk Scoring Methodology        | [docs/risk-scoring-methodology.md](docs/risk-scoring-methodology.md)           |
-| Responsible AI Considerations   | [docs/responsible-ai-considerations.md](docs/responsible-ai-considerations.md) |
-| AI & Open Source Disclosure     | [docs/ai-oss-disclosure.md](docs/ai-oss-disclosure.md)                         |
-| Path to CMS Pilot (5-min brief) | [docs/path-to-cms-pilot.md](docs/path-to-cms-pilot.md)                         |
-| Demo Script (5-7 min)           | [docs/demo-script.md](docs/demo-script.md)                                     |
-| Isolation Forest Model Card     | [docs/model-card-isolation-forest.md](docs/model-card-isolation-forest.md)     |
-| Development Process             | [docs/development-process.md](docs/development-process.md)                     |
-| Architecture Diagrams           | [docs/diagrams/](docs/diagrams/)                                               |
+The Isolation Forest anomaly model provides per-provider feature importance via leave-one-out approximation — not a global average, but which specific features drive _this_ provider's anomaly score. Risk-increasing features shown in red, protective features in green, all computed in under 100ms.
 
-## Key Principles
+### Real-Time Scoring
 
-1. **Explainable Scoring** — Every risk score traces to specific signals with data provenance
-2. **Transparent Decision Logic** — Rule-based scoring with peer comparison, validated against revocation outcomes
-3. **AI-Assisted Investigation** — LLM-powered natural language queries, risk narratives, and chat interface for analysts
-4. **Cloud-Native Architecture** — EKS, ArgoCD, Terraform — designed for scale
-5. **Real-Time Scoring** — SSE-streamed live payment monitor scores claims in under 50ms
-6. **Mission-Ready** — Clear pathway from MVP to agency pilot
+Claims stream via Server-Sent Events, scored by the 13-signal engine in **under 50 milliseconds**. No batch jobs, no overnight processing — proactive detection as payments arrive.
+
+### Built-In Fairness Monitoring
+
+A dedicated `/api/fairness` endpoint computes flagging rate disparities across geography and specialty using statistical parity difference, disparate impact ratio (EEOC four-fifths rule), and outlier detection. Configurable threshold. No demographic variables are used in scoring.
+
+### AI-Assisted Investigation
+
+AWS Bedrock Claude powers three capabilities: **text-to-SQL** (analysts ask questions in plain English), **risk narratives** (structured signals summarized in plain language), and **chat** (conversational investigation). All AI output is advisory — the scoring engine is fully deterministic and AI-free.
+
+---
+
+## The Product
+
+### Dashboard — Aggregate Risk Overview
+
+![Dashboard](screenshots/dashboard-live.png)
+
+Total providers scored, risk distribution breakdown, geographic heatmap of state-level flagging patterns, and top-risk cases.
+
+### Live Payment Monitor — Real-Time Scoring
+
+![Live Monitor](screenshots/02-live-monitor-running.png)
+
+Claims stream across a US map with pulsing risk dots. Each claim scored in <50ms. Click a flagged claim to investigate.
+
+### Provider Detail — Signal Breakdown
+
+![Provider Detail](screenshots/05-provider-detail-loaded.png)
+
+Full signal decomposition: which signals fired, how many points each contributed, peer baseline comparisons, evidence graph, ML anomaly score with per-provider feature importance.
+
+### Claims Simulator — Pre-Payment Screening
+
+![Simulate](screenshots/03-simulate.png)
+
+Submit a hypothetical claim and watch the scoring engine extract signals, compute risk + legitimacy, and generate an AI narrative — simulating what pre-payment screening would look like.
+
+### Fairness Dashboard — Bias Monitoring
+
+![Fairness](screenshots/08-fairness.png)
+
+Statistical parity and disparate impact metrics across states and specialties. Outlier detection flags systemic bias.
+
+### Investigation Workflow — Case Management
+
+![Investigations](screenshots/11-investigations.png)
+
+Triaged case queue with approve/flag/deny/escalate actions, audit trail, and AI chat sidebar for natural-language data queries.
+
+---
+
+## Government Readiness
+
+Argus is designed to deploy into a government environment with minimal rework.
+
+| Capability                       | Status                                                                                                                                                                                                           |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **FedRAMP Authorization**        | AWS Bedrock is FedRAMP High authorized. GovCloud deployment path documented.                                                                                                                                     |
+| **Audit Trail**                  | Immutable `audit_log` captures every analyst action (approve, flag, deny, escalate) and every AI-generated SQL query with analyst ID, timestamp, and source IP.                                                  |
+| **RBAC**                         | JWT-backed role-based access control is live.                                                                                                                                                                    |
+| **Security Pipeline**            | 6 security tools run on every PR: gitleaks (secrets), bandit (SAST), pip-audit (Python CVEs), npm audit (JS CVEs), CycloneDX SBOMs, Trivy container scanning.                                                    |
+| **SBOMs**                        | CycloneDX Software Bill of Materials generated for both backend and frontend on every build.                                                                                                                     |
+| **No PHI Required**              | Works on public CMS data today. Connecting internal claims feeds is a data source change, not an architecture change.                                                                                            |
+| **Integration with CMS Systems** | Designed to complement FPS (Fraud Prevention System), not replace it. FPS-flagged NPIs become investigation triggers in Argus. Evidence packages can feed into UCM (Unified Case Management) for UPIC workflows. |
+| **Infrastructure as Code**       | Terraform-managed AWS resources with S3 state + DynamoDB locking. GitOps deployment via ArgoCD.                                                                                                                  |
+
+**The path from hackathon to CMS pilot is a data connection change, not a rebuild.** Full briefing: [Path to CMS Pilot](docs/path-to-cms-pilot.md)
+
+---
+
+## Engineering Rigor
+
+### 10-Day Sprint, Production-Grade Delivery
+
+This was built in a 10-day hackathon sprint (Mar 14–24, 2026) using an AI-assisted agile process with two AI agents and a human orchestrator.
+
+| Metric                   | Value                                                           |
+| ------------------------ | --------------------------------------------------------------- |
+| Issues tracked           | 181                                                             |
+| Pull requests merged     | 162                                                             |
+| Commits to main          | 179                                                             |
+| Epics completed          | 19                                                              |
+| Test coverage (backend)  | 99%                                                             |
+| Test coverage (frontend) | 98%                                                             |
+| CI/CD pipeline stages    | 8 (Gate → Security → Quality → Build → Scan → Release → Deploy) |
+| Daily scoreboards        | 9 published                                                     |
+| API endpoints            | 14 live                                                         |
+| Frontend pages           | 12 interactive views                                            |
+
+### Project Management Metrics
+
+The sprint was managed with full agile discipline — not "hackathon chaos."
+
+| Metric                     | Value                                                |
+| -------------------------- | ---------------------------------------------------- |
+| Story points delivered     | **480 SP** across 128 pointed issues                 |
+| Sprint velocity            | Day 1: 0% → Day 5: 80% → Day 7: 91% → Day 8: 97%     |
+| Backlog created Day 1      | 70 issues across 9 epics before any code was written |
+| Issues added mid-sprint    | 111 (scope grew 2.6x as complexity was discovered)   |
+| Avg PRs merged per day     | **16.2 PRs/day** over the sprint                     |
+| Avg issues closed per day  | **18.1 issues/day** over the sprint                  |
+| One issue = one PR         | Strict rule, zero exceptions. Clean git history.     |
+| Copilot agent contribution | 43 PRs (27%), ~50 SP, ~3,500+ lines                  |
+| Human contribution         | ~119 PRs (73%), ~430 SP, ~35,000+ lines              |
+
+**Sprint velocity by phase:**
+
+| Phase                        | Story Points | Issues  |
+| ---------------------------- | ------------ | ------- |
+| Phase 0: Spine / CI/CD       | 27 SP        | 13      |
+| Phase 1: Data Foundation     | 50 SP        | 12      |
+| Phase 2: Scoring + API       | 74 SP        | 18      |
+| Phase 3: AI Reasoning        | 85 SP        | 16      |
+| Phase 4: Frontend UI         | 138 SP       | 33      |
+| Phase 5: Ship / Infra / Docs | 96 SP        | 34      |
+| **Total**                    | **480 SP**   | **128** |
+
+Daily scoreboards published in `docs/agile/` tracked issues opened vs. closed, PRs merged, CI pass rate, blockers, and decisions — every day for 9 consecutive days.
+
+### Frameworks & Methodologies
+
+This project applies recognized software engineering frameworks — not ad hoc hackathon shortcuts.
+
+| Framework                              | Where Applied                                                                                                                                                                            |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agile Scrum**                        | Epic-driven sprint planning, daily scoreboards, velocity tracking, backlog grooming                                                                                                      |
+| **Fibonacci Story Points**             | 1/2/3/5/8/13 scale based on PR diff size, files touched, complexity, integration points                                                                                                  |
+| **Conventional Commits**               | Every commit follows `type(scope): description (#N)` — enforced by CI gate                                                                                                               |
+| **BASSPC Self-Review**                 | Karpathy-inspired review methodology (Bloat, Assumptions, Scope, Sycophancy, Post-cleanup, CLI/IO) applied to every PR before merge                                                      |
+| **GitOps**                             | ArgoCD watches `precise-manifests` repo as single source of truth for Kubernetes state                                                                                                   |
+| **Infrastructure as Code**             | Terraform with S3 state backend + DynamoDB locking. Plan on PR, apply on merge                                                                                                           |
+| **Mitchell et al. Model Card**         | Isolation Forest model documented per the [2019 model card framework](https://arxiv.org/abs/1810.03993)                                                                                  |
+| **EEOC Four-Fifths Rule**              | Disparate impact ratio in fairness monitoring maps to the 80% threshold used in employment discrimination analysis                                                                       |
+| **OWASP Top 10**                       | Security scanning (bandit SAST, gitleaks, pip-audit, npm audit) aligned with OWASP vulnerability categories                                                                              |
+| **CycloneDX SBOM**                     | Software Bill of Materials generated for both backend and frontend on every build — supply chain transparency                                                                            |
+| **SDLC with Branch Protection**        | Full CONTRIBUTING.md: branch → PR → CI green → review → squash merge → cleanup. No direct pushes to main.                                                                                |
+| **Dual-Label Issue Taxonomy**          | Phase labels (`phase:0-spine` through `phase:5-ship`) + track labels (`backend`, `frontend`, `data`, `ai`, `infra`, `docs`) + priority labels (`P0-critical`, `P1-important`, `P2-nice`) |
+| **Human-AI Collaborative Development** | Claude Code as agile orchestrator + GitHub Copilot SWE Agent as autonomous implementer + 10 specialized agent personas for role-based work                                               |
+
+### AI-Assisted Development Process
+
+Two AI agents collaborated under human orchestration:
+
+- **Claude Code** (orchestrator): Broke epics into issues, assigned work, reviewed every PR using BASSPC methodology, merged, and ran post-merge cleanup. Managed the full agile lifecycle.
+- **GitHub Copilot SWE Agent**: Picked up assigned issues, wrote code on branches, opened draft PRs. **43 PRs authored** (27% of all PRs). Cannot self-approve — all merges were human-reviewed.
+
+Strict discipline: one issue per PR, conventional commits, CI must pass before merge. Full process: [Development Process](docs/development-process.md)
+
+### 10 Copilot Agent Personas ([`.github/agents/`](.github/agents/))
+
+Each agent is a detailed instruction file that shapes the Copilot SWE Agent's behavior based on the type of work assigned. Every persona includes project context, architecture awareness, coding standards, testing requirements, and explicit "what NOT to do" constraints.
+
+| Agent                  | File                                                                    | Role                                                   | Key Capabilities                                                                                   |
+| ---------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| **Senior Developer**   | [`senior-developer.agent.md`](.github/agents/senior-developer.agent.md) | End-to-end feature implementation                      | Full backend + frontend architecture awareness, 11 API endpoints reference, testing standards      |
+| **AI Engineer**        | [`ai-engineer.agent.md`](.github/agents/ai-engineer.agent.md)           | LLM prompts, text-to-SQL, Bedrock integration          | 7 SQL guardrails, prompt engineering guidelines, model configuration, adversarial testing          |
+| **Data Scientist**     | [`data-scientist.agent.md`](.github/agents/data-scientist.agent.md)     | ML models, feature engineering, statistical validation | Isolation Forest, 63-column feature table, retrospective validation, polars-only data manipulation |
+| **Frontend Developer** | [`frontend-dev.agent.md`](.github/agents/frontend-dev.agent.md)         | Vite + React 19 SPA pages and components               | Full design system (colors, typography, spacing), 18 API integration points, component patterns    |
+| **Test Engineer**      | [`test-engineer.agent.md`](.github/agents/test-engineer.agent.md)       | Test coverage, edge cases, async endpoint tests        | pytest + pytest-asyncio, mock patterns, coverage thresholds                                        |
+| **Bug Fixer**          | [`bug-fixer.agent.md`](.github/agents/bug-fixer.agent.md)               | Minimal targeted fixes with regression tests           | Root cause analysis, smallest possible diff, regression prevention                                 |
+| **Security Auditor**   | [`security-auditor.agent.md`](.github/agents/security-auditor.agent.md) | OWASP checks, bandit/pip-audit findings                | SQL injection prevention, input validation, secret scanning                                        |
+| **Code Reviewer**      | [`code-reviewer.agent.md`](.github/agents/code-reviewer.agent.md)       | BASSPC review methodology on PRs                       | Bloat, Assumptions, Scope, Sycophancy, Post-cleanup, CLI/IO checks                                 |
+| **Docs Writer**        | [`docs-writer.agent.md`](.github/agents/docs-writer.agent.md)           | README, architecture docs, API docs                    | Technical writing standards, diagram references, judge deliverables                                |
+| **Technical PM**       | [`technical-pm.agent.md`](.github/agents/technical-pm.agent.md)         | Issue triage, epic breakdown, acceptance criteria      | Sprint planning, priority labels, story point estimation                                           |
+
+Each persona enforces project conventions: conventional commits, branch naming (`<type>/<N>-<desc>`), `Closes #N` in PR bodies, and full local CI verification before push.
+
+### CI/CD Pipeline
+
+Single unified workflow. Every PR runs through:
+
+```
+Gate (PR title) → Security (4 scanners) → Quality Backend (ruff + mypy + pytest 95%) → Quality Frontend (eslint + tsc + vitest 80%) → Build (Docker + SBOMs) → Scan (Trivy)
+```
+
+On merge: Release (ECR push with SHA tags) → Deploy (GitOps via ArgoCD to EKS).
+
+### GitOps Deployment
+
+```
+Push to main → Build images → Push to ECR → Update SHA tags in precise-manifests repo → ArgoCD auto-syncs to EKS
+```
+
+Two-repo separation: application code in `cms-fraud-detection`, Kubernetes manifests in `precise-manifests`. ArgoCD is the sole deployer.
+
+---
 
 ## Architecture
 
-> Full architecture specification: [docs/architecture-v3.md](docs/architecture-v3.md)
+> Full specification: [Architecture (v3)](docs/architecture-v3.md)
 
 ![System Architecture](docs/diagrams/01-system-architecture.png)
+
+### Tech Stack
+
+| Layer    | Technology                                                | Purpose                                      |
+| -------- | --------------------------------------------------------- | -------------------------------------------- |
+| Frontend | Vite + React 19 + TypeScript + Tailwind v4 + Recharts     | 12-page SPA with responsive design           |
+| Backend  | Python 3.12 + FastAPI + psycopg (async)                   | 14 REST endpoints, auto-documented           |
+| Database | PostgreSQL 16 (EKS StatefulSet, 20Gi gp3)                 | Relational queries, provider/case data       |
+| Graph    | Neo4j 5 Community (EKS StatefulSet, 10Gi gp3)             | Evidence relationships, network analysis     |
+| Scoring  | Deterministic rule engine (13 signals) + Isolation Forest | Auditable, reproducible, peer comparison     |
+| AI       | AWS Bedrock (Claude Sonnet 4.6 + Haiku 4.5)               | Narratives, text-to-SQL, chat — FedRAMP High |
+| ETL      | DuckDB + Polars                                           | 19GB data pipeline                           |
+| CI/CD    | GitHub Actions → ECR → ArgoCD                             | 8-stage unified pipeline with GitOps         |
+| Infra    | AWS EKS + Istio + Terraform                               | Container-native, horizontally scalable      |
 
 ### Data Flow
 
@@ -130,6 +288,8 @@ CMS loses an estimated $60B+ annually to improper payments across Medicare and M
 | [Fairness Evaluation](docs/diagrams/09-fairness-evaluation.png)         | Responsible AI metrics pipeline      |
 | [Path to CMS Pilot](docs/diagrams/10-path-to-pilot.png)                 | MVP → Pilot → Production roadmap     |
 
+---
+
 ## Public Data Sources
 
 All datasets are publicly available and currently downloadable. No PHI is used.
@@ -150,19 +310,44 @@ All datasets are publicly available and currently downloadable. No PHI is used.
 | [OIG LEIE Exclusion List](https://oig.hhs.gov/exclusions/)                                                                                                           | oig.hhs.gov  | Potential enrichment; weak NPI join coverage |
 | [Medicare Part D Prescribers](https://data.cms.gov/provider-summary-by-type-of-service/medicare-part-d-prescribers/medicare-part-d-prescribers-by-provider-and-drug) | data.cms.gov | Potential prescribing-pattern enrichment     |
 
-## Tech Stack
+---
 
-| Layer    | Technology                                                                        | Status |
-| -------- | --------------------------------------------------------------------------------- | ------ |
-| Frontend | Vite + React 19 + TypeScript + Tailwind v4 + Recharts                             | Live   |
-| Backend  | Python 3.12 + FastAPI + psycopg                                                   | Live   |
-| Database | PostgreSQL 16 (EKS StatefulSet)                                                   | Live   |
-| Graph    | Neo4j 5 Community (EKS StatefulSet)                                               | Live   |
-| Scoring  | Rule-based taxonomy (13 signals) + Isolation Forest + per-provider explainability | Live   |
-| AI       | AWS Bedrock (Claude) — narratives, text-to-SQL, chat                              | Live   |
-| ETL      | DuckDB + Polars                                                                   | Done   |
-| CI/CD    | GitHub Actions (unified pipeline) + ECR + ArgoCD                                  | Live   |
-| Infra    | AWS EKS + Istio + Terraform                                                       | Live   |
+## Documentation
+
+### Judge Deliverables
+
+| Deliverable                     | Document                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------ |
+| Risk Scoring Methodology        | [docs/risk-scoring-methodology.md](docs/risk-scoring-methodology.md)           |
+| Responsible AI Considerations   | [docs/responsible-ai-considerations.md](docs/responsible-ai-considerations.md) |
+| AI & Open Source Disclosure     | [docs/ai-oss-disclosure.md](docs/ai-oss-disclosure.md)                         |
+| Path to CMS Pilot (5-min brief) | [docs/path-to-cms-pilot.md](docs/path-to-cms-pilot.md)                         |
+| Demo Script (5-7 min)           | [docs/demo-script.md](docs/demo-script.md)                                     |
+| Isolation Forest Model Card     | [docs/model-card-isolation-forest.md](docs/model-card-isolation-forest.md)     |
+| Development Process             | [docs/development-process.md](docs/development-process.md)                     |
+| Architecture (v3)               | [docs/architecture-v3.md](docs/architecture-v3.md)                             |
+| Architecture Diagrams           | [docs/diagrams/](docs/diagrams/)                                               |
+| User Personas                   | [docs/personas.md](docs/personas.md)                                           |
+
+### Additional Documentation
+
+- [Problem statement](docs/problem-statement.md)
+
+<details>
+<summary>Pre-sprint research (historical)</summary>
+
+- [Hackathon kickoff brief](docs/research/hackathon-kickoff.md)
+- [Orientation meeting notes](docs/research/orientation-meeting-notes.md)
+- [Team kickoff brief](docs/research/team-kickoff-brief.md)
+- [Demo data research and graph strategy](docs/research/demo-data-research-plan.md)
+- [Open questions](docs/research/open-questions.md)
+- [Official source register](docs/research/source-register.md)
+- [Challenge research brief](docs/research/challenge-research.md)
+- [Public dataset catalog](docs/research/dataset-catalog.md)
+
+</details>
+
+---
 
 ## Quickstart
 
@@ -189,7 +374,25 @@ npm test                               # Run frontend tests
 # API docs: http://localhost:8000/docs
 ```
 
+---
+
+## Sprint Timeline
+
+| Phase                    | Due    | Status   | Key Deliverables                                       |
+| ------------------------ | ------ | -------- | ------------------------------------------------------ |
+| Phase 0: Project Spine   | Mar 14 | **Done** | Monorepo, CI/CD, Dockerfiles, branch protection        |
+| Phase 1: Data Foundation | Mar 18 | **Done** | 19GB ETL, 13K cases + 10K providers, Neo4j graph       |
+| Phase 2: Scoring + API   | Mar 20 | **Done** | Scoring engine, all REST endpoints, peer baselines     |
+| Phase 3: AI Signals      | Mar 22 | **Done** | Text-to-SQL, risk narratives, anomaly detection        |
+| Phase 4: User Interface  | Mar 24 | **Done** | Claims simulator, investigation workflow, chat sidebar |
+| Phase 4b: Live Monitor   | Mar 24 | **Done** | SSE real-time payment monitor, ML explainability UI    |
+| Phase 5: Ship            | Mar 25 | **Done** | Demo script, AI/OSS disclosure, judge access           |
+
+**Demo Day**: March 27, 2026 — Reston, Virginia
+
+---
+
 ## Team
 
-- Arun Sanna — Lead, AI/ML Engineering, Architecture
-- Bibek Poudel — Backend, Infrastructure
+- **Arun Sanna** — Lead, AI/ML Engineering, Architecture
+- **Bibek Poudel** — Backend, Infrastructure
