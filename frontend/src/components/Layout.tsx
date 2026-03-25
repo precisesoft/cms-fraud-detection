@@ -54,6 +54,7 @@ export function Layout() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
             <input
               type="text"
+              aria-label="Search providers, NPI, claims"
               placeholder="Search providers, NPI, claims..."
               className="pl-10 pr-4 py-1.5 bg-slate-100 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 rounded-md text-sm w-80 transition-all outline-none"
             />
@@ -67,7 +68,7 @@ export function Layout() {
                 <p className="text-sm font-medium text-slate-700">
                   {user.full_name ?? user.username}
                 </p>
-                <p className="text-xs text-slate-400 capitalize">{user.role}</p>
+                <p className="text-xs text-slate-600 capitalize">{user.role}</p>
               </div>
               <button
                 onClick={logout}
@@ -106,13 +107,12 @@ export function Layout() {
         {/* Sidebar Navigation */}
         <aside
           id="sidebar-nav"
-          role="navigation"
           className={cn(
             "fixed inset-y-14 left-0 z-40 w-64 bg-white border-r border-slate-200 flex flex-col transform transition-transform duration-200 ease-in-out md:translate-x-0",
             isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
           )}
         >
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+          <nav aria-label="Primary" className="flex-1 overflow-y-auto p-4 space-y-1">
             {navigation.map((item) => (
               <NavLink
                 key={item.name}
@@ -146,10 +146,10 @@ export function Layout() {
 
           <div className="shrink-0 p-4 border-t border-slate-100 space-y-3">
             <div className="bg-slate-50 rounded-lg p-3">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+              <label htmlFor="current-program" className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
                 Current Program
-              </p>
-              <select className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-indigo-500 outline-none">
+              </label>
+              <select id="current-program" className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-indigo-500 outline-none">
                 <option>Medicare Part B</option>
                 <option>Medicaid State - NY</option>
                 <option>Medicaid State - CA</option>
@@ -172,8 +172,8 @@ export function Layout() {
           <div className="max-w-7xl mx-auto">
             <Suspense
               fallback={
-                <div className="flex items-center justify-center h-64">
-                  <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                <div role="status" aria-label="Loading page content" className="flex items-center justify-center h-64">
+                  <div aria-hidden="true" className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
                 </div>
               }
             >

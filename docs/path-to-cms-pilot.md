@@ -96,7 +96,7 @@ This directly addresses a documented gap. GAO Report GAO-17-710 criticized FPS f
 - **Multi-program** — Extend to Medicaid, Part D, DME
 - **ML enhancement** — Supervised models trained on reviewer feedback data
 - **System integration** — Connect to UPIC systems, MPI, existing CMS tools
-- **508 compliance** — Full accessibility audit
+- **508 compliance** — Full accessibility audit ([see Accessibility Report](./accessibility-report.md))
 
 ## The Ask (30 seconds)
 

@@ -1,9 +1,12 @@
 /**
  * API client for the CMS Fraud Detection backend.
- * All calls target the deployed backend at VITE_API_BASE_URL.
+ * In local development, requests stay same-origin and flow through Vite's proxy.
+ * In production builds, calls target VITE_API_BASE_URL.
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+const API_BASE = import.meta.env.DEV
+  ? ""
+  : import.meta.env.VITE_API_BASE_URL ?? "";
 
 /* ── Auth token management ─────────────────────────────────── */
 

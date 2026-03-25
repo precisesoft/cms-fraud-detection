@@ -42,7 +42,7 @@ export function Login() {
           className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4"
         >
           {error && (
-            <div className="bg-red-50 text-red-700 text-sm px-3 py-2 rounded-lg border border-red-200">
+            <div role="alert" className="bg-red-50 text-red-700 text-sm px-3 py-2 rounded-lg border border-red-200">
               {error}
             </div>
           )}
