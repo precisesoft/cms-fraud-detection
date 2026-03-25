@@ -10,12 +10,12 @@ from psycopg.rows import dict_row
 
 from src.api.deps import get_db
 from src.api.schemas import CohortFairness, FairnessReport, RevocationImpact
-from src.scoring.taxonomy import REVOKED_PROVIDER
+from src.scoring.taxonomy import HIGH_RISK_SCORE_THRESHOLD, REVOKED_PROVIDER
 
 router = APIRouter(prefix="/fairness", tags=["fairness"])
 
 # Providers at or above this risk score are "flagged"
-DEFAULT_THRESHOLD = 51
+DEFAULT_THRESHOLD = HIGH_RISK_SCORE_THRESHOLD
 
 # Derived from scoring taxonomy — single source of truth.
 # The blind approximation only adjusts risk (not legitimacy) because the

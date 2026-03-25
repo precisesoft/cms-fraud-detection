@@ -12,7 +12,11 @@ from src.data.project_graph import (
     SOURCES,
     _risk_band,
 )
-from src.scoring.taxonomy import ALL_SIGNALS
+from src.scoring.taxonomy import (
+    ALL_SIGNALS,
+    HIGH_RISK_SCORE_THRESHOLD,
+    STABLE_RISK_CEILING,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -90,17 +94,17 @@ class TestRiskBand:
     def test_zero_is_stable(self):
         assert _risk_band(0) == "stable"
 
-    def test_30_is_stable(self):
-        assert _risk_band(30) == "stable"
+    def test_at_ceiling_is_stable(self):
+        assert _risk_band(STABLE_RISK_CEILING) == "stable"
 
-    def test_31_is_review(self):
-        assert _risk_band(31) == "review"
+    def test_above_ceiling_is_review(self):
+        assert _risk_band(STABLE_RISK_CEILING + 1) == "review"
 
-    def test_50_is_review(self):
-        assert _risk_band(50) == "review"
+    def test_below_high_risk_is_review(self):
+        assert _risk_band(HIGH_RISK_SCORE_THRESHOLD - 1) == "review"
 
-    def test_51_is_high_risk(self):
-        assert _risk_band(51) == "high_risk"
+    def test_at_high_risk_threshold(self):
+        assert _risk_band(HIGH_RISK_SCORE_THRESHOLD) == "high_risk"
 
     def test_100_is_high_risk(self):
         assert _risk_band(100) == "high_risk"
@@ -328,7 +332,7 @@ class TestProjectProviders:
 
         rows = [
             ("A", "Name", "MD", "CA", "City", "90001", None, False, False),  # stable
-            ("B", "Name", "MD", "CA", "City", "90001", 40, True, False),  # review
+            ("B", "Name", "MD", "CA", "City", "90001", 20, True, False),  # review
             ("C", "Name", "MD", "CA", "City", "90001", 75, True, True),  # high_risk
         ]
         mock_cur = _make_async_cursor_iter(rows)

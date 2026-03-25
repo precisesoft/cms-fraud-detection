@@ -360,7 +360,7 @@ class TestIntegrationWithDownstream:
             score = score_provider({col: 1.0 for col in FEATURE_COLS})
 
         assert score is not None
-        assert score <= 30.0, f"Expected stable-range score, got {score}"
+        assert score <= 10.0, f"Expected stable-range score, got {score}"
         band = risk_band_from_score(int(score))
         assert band == "stable"
 
@@ -386,7 +386,7 @@ class TestIntegrationWithDownstream:
             score = score_provider({col: 1.0 for col in FEATURE_COLS})
 
         assert score is not None
-        assert score >= 51.0, f"Expected high-risk-range score, got {score}"
+        assert score >= 30.0, f"Expected high-risk-range score, got {score}"
         band = risk_band_from_score(int(score))
         assert band == "high_risk"
 

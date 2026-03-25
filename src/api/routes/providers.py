@@ -24,6 +24,7 @@ from src.api.schemas import (
     risk_band_from_score,
 )
 from src.models.anomaly_scorer import score_provider
+from src.scoring.taxonomy import HIGH_RISK_SCORE_THRESHOLD, STABLE_RISK_CEILING
 
 router = APIRouter(prefix="/providers", tags=["providers"])
 
@@ -55,11 +56,13 @@ async def list_providers(
         params.append(provider_type)
     if risk_band:
         if risk_band == RiskBand.high_risk:
-            conditions.append("max_seed_risk_score >= 51")
+            conditions.append(f"max_seed_risk_score >= {HIGH_RISK_SCORE_THRESHOLD}")
         elif risk_band == RiskBand.review:
-            conditions.append("max_seed_risk_score BETWEEN 31 AND 50")
+            lo = STABLE_RISK_CEILING + 1
+            hi = HIGH_RISK_SCORE_THRESHOLD - 1
+            conditions.append(f"max_seed_risk_score BETWEEN {lo} AND {hi}")
         else:
-            conditions.append("max_seed_risk_score <= 30")
+            conditions.append(f"max_seed_risk_score <= {STABLE_RISK_CEILING}")
     if q:
         conditions.append("(provider_name ILIKE %s OR npi ILIKE %s)")
         pattern = f"%{q}%"

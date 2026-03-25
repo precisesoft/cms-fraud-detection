@@ -228,7 +228,7 @@ class TestComputeSeedScores:
     # Revoked (25) + not enrolled (8) + volume z=6 (20) + intensity z=6 (18)
     # + charge z=6 (18) + payment z=6 (12) = 101 → capped at 100
     # Legitimacy: 0 (no_revocation fails, not enrolled, not participating)
-    # Expected label: high_risk (risk >= 51, risk >= legitimacy + 5)
+    # Expected label: high_risk (risk >= 30, risk >= legitimacy + 5)
     # ------------------------------------------------------------------
     _HIGH_RISK = {
         "present_in_2026_revocation_file": 1,

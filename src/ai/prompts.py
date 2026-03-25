@@ -6,11 +6,19 @@ used by the text-to-SQL engine, plus the risk narrative prompt.
 
 from __future__ import annotations
 
+from src.scoring.taxonomy import HIGH_RISK_SCORE_THRESHOLD, STABLE_RISK_CEILING
+
+_RISK_BAND_NOTE = (
+    f"- Risk scores: 0-{STABLE_RISK_CEILING} = stable, "
+    f"{STABLE_RISK_CEILING + 1}-{HIGH_RISK_SCORE_THRESHOLD - 1}"
+    f" = review, {HIGH_RISK_SCORE_THRESHOLD}+ = high_risk"
+)
+
 # ---------------------------------------------------------------------------
 # Database schema description for text-to-SQL
 # ---------------------------------------------------------------------------
 
-SCHEMA_DESCRIPTION = """\
+SCHEMA_DESCRIPTION = f"""\
 You are an expert SQL analyst for CMS Medicare fraud detection. You translate
 natural language questions into PostgreSQL queries against the following schema.
 
@@ -106,7 +114,7 @@ Key columns:
 - The only timestamped data is case_actions (analyst investigation actions).
 
 ## Important Notes
-- Risk scores: 0-30 = stable, 31-50 = review, 51+ = high_risk
+{_RISK_BAND_NOTE}
 - Z-scores: values > 2.0 indicate statistical outliers vs peers
 - submitted_to_allowed_ratio > 1.0 means provider charges more than Medicare allows
 - service_hhi close to 1.0 means highly concentrated billing (few codes)
@@ -122,7 +130,7 @@ FEW_SHOT_EXAMPLES = [
         "question": "How many providers are high risk?",
         "sql": (
             "SELECT count(*) AS high_risk_count "
-            "FROM provider_features WHERE max_seed_risk_score > 50;"
+            f"FROM provider_features WHERE max_seed_risk_score >= {HIGH_RISK_SCORE_THRESHOLD};"
         ),
     },
     {
@@ -145,7 +153,7 @@ FEW_SHOT_EXAMPLES = [
         "question": "Which states have the most high-risk providers?",
         "sql": (
             "SELECT state, count(*) AS high_risk_count "
-            "FROM provider_features WHERE max_seed_risk_score > 50 "
+            f"FROM provider_features WHERE max_seed_risk_score >= {HIGH_RISK_SCORE_THRESHOLD} "
             "GROUP BY state ORDER BY high_risk_count DESC LIMIT 10;"
         ),
     },
@@ -179,8 +187,8 @@ FEW_SHOT_EXAMPLES = [
         "question": "How many providers are in each risk band?",
         "sql": (
             "SELECT CASE "
-            "WHEN max_seed_risk_score > 50 THEN 'high_risk' "
-            "WHEN max_seed_risk_score > 30 THEN 'review' "
+            f"WHEN max_seed_risk_score >= {HIGH_RISK_SCORE_THRESHOLD} THEN 'high_risk' "
+            f"WHEN max_seed_risk_score > {STABLE_RISK_CEILING} THEN 'review' "
             "ELSE 'stable' END AS risk_band, "
             "count(*) AS provider_count "
             "FROM provider_features GROUP BY risk_band ORDER BY provider_count DESC;"
@@ -265,7 +273,7 @@ FEW_SHOT_EXAMPLES = [
             "pf.max_seed_risk_score, pf.total_estimated_payment "
             "FROM provider_features pf "
             "WHERE pf.state = (SELECT state FROM provider_features WHERE npi = '1821387911') "
-            "AND pf.max_seed_risk_score > 50 AND pf.npi != '1821387911' "
+            f"AND pf.max_seed_risk_score >= {HIGH_RISK_SCORE_THRESHOLD} AND pf.npi != '1821387911' "
             "ORDER BY pf.max_seed_risk_score DESC LIMIT 10;"
         ),
     },

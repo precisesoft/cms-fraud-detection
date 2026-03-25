@@ -67,7 +67,7 @@ Proactive CMS provider fraud detection with explainable AI. Identifies anomalous
 - **Git:** conventional commits, present tense, `(#N)` suffix
 - **Python:** 3.12+, ruff for lint/format, mypy for types
 - **Naming:** kebab-case dirs/files, PascalCase classes, snake_case functions
-- **Risk bands:** 0-30 stable, 31-50 review, 51+ high_risk
+- **Risk bands:** 0-25 stable, 26-50 review, 51+ high_risk
 - **DB creds:** dev default `cms:cms_local_dev` — never use in production
 
 ## Completed Epics

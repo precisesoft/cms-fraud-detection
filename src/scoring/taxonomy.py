@@ -21,7 +21,7 @@ MIN_PEER_COUNT = 25
 HIGH_RISK_SCORE_THRESHOLD = 51
 HIGH_RISK_GAP = 5  # risk must exceed legitimacy by this much
 STABLE_LEGITIMACY_THRESHOLD = 70
-STABLE_RISK_CEILING = 30
+STABLE_RISK_CEILING = 25
 
 
 # ---------------------------------------------------------------------------

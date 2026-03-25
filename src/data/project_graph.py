@@ -157,11 +157,13 @@ SET rel.value = r.value, rel.points = r.points
 
 
 def _risk_band(score: int | None) -> str:
+    from src.scoring.taxonomy import HIGH_RISK_SCORE_THRESHOLD, STABLE_RISK_CEILING
+
     if score is None:
         return "stable"
-    if score >= 51:
+    if score >= HIGH_RISK_SCORE_THRESHOLD:
         return "high_risk"
-    if score >= 31:
+    if score > STABLE_RISK_CEILING:
         return "review"
     return "stable"
 

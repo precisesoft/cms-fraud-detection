@@ -396,6 +396,11 @@ async def _seed_synthetic_background(run_id: int, db_url: str) -> None:
     """Async wrapper for the seed-synthetic background task."""
     try:
         await asyncio.to_thread(_seed_synthetic_sync, run_id, db_url)
+        # Invalidate dashboard cache after successful data load
+        from src.api.routes.dashboard import invalidate_dashboard_cache
+
+        invalidate_dashboard_cache()
+        logger.info("[%s] Dashboard cache invalidated after seed", run_id)
     except Exception as exc:
         logger.exception("[%s] Seed synthetic pipeline failed", run_id)
         try:
