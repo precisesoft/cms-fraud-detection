@@ -11,6 +11,7 @@ import type { PendingCase, RiskBand } from "../lib/api";
 import { StatusBadge } from "../components/StatusBadge";
 import { cn } from "../lib/utils";
 import { formatUSD, formatCaseId } from "../lib/helpers";
+import { InfoButton } from "../components/InfoButton";
 
 type SortDir = "desc" | "asc";
 
@@ -88,7 +89,10 @@ export function Investigations() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Investigations</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-slate-900">Investigations</h1>
+            <InfoButton title="Pending Investigations">High-risk cases requiring analyst review, sorted by risk score. Each card shows the provider, HCPCS code, service volume, submitted charge, and risk band. Click any case to open the full investigation with AI-generated narrative, risk signals, peer comparisons, and action buttons.</InfoButton>
+          </div>
           <p className="mt-1 text-sm text-slate-500">
             Pending high-risk cases requiring analyst review and action.
           </p>

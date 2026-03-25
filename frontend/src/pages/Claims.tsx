@@ -12,6 +12,7 @@ import type { Claim, PaginationMeta, RiskBand } from "../lib/api";
 import { StatusBadge } from "../components/StatusBadge";
 import { cn } from "../lib/utils";
 import { formatUSD, scoreColor, formatCaseId } from "../lib/helpers";
+import { InfoButton } from "../components/InfoButton";
 
 export function Claims() {
   const [claims, setClaims] = React.useState<Claim[]>([]);
@@ -110,6 +111,10 @@ export function Claims() {
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-slate-200 flex items-center gap-2">
+          <h2 className="font-semibold text-slate-700 text-sm">Claims Table</h2>
+          <InfoButton title="Claims Table">Service-level claim records where each row represents one provider–HCPCS code combination. Shows total services rendered, beneficiary count, average submitted charges, and the computed risk score from peer comparison. Use filters to narrow by NPI, risk label, or minimum score.</InfoButton>
+        </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50/80">

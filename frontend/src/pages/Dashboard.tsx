@@ -7,6 +7,7 @@ import type { DashboardStats, PendingCase } from '../lib/api';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatCompactUSD, scoreColor, providerDisplayName } from '../lib/helpers';
 import { FreshnessBanner } from '../components/FreshnessBanner';
+import { InfoButton } from '../components/InfoButton';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -26,8 +27,8 @@ export function Dashboard() {
   const kpis = [
     { name: 'Total Providers', value: stats?.total_providers ?? 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', href: '/providers' },
     { name: 'Total Cases', value: stats?.total_cases ?? 0, icon: FileText, color: 'text-amber-600', bg: 'bg-amber-50', href: '/claims' },
-    { name: 'High Risk', value: stats?.risk_distribution?.high_risk ?? 0, icon: ShieldAlert, color: 'text-rose-600', bg: 'bg-rose-50', href: '/providers?risk_band=high_risk' },
-    { name: 'Pending Review', value: pending.length, icon: AlertTriangle, color: 'text-indigo-600', bg: 'bg-indigo-50', href: '/investigations' },
+    { name: 'High Risk', value: stats?.risk_distribution?.high_risk ?? 0, icon: ShieldAlert, color: 'text-rose-600', bg: 'bg-rose-50', href: '/providers?risk_band=high_risk', info: "Providers whose maximum service-line risk score is 51 or above. These are flagged for priority investigation based on peer-comparison z-scores, billing anomalies, and enrollment signals." },
+    { name: 'Pending Review', value: pending.length, icon: AlertTriangle, color: 'text-indigo-600', bg: 'bg-indigo-50', href: '/investigations', info: "Cases that scored above the review threshold but have not yet been investigated by an analyst. Each case represents a provider–service code combination with elevated risk signals." },
   ];
 
   return (
@@ -57,7 +58,14 @@ export function Dashboard() {
               <ArrowRight className="w-4 h-4 text-slate-300" />
             </div>
             <div className="mt-4">
-              <p className="text-sm font-medium text-slate-500">{kpi.name}</p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-slate-500">{kpi.name}</span>
+                {kpi.info && (
+                  <span onClick={(e) => e.stopPropagation()}>
+                    <InfoButton title={kpi.name}>{kpi.info}</InfoButton>
+                  </span>
+                )}
+              </div>
               <p className="text-2xl font-bold text-slate-900 mt-1">{kpi.value.toLocaleString()}</p>
             </div>
           </button>
@@ -67,7 +75,10 @@ export function Dashboard() {
       {/* Risk Distribution */}
       {stats?.risk_distribution && (
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <h2 className="font-bold text-slate-900 mb-4">Risk Distribution</h2>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="font-bold text-slate-900">Risk Distribution</h2>
+            <InfoButton title="Risk Distribution">Shows how all scored providers fall into three risk bands. High Risk (score ≥ 51): priority investigation. Review (31–50): warrants closer look. Stable (≤ 30): normal billing patterns. Scores come from deterministic rules applied to peer-comparison z-scores.</InfoButton>
+          </div>
           <div className="grid grid-cols-3 gap-4">
             {[
               { label: 'High Risk', value: stats.risk_distribution.high_risk, color: 'bg-rose-500' },
@@ -97,7 +108,10 @@ export function Dashboard() {
         {/* Top Providers */}
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="font-bold text-slate-900">Top Flagged Providers</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="font-bold text-slate-900">Top Flagged Providers</h2>
+              <InfoButton title="Top Flagged Providers">Providers ranked by their highest service-line risk score. Shows specialty, state, total estimated Medicare payment, and risk band. Click any provider to view their full risk profile and scoring breakdown.</InfoButton>
+            </div>
             <Link to="/providers" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
               View All
             </Link>
@@ -129,7 +143,10 @@ export function Dashboard() {
         {/* Pending Cases */}
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="font-bold text-slate-900">Pending Review Cases</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="font-bold text-slate-900">Pending Review Cases</h2>
+              <InfoButton title="Pending Review Cases">Cases awaiting analyst review, ordered by risk score. Each entry shows the HCPCS service code, description, average submitted charge, and computed risk score. Click to open the full investigation view.</InfoButton>
+            </div>
             <Link to="/investigations" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
               View All
             </Link>
