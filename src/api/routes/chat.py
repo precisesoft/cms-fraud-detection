@@ -19,6 +19,7 @@ from src.api.auth import get_current_user
 from src.api.deps import get_db, get_readonly_db
 from src.api.routes.audit import write_audit_entry
 from src.api.schemas import AuditEventType, ChatRequest, ChatResponse, UserResponse
+from src.scoring.taxonomy import HIGH_RISK_SCORE_THRESHOLD, STABLE_RISK_CEILING
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,9 @@ async def _build_provider_context(
         f"Revoked (2026): {'Yes' if pf.get('revoked_2026') else 'No'}",
         "",
         "Scores:",
-        f"  Max Risk Score: {risk} (0-30 stable, 31-50 review, 51+ high_risk)",
+        f"  Max Risk Score: {risk} (0-{STABLE_RISK_CEILING} stable, "
+        f"{STABLE_RISK_CEILING + 1}-{HIGH_RISK_SCORE_THRESHOLD - 1} review, "
+        f"{HIGH_RISK_SCORE_THRESHOLD}+ high_risk)",
         f"  Avg Risk Score: {pf.get('avg_seed_risk_score', 'N/A')}",
         f"  High-Risk Service Lines: {n_high} of {n_lines}",
         "",

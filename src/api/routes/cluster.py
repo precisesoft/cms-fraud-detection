@@ -12,7 +12,7 @@ from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 
 from src.api.deps import get_db
-from src.api.schemas import ClusterMember, FraudClusterResponse, RiskBand
+from src.api.schemas import ClusterMember, FraudClusterResponse, RiskBand, risk_band_from_score
 
 router = APIRouter(prefix="/cluster", tags=["cluster"])
 
@@ -68,13 +68,7 @@ LIMIT 26
 
 
 def _risk_band(score: int | None) -> RiskBand | None:
-    if score is None:
-        return None
-    if score >= 51:
-        return RiskBand.high_risk
-    if score >= 31:
-        return RiskBand.review
-    return RiskBand.stable
+    return risk_band_from_score(score)
 
 
 # ---------------------------------------------------------------------------

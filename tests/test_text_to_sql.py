@@ -141,7 +141,7 @@ def test_valid_select_still_passes():
 def test_valid_cte_with_aggregation():
     sql = (
         "WITH risk AS (SELECT state, count(*) AS n FROM provider_features "
-        "WHERE max_seed_risk_score > 50 GROUP BY state) "
+        "WHERE max_seed_risk_score >= 30 GROUP BY state) "
         "SELECT * FROM risk ORDER BY n DESC LIMIT 10"
     )
     assert validate_sql(sql) == sql
@@ -213,7 +213,7 @@ def test_valid_select_with_subquery():
 def test_valid_case_expression():
     """CASE WHEN should not be confused with forbidden keywords."""
     sql = (
-        "SELECT npi, CASE WHEN max_seed_risk_score >= 51 THEN 'high' "
+        "SELECT npi, CASE WHEN max_seed_risk_score >= 30 THEN 'high' "
         "ELSE 'low' END AS band FROM provider_features LIMIT 10"
     )
     assert validate_sql(sql) == sql

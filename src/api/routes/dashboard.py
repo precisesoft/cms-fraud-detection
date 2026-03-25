@@ -1,13 +1,13 @@
 """Dashboard endpoints — aggregate stats and geographic heatmap.
 
 Performance: Both endpoints use a TTL cache (60 s) so repeated loads
-within the same minute hit memory instead of the database.  Dashboard
-queries also run concurrently via ``asyncio.gather``.
+within the same minute hit memory instead of the database.  Queries
+run sequentially on the single connection (psycopg async connections
+cannot multiplex concurrent cursors).
 """
 
 from __future__ import annotations
 
-import asyncio
 import time
 
 from fastapi import APIRouter, Depends, Response
@@ -23,6 +23,7 @@ from src.api.schemas import (
     RiskDistribution,
     risk_band_from_score,
 )
+from src.scoring.taxonomy import HIGH_RISK_SCORE_THRESHOLD, STABLE_RISK_CEILING
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -58,11 +59,19 @@ SELECT count(*)::int AS total_providers,
 FROM provider_features
 """
 
-_DISTRIBUTION_SQL = """
+_REVIEW_LO = STABLE_RISK_CEILING + 1
+_REVIEW_HI = HIGH_RISK_SCORE_THRESHOLD - 1
+
+_DISTRIBUTION_SQL = f"""
 SELECT
-  count(*) FILTER (WHERE max_seed_risk_score >= 51)::int AS high_risk,
-  count(*) FILTER (WHERE max_seed_risk_score BETWEEN 31 AND 50)::int AS review,
-  count(*) FILTER (WHERE max_seed_risk_score <= 30 OR max_seed_risk_score IS NULL)::int AS stable
+  count(*) FILTER (WHERE max_seed_risk_score >= {HIGH_RISK_SCORE_THRESHOLD})::int
+    AS high_risk,
+  count(*) FILTER (WHERE max_seed_risk_score BETWEEN {_REVIEW_LO} AND {_REVIEW_HI})::int
+    AS review,
+  count(*) FILTER (
+    WHERE max_seed_risk_score <= {STABLE_RISK_CEILING}
+       OR max_seed_risk_score IS NULL
+  )::int AS stable
 FROM provider_features
 """
 
@@ -107,12 +116,11 @@ async def get_dashboard(
         response.headers["Cache-Control"] = f"public, max-age={_CACHE_TTL}"
         return _dashboard_cache
 
-    # Run the three queries concurrently
-    counts, dist, top_rows = await asyncio.gather(
-        _fetch_counts(conn),
-        _fetch_distribution(conn),
-        _fetch_top(conn),
-    )
+    # Run queries sequentially — psycopg async connections cannot
+    # multiplex concurrent cursors on a single connection.
+    counts = await _fetch_counts(conn)
+    dist = await _fetch_distribution(conn)
+    top_rows = await _fetch_top(conn)
 
     total_providers = counts.get("total_providers", 0)
     total_cases = counts.get("total_cases", 0)
@@ -149,11 +157,14 @@ async def get_dashboard(
 # GET /dashboard/heatmap — state-level risk map
 # ---------------------------------------------------------------------------
 
-_HEATMAP_SQL = """
+_HEATMAP_SQL = f"""
 SELECT state,
        count(*)::int AS provider_count,
-       round(avg(max_seed_risk_score)::numeric, 1)::float AS avg_risk_score,
-       count(*) FILTER (WHERE max_seed_risk_score >= 51)::int AS flagged_count
+       round(avg(max_seed_risk_score)::numeric, 1)::float
+           AS avg_risk_score,
+       count(*) FILTER (
+           WHERE max_seed_risk_score >= {HIGH_RISK_SCORE_THRESHOLD}
+       )::int AS flagged_count
 FROM provider_features
 WHERE state IS NOT NULL
 GROUP BY state

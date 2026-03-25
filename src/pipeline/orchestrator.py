@@ -801,6 +801,9 @@ async def recalibrate(run_id: int, db_url: str = DATABASE_URL) -> PipelineResult
     loop is not blocked.  Progress is recorded in ``pipeline_runs`` after
     each stage, enabling real-time frontend polling.
 
+    After a successful run the in-memory dashboard cache is invalidated so
+    the next ``GET /api/dashboard`` returns freshly computed aggregates.
+
     Args:
         run_id: An existing ``pipeline_runs.id`` (must already be ``status='running'``).
         db_url: Postgres connection string.
@@ -814,6 +817,17 @@ async def recalibrate(run_id: int, db_url: str = DATABASE_URL) -> PipelineResult
     except Exception as exc:
         logger.exception("[%s] Unexpected orchestrator error", run_id)
         result = PipelineResult(run_id=run_id, status="failed", error=str(exc))
+
+    # Invalidate the dashboard cache so the next request picks up fresh data
+    if result.status == "completed":
+        try:
+            from src.api.routes.dashboard import invalidate_dashboard_cache
+
+            invalidate_dashboard_cache()
+            logger.info("[%s] Dashboard cache invalidated", run_id)
+        except Exception:
+            logger.debug("[%s] Dashboard cache invalidation skipped (not in API process)", run_id)
+
     logger.info("[%s] Pipeline finished: %s", run_id, result.status)
     return result
 

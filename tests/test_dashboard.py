@@ -51,8 +51,8 @@ HEATMAP_ROWS = [
     {"state": "TX", "provider_count": 100, "avg_risk_score": 35.1, "flagged_count": 10},
 ]
 
-# The dashboard now runs three queries via asyncio.gather, each opening its
-# own cursor.  We track which SQL was issued and return the right fixture.
+# The dashboard runs three queries sequentially, each opening its own
+# cursor.  We track which SQL was issued and return the right fixture.
 
 _SQL_FIXTURES: dict[str, dict | list[dict]] = {
     "count(*)::int AS total_providers": COUNTS_ROW,

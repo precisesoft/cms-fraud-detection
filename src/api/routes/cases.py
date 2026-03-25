@@ -24,6 +24,7 @@ from src.api.schemas import (
     CaseActionsListResponse,
     UserResponse,
 )
+from src.scoring.taxonomy import HIGH_RISK_SCORE_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +126,22 @@ async def list_pending(
     limit: int = 50,
     conn: AsyncConnection = Depends(get_db),
 ) -> list[dict]:
-    """Get high-risk cases that have no action yet (analyst inbox)."""
+    """Get high-risk cases that have no action yet (analyst inbox).
+
+    Falls back to returning all high-risk cases if the ``case_actions``
+    table has not been created yet (migration 001 not applied).
+    """
+    try:
+        return await _pending_with_actions(conn, limit)
+    except Exception:
+        # Rollback the failed transaction before retrying with the fallback
+        await conn.rollback()
+        logger.warning("case_actions table missing — returning unfiltered high-risk cases")
+        return await _pending_fallback(conn, limit)
+
+
+async def _pending_with_actions(conn: AsyncConnection, limit: int) -> list[dict]:
+    """Return high-risk cases excluding those already acted on."""
     async with conn.cursor() as cur:
         await cur.execute(
             """
@@ -141,11 +157,34 @@ async def list_pending(
                 ORDER BY case_id, created_at DESC
             ) latest ON latest.case_id = psc.case_id
             WHERE latest.case_id IS NULL
-              AND psc.seed_risk_score >= 51
+              AND psc.seed_risk_score >= %s
             ORDER BY psc.seed_risk_score DESC
             LIMIT %s
             """,
-            (limit,),
+            (HIGH_RISK_SCORE_THRESHOLD, limit),
+        )
+        cols = [desc.name for desc in cur.description] if cur.description else []
+        rows = await cur.fetchall()
+
+    return [dict(zip(cols, row)) for row in rows]
+
+
+async def _pending_fallback(conn: AsyncConnection, limit: int) -> list[dict]:
+    """Return high-risk cases without filtering by actions (table missing)."""
+    async with conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT case_id, npi,
+                   provider_last_org_name,
+                   hcpcs_cd, hcpcs_desc,
+                   seed_risk_score, seed_case_label,
+                   avg_submitted_charge, tot_srvcs
+            FROM provider_service_cases
+            WHERE seed_risk_score >= %s
+            ORDER BY seed_risk_score DESC
+            LIMIT %s
+            """,
+            (HIGH_RISK_SCORE_THRESHOLD, limit),
         )
         cols = [desc.name for desc in cur.description] if cur.description else []
         rows = await cur.fetchall()

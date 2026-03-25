@@ -98,30 +98,30 @@ class TestLabelCase:
         assert label_case(risk_score=60, legitimacy_score=40) == CaseLabel.high_risk
 
     def test_high_risk_requires_gap(self):
-        # risk >= 50 but gap < 5 → review, not high_risk
-        assert label_case(risk_score=52, legitimacy_score=50) == CaseLabel.review
+        # risk >= 30 but gap < 5 → review, not high_risk
+        assert label_case(risk_score=32, legitimacy_score=30) == CaseLabel.review
 
     def test_stable(self):
-        assert label_case(risk_score=10, legitimacy_score=80) == CaseLabel.stable
+        assert label_case(risk_score=5, legitimacy_score=80) == CaseLabel.stable
 
     def test_stable_requires_low_risk(self):
-        # legitimacy >= 70 but risk >= 30 → review
-        assert label_case(risk_score=35, legitimacy_score=75) == CaseLabel.review
+        # legitimacy >= 70 but risk >= 10 (STABLE_RISK_CEILING) → review
+        assert label_case(risk_score=15, legitimacy_score=75) == CaseLabel.review
 
     def test_review_is_default(self):
-        assert label_case(risk_score=40, legitimacy_score=40) == CaseLabel.review
+        assert label_case(risk_score=20, legitimacy_score=20) == CaseLabel.review
 
     def test_edge_high_risk_boundary(self):
-        # risk=51, gap=6 → high_risk (threshold is >= 51)
-        assert label_case(risk_score=51, legitimacy_score=45) == CaseLabel.high_risk
+        # risk=30, gap=6 → high_risk (threshold is >= 30)
+        assert label_case(risk_score=30, legitimacy_score=24) == CaseLabel.high_risk
 
     def test_edge_below_high_risk_boundary(self):
-        # risk=50 is below threshold → review
-        assert label_case(risk_score=50, legitimacy_score=45) == CaseLabel.review
+        # risk=29 is below threshold → review
+        assert label_case(risk_score=29, legitimacy_score=20) == CaseLabel.review
 
     def test_edge_stable_boundary(self):
-        # legitimacy=70, risk=29 → stable
-        assert label_case(risk_score=29, legitimacy_score=70) == CaseLabel.stable
+        # legitimacy=70, risk=9 → stable (risk < STABLE_RISK_CEILING=10)
+        assert label_case(risk_score=9, legitimacy_score=70) == CaseLabel.stable
 
 
 class TestMaxScores:

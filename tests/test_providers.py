@@ -267,7 +267,7 @@ class TestListProviders:
 
     async def test_risk_band_computed(self):
         """risk_band is not in DB — it should be computed from max_seed_risk_score."""
-        row = _summary_row({"max_seed_risk_score": 35})
+        row = _summary_row({"max_seed_risk_score": 20})
         app = _make_app([row])
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -297,8 +297,8 @@ class TestListProviders:
         assert resp.status_code == 200
 
     async def test_risk_band_filter_stable(self):
-        """risk_band=stable should add the <= 30 condition (lines 56-57)."""
-        row = _summary_row({"max_seed_risk_score": 15})
+        """risk_band=stable should add the <= STABLE_RISK_CEILING condition."""
+        row = _summary_row({"max_seed_risk_score": 5})
         app = _make_app([row])
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -352,7 +352,7 @@ class TestGetProvider:
         assert "not found" in resp.json()["detail"].lower()
 
     async def test_detail_risk_band_stable(self):
-        row = {**SAMPLE_ROW, "max_seed_risk_score": 15}
+        row = {**SAMPLE_ROW, "max_seed_risk_score": 8}
         app = _make_app([row], detail=True)
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"

@@ -13,6 +13,7 @@ from psycopg.rows import dict_row
 
 from src.api.deps import get_db
 from src.api.schemas import NetworkNeighbor, NetworkRiskResponse
+from src.scoring.taxonomy import HIGH_RISK_SCORE_THRESHOLD
 
 router = APIRouter(prefix="/network", tags=["network"])
 
@@ -49,9 +50,11 @@ ORDER BY max_seed_risk_score DESC
 LIMIT 10
 """
 
-_ZIP_RISK_STATS_SQL = """
+_ZIP_RISK_STATS_SQL = f"""
 SELECT count(*) AS total_in_zip,
-       count(*) FILTER (WHERE max_seed_risk_score >= 51) AS high_risk_in_zip,
+       count(*) FILTER (
+           WHERE max_seed_risk_score >= {HIGH_RISK_SCORE_THRESHOLD}
+       ) AS high_risk_in_zip,
        count(*) FILTER (WHERE revoked_2026 = 1) AS revoked_in_zip,
        avg(max_seed_risk_score) AS avg_risk_in_zip
 FROM provider_features

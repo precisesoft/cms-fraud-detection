@@ -258,14 +258,14 @@ class TestClusterEndpoint:
     async def test_risk_band_assignment(self):
         rows = [
             {**CLUSTER_ROWS[0], "risk_score": 55},  # high_risk
-            {**CLUSTER_ROWS[1], "npi": "7777777777", "risk_score": 35},  # review
+            {**CLUSTER_ROWS[1], "npi": "7777777777", "risk_score": 20},  # review
             {
                 "npi": "6666666666",
                 "provider_name": "Good Clinic",
                 "provider_type": "Family Medicine",
                 "state": "FL",
                 "zip5": "33101",
-                "risk_score": 20,
+                "risk_score": 5,
                 "revoked": 0,
                 "link_type": "SAME_ZIP",
                 "hops": 1,
