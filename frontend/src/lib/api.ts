@@ -653,6 +653,28 @@ export function getValidation() {
   return request<ValidationReport>("/api/validation");
 }
 
+/* ── Ingest status ─────────────────────────────────────────── */
+
+export interface IngestStatus {
+  sources: Array<{
+    type: string;
+    version: string;
+    uploaded_at: string;
+    row_count: number;
+  }>;
+  last_recalibration: {
+    run_id: number;
+    completed_at: string;
+    providers_scored: number;
+    status: string;
+  } | null;
+  providers_in_system: number;
+}
+
+export function getIngestStatus() {
+  return request<IngestStatus>("/api/ingest/status");
+}
+
 /* ── Auth ──────────────────────────────────────────────────── */
 
 export interface AuthUser {
