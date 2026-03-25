@@ -183,7 +183,7 @@ export function Analytics() {
   };
 
   return (
-    <div className="flex flex-col h-full min-h-0 animate-in fade-in duration-500">
+    <div className="flex min-h-[calc(100vh-9rem)] flex-col animate-in fade-in duration-500">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Analytics</h1>
@@ -194,148 +194,151 @@ export function Analytics() {
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-6 pb-4">
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full">
-            <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mb-4">
-              <MessageSquareMore className="w-8 h-8 text-indigo-400" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-800 mb-2">
-              Ask anything about the data
-            </h3>
-            <p className="text-sm text-slate-500 mb-6 text-center max-w-md">
-              I can query the database for you. Try one of these:
-            </p>
-            <div className="flex flex-wrap gap-2 justify-center max-w-2xl">
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => handleSend(s)}
-                  className="px-4 py-2 bg-white border border-slate-200 text-sm text-slate-700 font-medium rounded-xl hover:border-indigo-300 hover:bg-indigo-50/50 transition-all"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={cn("max-w-3xl", msg.role === "user" ? "ml-auto" : "")}
-          >
-            {msg.role === "user" ? (
-              <div className="bg-indigo-600 text-white px-5 py-3 rounded-2xl rounded-tr-md text-sm font-medium">
-                {msg.content}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="bg-white px-5 py-4 rounded-2xl rounded-tl-md border border-slate-200 shadow-sm">
-                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
-                    {msg.content}
-                  </p>
+      <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="space-y-6">
+            {messages.length === 0 && (
+              <div className="flex min-h-[24rem] flex-col items-center justify-center px-4 py-8 text-center">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50">
+                  <MessageSquareMore className="w-8 h-8 text-indigo-400" />
                 </div>
-
-                {msg.response?.sql && (
-                  <div className="bg-slate-900 text-slate-200 p-4 rounded-xl text-xs font-mono overflow-x-auto">
-                    <div className="flex items-center gap-2 text-indigo-400 mb-2">
-                      <Database className="w-3.5 h-3.5" /> SQL Query (
-                      {msg.response.duration_ms}ms)
-                    </div>
-                    <pre>{msg.response.sql}</pre>
-                  </div>
-                )}
-
-                {msg.response?.chart_spec && (
-                  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                      <BarChart3 className="w-3.5 h-3.5" />{" "}
-                      {msg.response.chart_spec.title}
-                    </p>
-                    <ChartRenderer spec={msg.response.chart_spec} />
-                  </div>
-                )}
-
-                {msg.response && msg.response.rows.length > 0 && (
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500">
-                      <Table className="w-3.5 h-3.5" /> {msg.response.row_count}{" "}
-                      rows
-                    </div>
-                    <div className="overflow-x-auto max-h-64">
-                      <table className="min-w-full divide-y divide-slate-200 text-xs">
-                        <thead className="bg-slate-50/80 sticky top-0">
-                          <tr>
-                            {msg.response.columns.map((col) => (
-                              <th
-                                scope="col"
-                                key={col}
-                                className="px-4 py-2 text-left font-bold text-slate-500 uppercase tracking-wider"
-                              >
-                                {col}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {msg.response.rows.slice(0, 50).map((row, ri) => (
-                            <tr key={ri} className="hover:bg-slate-50/60">
-                              {msg.response!.columns.map((col) => (
-                                <td
-                                  key={col}
-                                  className="px-4 py-2 text-slate-700"
-                                >
-                                  {String(row[col] ?? "")}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
+                <h3 className="mb-2 text-lg font-bold text-slate-800">
+                  Ask anything about the data
+                </h3>
+                <p className="mb-6 max-w-md text-sm text-slate-500">
+                  I can query the database for you. Try one of these:
+                </p>
+                <div className="flex max-w-2xl flex-wrap justify-center gap-2">
+                  {SUGGESTIONS.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => handleSend(s)}
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-all hover:border-indigo-300 hover:bg-indigo-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
-          </div>
-        ))}
 
-        {loading && (
-          <div className="flex items-center gap-2 text-sm text-slate-400">
-            <span className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
-            Thinking...
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={cn("max-w-3xl", msg.role === "user" ? "ml-auto" : "")}
+              >
+                {msg.role === "user" ? (
+                  <div className="rounded-2xl rounded-tr-md bg-indigo-600 px-5 py-3 text-sm font-medium text-white">
+                    {msg.content}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="rounded-2xl rounded-tl-md border border-slate-200 bg-white px-5 py-4 shadow-sm">
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                        {msg.content}
+                      </p>
+                    </div>
 
-      {/* Input */}
-      <div className="border-t border-slate-200 pt-4">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSend();
-          }}
-          className="flex items-center gap-3"
-        >
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask a question about the data..."
-            disabled={loading}
-            className="flex-1 px-5 py-3 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-300 transition-all disabled:opacity-50"
-          />
-          <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            className="p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+                    {msg.response?.sql && (
+                      <div className="overflow-x-auto rounded-xl bg-slate-900 p-4 text-xs font-mono text-slate-200">
+                        <div className="mb-2 flex items-center gap-2 text-indigo-400">
+                          <Database className="w-3.5 h-3.5" /> SQL Query (
+                          {msg.response.duration_ms}ms)
+                        </div>
+                        <pre>{msg.response.sql}</pre>
+                      </div>
+                    )}
+
+                    {msg.response?.chart_spec && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500">
+                          <BarChart3 className="w-3.5 h-3.5" />
+                          {msg.response.chart_spec.title}
+                        </p>
+                        <ChartRenderer spec={msg.response.chart_spec} />
+                      </div>
+                    )}
+
+                    {msg.response && msg.response.rows.length > 0 && (
+                      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                        <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2 text-xs font-bold text-slate-500">
+                          <Table className="w-3.5 h-3.5" /> {msg.response.row_count} rows
+                        </div>
+                        <div className="max-h-64 overflow-x-auto">
+                          <table className="min-w-full divide-y divide-slate-200 text-xs">
+                            <thead className="sticky top-0 bg-slate-50/80">
+                              <tr>
+                                {msg.response.columns.map((col) => (
+                                  <th
+                                    scope="col"
+                                    key={col}
+                                    className="px-4 py-2 text-left font-bold text-slate-500 uppercase tracking-wider"
+                                  >
+                                    {col}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {msg.response.rows.slice(0, 50).map((row, ri) => (
+                                <tr key={ri} className="hover:bg-slate-50/60">
+                                  {msg.response.columns.map((col) => (
+                                    <td
+                                      key={col}
+                                      className="px-4 py-2 text-slate-700"
+                                    >
+                                      {String(row[col] ?? "")}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {loading && (
+              <div className="flex items-center gap-2 text-sm text-slate-400">
+                <span className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                Thinking...
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        </div>
+
+        <div className="border-t border-slate-200 bg-white p-4 sm:p-5">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSend();
+            }}
+            className="flex items-center gap-3"
           >
-            <Send className="w-4 h-4" />
-          </button>
-        </form>
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask a question about the data..."
+              aria-label="Ask a question about the data"
+              disabled={loading}
+              className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm transition-all focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+            />
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              aria-label="Send analytics question"
+              className="rounded-xl bg-indigo-600 p-3 text-white shadow-sm transition-all hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
