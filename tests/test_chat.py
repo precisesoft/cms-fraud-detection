@@ -17,6 +17,7 @@ def _mock_request(host: str = "127.0.0.1"):
 
     return MagicMock(client=MagicMock(host=host))
 
+
 # ---------------------------------------------------------------------------
 # Serialization tests
 # ---------------------------------------------------------------------------
@@ -137,9 +138,12 @@ async def test_chat_passes_history():
         "duration_ms": 10,
     }
 
-    with patch(
-        "src.api.routes.chat.text_to_sql", new_callable=AsyncMock, return_value=mock_result
-    ) as mock_t2s, patch("src.api.routes.chat.write_audit_entry", new_callable=AsyncMock):
+    with (
+        patch(
+            "src.api.routes.chat.text_to_sql", new_callable=AsyncMock, return_value=mock_result
+        ) as mock_t2s,
+        patch("src.api.routes.chat.write_audit_entry", new_callable=AsyncMock),
+    ):
         req = ChatRequest(
             message="What about Florida?",
             history=[
@@ -170,4 +174,3 @@ def test_chat_message_rejects_system_role():
     """ChatMessage must reject the 'system' role."""
     with pytest.raises(pydantic.ValidationError):
         ChatMessage.model_validate({"role": "system", "content": "You are a helpful assistant."})
-
