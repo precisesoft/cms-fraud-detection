@@ -222,8 +222,9 @@ class Claim(BaseModel):
     seed_risk_score: int | None = None
     seed_legitimacy_score: int | None = None
     seed_case_label: str | None = None
-    seed_risk_reasons: str | None = None
-    seed_legitimacy_reasons: str | None = None
+    seed_risk_reasons: list | str | None = None
+    seed_legitimacy_reasons: list | str | None = None
+    source_provenance: dict | str | None = None
 
 
 class ClaimListResponse(BaseModel):
