@@ -174,12 +174,8 @@ class TestRunRecalibrateSyncStageCompletion:
             patch("src.pipeline.etl.run_stage_peer_baselines") as mock_peers,
             patch("src.pipeline.etl.run_stage_zscores") as mock_z,
             patch("src.pipeline.etl.run_stage_seed_scoring") as mock_seed,
-            patch(
-                "src.pipeline.build_features.build_provider_features_from_db"
-            ) as mock_features,
-            patch(
-                "src.pipeline.build_features.upsert_provider_features"
-            ) as mock_upsert,
+            patch("src.pipeline.build_features.build_provider_features_from_db") as mock_features,
+            patch("src.pipeline.build_features.upsert_provider_features") as mock_upsert,
             patch("src.pipeline.orchestrator._bulk_ml_scoring") as mock_ml,
         ):
             # Wire conn
@@ -201,9 +197,7 @@ class TestRunRecalibrateSyncStageCompletion:
             import polars as pl
 
             mock_features.return_value = pl.DataFrame({"npi": ["1234567890"]})
-            mock_upsert.return_value = MagicMock(
-                rows_inserted=1, rows_updated=0, rows_unchanged=0
-            )
+            mock_upsert.return_value = MagicMock(rows_inserted=1, rows_updated=0, rows_unchanged=0)
             mock_ml.return_value = {
                 "providers_scored": 1,
                 "observations_scored": 5,
@@ -250,12 +244,8 @@ class TestRunRecalibrateSyncStageCompletion:
             patch("src.pipeline.etl.run_stage_peer_baselines") as mock_peers,
             patch("src.pipeline.etl.run_stage_zscores") as mock_z,
             patch("src.pipeline.etl.run_stage_seed_scoring") as mock_seed,
-            patch(
-                "src.pipeline.build_features.build_provider_features_from_db"
-            ) as mock_features,
-            patch(
-                "src.pipeline.build_features.upsert_provider_features"
-            ) as mock_upsert,
+            patch("src.pipeline.build_features.build_provider_features_from_db") as mock_features,
+            patch("src.pipeline.build_features.upsert_provider_features") as mock_upsert,
             patch("src.pipeline.orchestrator._bulk_ml_scoring") as mock_ml,
         ):
             conn = _make_sync_conn()
@@ -277,9 +267,7 @@ class TestRunRecalibrateSyncStageCompletion:
             import polars as pl
 
             mock_features.return_value = pl.DataFrame({"npi": ["1234567890"]})
-            mock_upsert.return_value = MagicMock(
-                rows_inserted=1, rows_updated=0, rows_unchanged=0
-            )
+            mock_upsert.return_value = MagicMock(rows_inserted=1, rows_updated=0, rows_unchanged=0)
             mock_ml.return_value = {
                 "providers_scored": 1,
                 "observations_scored": 2,
@@ -476,9 +464,7 @@ class TestIngestRoutes:
 
         app = create_app()
 
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             mock_conn = AsyncMock()
             cur_mock = AsyncMock()
             cur_mock.fetchone = AsyncMock(return_value=None)
@@ -511,9 +497,7 @@ class TestIngestRoutes:
 
         app = create_app()
 
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             mock_conn = AsyncMock()
             cur_mock = AsyncMock()
             cur_mock.fetchall = AsyncMock(return_value=[])
@@ -596,9 +580,7 @@ class TestFullPipelineIntegration:
                     extra={"label_counts": {"high_risk": 10, "review": 20, "stable": 70}},
                 ),
             ),
-            patch(
-                "src.pipeline.build_features.build_provider_features_from_db"
-            ) as mock_feat,
+            patch("src.pipeline.build_features.build_provider_features_from_db") as mock_feat,
             patch("src.pipeline.build_features.upsert_provider_features") as mock_up,
             patch("src.pipeline.orchestrator._bulk_ml_scoring") as mock_ml,
         ):

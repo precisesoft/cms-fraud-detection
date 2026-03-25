@@ -291,7 +291,6 @@ def _run_recalibrate_sync(run_id: int, db_url: str) -> PipelineResult:
     )
     from src.pipeline.stages import ORDERED_STAGES, STAGE_WEIGHTS, PipelineStage
 
-
     stages_completed: list[StageRecord] = []
     accumulated_weight = 0.0
 
@@ -401,8 +400,10 @@ def _run_recalibrate_sync(run_id: int, db_url: str) -> PipelineResult:
                     error_message=f"Stage {stage.value} failed: {exc}",
                 )
                 return PipelineResult(
-                    run_id=run_id, status="failed",
-                    stages=stages_completed, error=str(exc),
+                    run_id=run_id,
+                    status="failed",
+                    stages=stages_completed,
+                    error=str(exc),
                 )
             accumulated_weight = _progress_after(stage)
             rec = _append_stage(stage.value, "completed", metrics, stage_start)
@@ -454,8 +455,10 @@ def _run_recalibrate_sync(run_id: int, db_url: str) -> PipelineResult:
                     error_message=f"Stage {stage.value} failed: {exc}",
                 )
                 return PipelineResult(
-                    run_id=run_id, status="failed",
-                    stages=stages_completed, error=str(exc),
+                    run_id=run_id,
+                    status="failed",
+                    stages=stages_completed,
+                    error=str(exc),
                 )
             accumulated_weight = _progress_after(stage)
             rec = _append_stage(stage.value, "completed", metrics, stage_start)
@@ -506,8 +509,10 @@ def _run_recalibrate_sync(run_id: int, db_url: str) -> PipelineResult:
                     error_message=f"Stage {stage.value} failed: {exc}",
                 )
                 return PipelineResult(
-                    run_id=run_id, status="failed",
-                    stages=stages_completed, error=str(exc),
+                    run_id=run_id,
+                    status="failed",
+                    stages=stages_completed,
+                    error=str(exc),
                 )
             accumulated_weight = _progress_after(stage)
             rec = _append_stage(stage.value, "completed", metrics, stage_start)
@@ -561,8 +566,10 @@ def _run_recalibrate_sync(run_id: int, db_url: str) -> PipelineResult:
                     error_message=f"Stage {stage.value} failed: {exc}",
                 )
                 return PipelineResult(
-                    run_id=run_id, status="failed",
-                    stages=stages_completed, error=str(exc),
+                    run_id=run_id,
+                    status="failed",
+                    stages=stages_completed,
+                    error=str(exc),
                 )
             accumulated_weight = _progress_after(stage)
             rec = _append_stage(stage.value, "completed", metrics, stage_start)
@@ -617,8 +624,10 @@ def _run_recalibrate_sync(run_id: int, db_url: str) -> PipelineResult:
                     error_message=f"Stage {stage.value} failed: {exc}",
                 )
                 return PipelineResult(
-                    run_id=run_id, status="failed",
-                    stages=stages_completed, error=str(exc),
+                    run_id=run_id,
+                    status="failed",
+                    stages=stages_completed,
+                    error=str(exc),
                 )
             accumulated_weight = _progress_after(stage)
             rec = _append_stage(stage.value, "completed", metrics, stage_start)
@@ -665,8 +674,10 @@ def _run_recalibrate_sync(run_id: int, db_url: str) -> PipelineResult:
                     error_message=f"Stage {stage.value} failed: {exc}",
                 )
                 return PipelineResult(
-                    run_id=run_id, status="failed",
-                    stages=stages_completed, error=str(exc),
+                    run_id=run_id,
+                    status="failed",
+                    stages=stages_completed,
+                    error=str(exc),
                 )
             accumulated_weight = _progress_after(stage)
             rec = _append_stage(stage.value, "completed", metrics, stage_start)
