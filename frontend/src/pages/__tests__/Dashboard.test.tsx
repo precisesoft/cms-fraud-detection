@@ -29,6 +29,7 @@ vi.mock("../../contexts/AuthContext", () => ({
 vi.mock("../../lib/api", () => ({
   getDashboard: vi.fn(),
   getPendingCases: vi.fn(),
+  getIngestStatus: vi.fn().mockResolvedValue(null),
 }));
 
 const mockStats = {
