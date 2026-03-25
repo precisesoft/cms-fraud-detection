@@ -17,6 +17,7 @@ import {
 import { Link } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { useAuth } from "../contexts/AuthContext";
+import { InfoButton } from "../components/InfoButton";
 import {
   uploadData,
   triggerRecalibrate,
@@ -133,12 +134,17 @@ function DataSourcesSection({
 
   return (
     <section aria-labelledby="sources-heading">
-      <h2
-        id="sources-heading"
-        className="text-lg font-bold text-slate-800 mb-4"
-      >
-        Data Sources
-      </h2>
+      <div className="flex items-center gap-1.5 mb-4">
+        <h2
+          id="sources-heading"
+          className="text-lg font-bold text-slate-800"
+        >
+          Data Sources
+        </h2>
+        <InfoButton title="Data Sources">
+          Current CMS data files loaded into the system. Freshness badges indicate data currency: Current (uploaded &lt; 90 days ago), Aging (90–180 days), Stale (&gt; 180 days). Four source types: Part B Service (claims), Part B Provider (provider info), Enrollment (status), and Revocations (CMS actions).
+        </InfoButton>
+      </div>
       {loading ? (
         <div className="flex items-center gap-2 text-slate-400 text-sm py-4">
           <Loader2 className="w-4 h-4 animate-spin" /> Loading sources…
@@ -275,9 +281,14 @@ function UploadSection({ onUploadComplete }: { onUploadComplete: () => void }) {
 
   return (
     <section aria-labelledby="upload-heading">
-      <h2 id="upload-heading" className="text-lg font-bold text-slate-800 mb-4">
-        Upload New Data
-      </h2>
+      <div className="flex items-center gap-1.5 mb-4">
+        <h2 id="upload-heading" className="text-lg font-bold text-slate-800">
+          Upload New Data
+        </h2>
+        <InfoButton title="Upload CMS Data">
+          Upload CMS data files in CSV format. Supports four source types matching CMS public use files. The optional auto-recalibrate checkbox triggers the full scoring pipeline immediately after upload to refresh all risk scores with the new data.
+        </InfoButton>
+      </div>
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -498,12 +509,17 @@ function RecalibrateSection({
 
   return (
     <section aria-labelledby="recalibrate-heading">
-      <h2
-        id="recalibrate-heading"
-        className="text-lg font-bold text-slate-800 mb-4"
-      >
-        Recalibrate Scores
-      </h2>
+      <div className="flex items-center gap-1.5 mb-4">
+        <h2
+          id="recalibrate-heading"
+          className="text-lg font-bold text-slate-800"
+        >
+          Recalibrate Scores
+        </h2>
+        <InfoButton title="Score Recalibration">
+          Triggers the full scoring pipeline: recomputes peer baselines, calculates z-scores, applies deterministic scoring rules, rebuilds provider profiles, and retrains ML models. Shows real-time progress through six pipeline stages with metrics and timing.
+        </InfoButton>
+      </div>
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
         <div className="flex flex-wrap gap-3">
           <button
@@ -679,12 +695,17 @@ function RunHistorySection() {
 
   return (
     <section aria-labelledby="history-heading">
-      <h2
-        id="history-heading"
-        className="text-lg font-bold text-slate-800 mb-4"
-      >
-        Run History
-      </h2>
+      <div className="flex items-center gap-1.5 mb-4">
+        <h2
+          id="history-heading"
+          className="text-lg font-bold text-slate-800"
+        >
+          Run History
+        </h2>
+        <InfoButton title="Pipeline Run History">
+          Audit log of all pipeline executions showing run type, status, who triggered it, start/end times, and stage-by-stage details. Expand any row to see individual stage metrics, durations, and errors. Useful for tracking data lineage and debugging pipeline issues.
+        </InfoButton>
+      </div>
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center gap-2 text-slate-400 text-sm p-6">
@@ -845,9 +866,14 @@ function SeedSection({
 
   return (
     <section aria-labelledby="seed-heading">
-      <h2 id="seed-heading" className="text-lg font-bold text-slate-800 mb-4">
-        Demo Mode
-      </h2>
+      <div className="flex items-center gap-1.5 mb-4">
+        <h2 id="seed-heading" className="text-lg font-bold text-slate-800">
+          Demo Mode
+        </h2>
+        <InfoButton title="Demo Mode — Synthetic Data">
+          One-click synthetic data generation for demonstrations. Creates 250 realistic synthetic providers with 4,250 service lines covering diverse specialties, states, and risk profiles. Then runs the full recalibration pipeline (peer baselines → z-scores → scoring → provider profiles → ML models).
+        </InfoButton>
+      </div>
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
