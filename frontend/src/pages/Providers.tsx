@@ -16,6 +16,7 @@ import {
   scoreColor,
   providerDisplayName,
 } from "../lib/helpers";
+import { InfoButton } from "../components/InfoButton";
 
 export function Providers() {
   const navigate = useNavigate();
@@ -138,6 +139,10 @@ export function Providers() {
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-slate-200 flex items-center gap-2">
+          <h2 className="font-semibold text-slate-700 text-sm">Provider Risk Table</h2>
+          <InfoButton title="Provider Risk Table">Searchable, filterable list of all Medicare providers in the dataset. Risk scores are computed from peer-comparison z-scores across billing volume, charges, and beneficiary counts. Risk bands: Stable (≤ 30), Review (31–50), High Risk (≥ 51). Click any row to view the full provider profile.</InfoButton>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead>
