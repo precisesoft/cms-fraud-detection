@@ -91,7 +91,15 @@ export function AssistantDrawer({
     setLoading(true);
 
     try {
-      const response = await chat(content, history, context.entityId || undefined);
+      const npi =
+        context.type === "provider"
+          ? context.entityId || undefined
+          : context.entityId?.split("|")[0] || undefined;
+      const caseId =
+        context.type !== "provider"
+          ? context.entityId || undefined
+          : undefined;
+      const response = await chat(content, history, npi, caseId);
       const assistantMsg = {
         id: nextId(),
         role: "assistant" as const,
