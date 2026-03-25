@@ -125,6 +125,109 @@ CREATE TABLE IF NOT EXISTS provider_features (
     charge_cv                   DOUBLE PRECISION
 );
 
+-- ---------------------------------------------------------------------------
+-- Raw CMS source tables (renamed schema columns + versioning)
+-- ---------------------------------------------------------------------------
+
+-- Medicare Physician & Other Practitioners — by Provider and Service
+CREATE TABLE IF NOT EXISTS raw_part_b_service (
+    npi                     TEXT NOT NULL,
+    provider_last_org_name  TEXT,
+    provider_first_name     TEXT,
+    provider_credentials    TEXT,
+    provider_entity_code    TEXT,
+    provider_city           TEXT,
+    provider_state          TEXT,
+    provider_zip5           TEXT,
+    provider_type           TEXT,
+    medicare_participating_ind TEXT,
+    hcpcs_cd                TEXT NOT NULL,
+    hcpcs_desc              TEXT,
+    place_of_service        TEXT,
+    tot_benes               DOUBLE PRECISION,
+    tot_srvcs               DOUBLE PRECISION,
+    tot_bene_day_srvcs      DOUBLE PRECISION,
+    avg_submitted_charge    DOUBLE PRECISION,
+    avg_medicare_allowed_amt DOUBLE PRECISION,
+    avg_medicare_payment_amt DOUBLE PRECISION,
+    source_version          TEXT NOT NULL,
+    loaded_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_raw_part_b_service_version
+    ON raw_part_b_service (source_version);
+CREATE INDEX IF NOT EXISTS idx_raw_part_b_service_npi
+    ON raw_part_b_service (npi);
+
+-- Medicare Physician & Other Practitioners — by Provider (aggregate)
+CREATE TABLE IF NOT EXISTS raw_part_b_provider (
+    npi                     TEXT NOT NULL,
+    provider_last_org_name  TEXT,
+    provider_first_name     TEXT,
+    provider_city           TEXT,
+    provider_state          TEXT,
+    provider_zip5           TEXT,
+    provider_type           TEXT,
+    medicare_participating_ind TEXT,
+    tot_hcpcs_cds           DOUBLE PRECISION,
+    tot_benes               DOUBLE PRECISION,
+    tot_srvcs               DOUBLE PRECISION,
+    tot_submitted_charge    DOUBLE PRECISION,
+    tot_medicare_allowed_amt DOUBLE PRECISION,
+    tot_medicare_payment_amt DOUBLE PRECISION,
+    source_version          TEXT NOT NULL,
+    loaded_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_raw_part_b_provider_version
+    ON raw_part_b_provider (source_version);
+CREATE INDEX IF NOT EXISTS idx_raw_part_b_provider_npi
+    ON raw_part_b_provider (npi);
+
+-- PECOS — Medicare Fee-for-Service Public Provider Enrollment
+CREATE TABLE IF NOT EXISTS raw_enrollment (
+    npi                     TEXT NOT NULL,
+    enrlmt_id               TEXT,
+    provider_type_code      TEXT,
+    provider_type_desc      TEXT,
+    state_cd                TEXT,
+    enrlmt_stus_efctv_dt    TEXT,
+    enrlmt_end_dt           TEXT,
+    mdcr_stus_cd            TEXT,
+    source_version          TEXT NOT NULL,
+    loaded_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_raw_enrollment_version
+    ON raw_enrollment (source_version);
+CREATE INDEX IF NOT EXISTS idx_raw_enrollment_npi
+    ON raw_enrollment (npi);
+
+-- CMS Medicare Revocation file
+CREATE TABLE IF NOT EXISTS raw_revocations (
+    npi                     TEXT NOT NULL,
+    revocation_rsn          TEXT,
+    source_version          TEXT NOT NULL,
+    loaded_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_raw_revocations_version
+    ON raw_revocations (source_version);
+CREATE INDEX IF NOT EXISTS idx_raw_revocations_npi
+    ON raw_revocations (npi);
+
+-- Version tracking and dedup: one row per (source_type, version)
+CREATE TABLE IF NOT EXISTS data_source_versions (
+    id          BIGSERIAL PRIMARY KEY,
+    source_type TEXT NOT NULL,
+    version     TEXT NOT NULL,
+    file_hash   TEXT NOT NULL,
+    row_count   INTEGER NOT NULL,
+    uploaded_by TEXT NOT NULL,
+    loaded_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (source_type, version)
+);
+
 -- Application users (authentication)
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
