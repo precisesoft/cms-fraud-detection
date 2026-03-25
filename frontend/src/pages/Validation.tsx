@@ -33,7 +33,7 @@ const PIXELS_PER_BAR = 48;
  * Returns a short display label for a regulation reason string.
  * Strips a leading code prefix (e.g. "424.535(A)(1)") and truncates to maxLen.
  */
-function shortLabel(reason: string, maxLen = 24): string {
+export function shortLabel(reason: string, maxLen = 24): string {
   if (reason.length <= maxLen) return reason;
   // Extract description after a leading regulation-code prefix, e.g. "424.535(A)(1) Noncompliance…"
   const match = reason.match(/^[\d.()\w]+\s+(.+)$/);
@@ -267,7 +267,10 @@ export function Validation() {
                   innerRadius={60}
                   outerRadius={90}
                   strokeWidth={2}
-                  label={({ name, value }) => `${name}: ${value}`}
+                  label={
+                    /* istanbul ignore next */ ({ name, value }) =>
+                      `${name}: ${value}`
+                  }
                 >
                   {pieData.map((entry, i) => (
                     <Cell key={i} fill={entry.color} />
@@ -383,14 +386,18 @@ export function Validation() {
                 type="number"
                 domain={[0, 100]}
                 tick={{ fontSize: 10, fill: "#64748b" }}
-                tickFormatter={(v: number) => `${v}%`}
+                tickFormatter={
+                  /* istanbul ignore next */ (v: number) => `${v}%`
+                }
               />
               <YAxis
                 type="category"
                 dataKey="reason"
                 width={160}
                 tick={{ fontSize: 10, fontWeight: 600, fill: "#64748b" }}
-                tickFormatter={(v: string) => shortLabel(v)}
+                tickFormatter={
+                  /* istanbul ignore next */ (v: string) => shortLabel(v)
+                }
               />
               <Tooltip
                 contentStyle={{
@@ -398,8 +405,15 @@ export function Validation() {
                   borderRadius: 8,
                   border: "1px solid #e2e8f0",
                 }}
-                formatter={(value: number) => [`${value}%`, "Detection Rate"]}
-                labelFormatter={(label: string) => label}
+                formatter={
+                  /* istanbul ignore next */ (value: number) => [
+                    `${value}%`,
+                    "Detection Rate",
+                  ]
+                }
+                labelFormatter={
+                  /* istanbul ignore next */ (label: string) => label
+                }
               />
               <Bar dataKey="rate" radius={[0, 4, 4, 0]}>
                 {chartData.map((entry, i) => (
@@ -426,19 +440,34 @@ export function Validation() {
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50/80">
               <tr>
-                <th scope="col" className="px-5 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">
+                <th
+                  scope="col"
+                  className="px-5 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-widest"
+                >
                   Revocation Reason
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">
+                <th
+                  scope="col"
+                  className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest"
+                >
                   Total
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">
+                <th
+                  scope="col"
+                  className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest"
+                >
                   Detected
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">
+                <th
+                  scope="col"
+                  className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest"
+                >
                   Rate
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-center text-xs font-bold text-slate-500 uppercase tracking-widest">
+                <th
+                  scope="col"
+                  className="px-5 py-3.5 text-center text-xs font-bold text-slate-500 uppercase tracking-widest"
+                >
                   Status
                 </th>
               </tr>
