@@ -8,8 +8,9 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { getProviders } from "../lib/api";
-import type { ProviderSummary, PaginationMeta } from "../lib/api";
+import { useProviders } from "../lib/hooks";
+import { useDebounce } from "../lib/use-debounce";
+import type { PaginationMeta } from "../lib/api";
 import { StatusBadge } from "../components/StatusBadge";
 import {
   formatCompactUSD,
@@ -27,43 +28,31 @@ export function Providers() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [stateFilter, setStateFilter] = React.useState(initialState);
   const [riskBandFilter, setRiskBandFilter] = React.useState(initialRiskBand);
-  const [providers, setProviders] = React.useState<ProviderSummary[]>([]);
-  const [meta, setMeta] = React.useState<PaginationMeta>({
+  const [page, setPage] = React.useState(1);
+
+  const debouncedSearch = useDebounce(searchTerm, 300);
+  const debouncedState = useDebounce(stateFilter, 300);
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, debouncedState, riskBandFilter]);
+
+  const { data } = useProviders({
+    page,
+    per_page: 50,
+    q: debouncedSearch || undefined,
+    state: debouncedState || undefined,
+    risk_band: riskBandFilter || undefined,
+  });
+
+  const providers = data?.data ?? [];
+  const meta: PaginationMeta = data?.meta ?? {
     total: 0,
     page: 1,
     per_page: 50,
     pages: 1,
-  });
-
-  React.useEffect(() => {
-    let active = true;
-    getProviders({
-      page: meta.page,
-      per_page: 50,
-      q: searchTerm || undefined,
-      state: stateFilter || undefined,
-      risk_band: riskBandFilter || undefined,
-    })
-      .then((data) => {
-        if (active) {
-          setProviders(data.data);
-          setMeta(data.meta);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setProviders([]);
-          setMeta({ total: 0, page: 1, per_page: 50, pages: 1 });
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [meta.page, searchTerm, stateFilter, riskBandFilter]);
-
-  React.useEffect(() => {
-    setMeta((c) => ({ ...c, page: 1 }));
-  }, [searchTerm, stateFilter, riskBandFilter]);
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -253,9 +242,7 @@ export function Providers() {
           </p>
           <div className="flex items-center gap-2">
             <button
-              onClick={() =>
-                setMeta((c) => ({ ...c, page: Math.max(1, c.page - 1) }))
-              }
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={meta.page <= 1}
               className={cn(
                 "px-3 py-1 bg-white border border-slate-200 rounded text-xs font-medium",
@@ -267,9 +254,7 @@ export function Providers() {
               Previous
             </button>
             <button
-              onClick={() =>
-                setMeta((c) => ({ ...c, page: Math.min(c.pages, c.page + 1) }))
-              }
+              onClick={() => setPage((p) => Math.min(meta.pages, p + 1))}
               disabled={meta.page >= meta.pages}
               className={cn(
                 "px-3 py-1 bg-white border border-slate-200 rounded text-xs font-medium",

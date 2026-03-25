@@ -1,8 +1,16 @@
-"""Dashboard endpoints — aggregate stats and geographic heatmap."""
+"""Dashboard endpoints — aggregate stats and geographic heatmap.
+
+Performance: Both endpoints use a TTL cache (60 s) so repeated loads
+within the same minute hit memory instead of the database.  Dashboard
+queries also run concurrently via ``asyncio.gather``.
+"""
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+import asyncio
+import time
+
+from fastapi import APIRouter, Depends, Response
 from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 
@@ -17,6 +25,28 @@ from src.api.schemas import (
 )
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
+
+# ---------------------------------------------------------------------------
+# In-memory TTL cache (simple, process-local)
+# ---------------------------------------------------------------------------
+
+_CACHE_TTL = 60  # seconds
+
+_dashboard_cache: DashboardStats | None = None
+_dashboard_cache_ts: float = 0.0
+
+_heatmap_cache: HeatmapResponse | None = None
+_heatmap_cache_ts: float = 0.0
+
+
+def invalidate_dashboard_cache() -> None:
+    """Call after a pipeline run or data ingest to force a refresh."""
+    global _dashboard_cache, _dashboard_cache_ts, _heatmap_cache, _heatmap_cache_ts
+    _dashboard_cache = None
+    _dashboard_cache_ts = 0.0
+    _heatmap_cache = None
+    _heatmap_cache_ts = 0.0
+
 
 # ---------------------------------------------------------------------------
 # GET /dashboard — aggregate stats
@@ -45,28 +75,52 @@ LIMIT 10
 """
 
 
+async def _fetch_counts(conn: AsyncConnection) -> dict:
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(_COUNTS_SQL)
+        return await cur.fetchone() or {}
+
+
+async def _fetch_distribution(conn: AsyncConnection) -> dict:
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(_DISTRIBUTION_SQL)
+        return await cur.fetchone() or {}
+
+
+async def _fetch_top(conn: AsyncConnection) -> list[dict]:
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(_TOP_SQL)
+        return await cur.fetchall()
+
+
 @router.get("", response_model=DashboardStats)
 async def get_dashboard(
+    response: Response,
     conn: AsyncConnection = Depends(get_db),
 ) -> DashboardStats:
     """Return aggregate stats, risk distribution, and top flagged providers."""
-    async with conn.cursor(row_factory=dict_row) as cur:
-        await cur.execute(_COUNTS_SQL)
-        counts = await cur.fetchone()
+    global _dashboard_cache, _dashboard_cache_ts
 
-        await cur.execute(_DISTRIBUTION_SQL)
-        dist = await cur.fetchone()
+    now = time.monotonic()
+    if _dashboard_cache is not None and (now - _dashboard_cache_ts) < _CACHE_TTL:
+        response.headers["X-Cache"] = "HIT"
+        response.headers["Cache-Control"] = f"public, max-age={_CACHE_TTL}"
+        return _dashboard_cache
 
-        await cur.execute(_TOP_SQL)
-        top_rows = await cur.fetchall()
+    # Run the three queries concurrently
+    counts, dist, top_rows = await asyncio.gather(
+        _fetch_counts(conn),
+        _fetch_distribution(conn),
+        _fetch_top(conn),
+    )
 
-    total_providers = counts["total_providers"] if counts else 0
-    total_cases = counts["total_cases"] if counts else 0
+    total_providers = counts.get("total_providers", 0)
+    total_cases = counts.get("total_cases", 0)
 
     distribution = RiskDistribution(
-        high_risk=dist["high_risk"] if dist else 0,
-        review=dist["review"] if dist else 0,
-        stable=dist["stable"] if dist else 0,
+        high_risk=dist.get("high_risk", 0),
+        review=dist.get("review", 0),
+        stable=dist.get("stable", 0),
     )
 
     top_providers = [
@@ -77,12 +131,18 @@ async def get_dashboard(
         for r in top_rows
     ]
 
-    return DashboardStats(
+    result = DashboardStats(
         total_providers=total_providers,
         total_cases=total_cases,
         risk_distribution=distribution,
         top_providers=top_providers,
     )
+
+    _dashboard_cache = result
+    _dashboard_cache_ts = now
+    response.headers["X-Cache"] = "MISS"
+    response.headers["Cache-Control"] = f"public, max-age={_CACHE_TTL}"
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -103,12 +163,26 @@ ORDER BY avg_risk_score DESC
 
 @router.get("/heatmap", response_model=HeatmapResponse)
 async def get_heatmap(
+    response: Response,
     conn: AsyncConnection = Depends(get_db),
 ) -> HeatmapResponse:
     """Return state-level aggregated risk data for the geographic heatmap."""
+    global _heatmap_cache, _heatmap_cache_ts
+
+    now = time.monotonic()
+    if _heatmap_cache is not None and (now - _heatmap_cache_ts) < _CACHE_TTL:
+        response.headers["X-Cache"] = "HIT"
+        response.headers["Cache-Control"] = f"public, max-age={_CACHE_TTL}"
+        return _heatmap_cache
+
     async with conn.cursor(row_factory=dict_row) as cur:
         await cur.execute(_HEATMAP_SQL)
         rows = await cur.fetchall()
 
-    data = [HeatmapEntry(**r) for r in rows]
-    return HeatmapResponse(data=data)
+    result = HeatmapResponse(data=[HeatmapEntry(**r) for r in rows])
+
+    _heatmap_cache = result
+    _heatmap_cache_ts = now
+    response.headers["X-Cache"] = "MISS"
+    response.headers["Cache-Control"] = f"public, max-age={_CACHE_TTL}"
+    return result

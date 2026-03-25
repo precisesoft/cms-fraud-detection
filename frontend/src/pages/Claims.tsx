@@ -7,50 +7,37 @@ import {
   FileText,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getClaims } from "../lib/api";
-import type { Claim, PaginationMeta, RiskBand } from "../lib/api";
+import { useClaims } from "../lib/hooks";
+import { useDebounce } from "../lib/use-debounce";
+import type { RiskBand } from "../lib/api";
 import { StatusBadge } from "../components/StatusBadge";
 import { cn } from "../lib/utils";
 import { formatUSD, scoreColor, formatCaseId } from "../lib/helpers";
 import { InfoButton } from "../components/InfoButton";
 
 export function Claims() {
-  const [claims, setClaims] = React.useState<Claim[]>([]);
-  const [meta, setMeta] = React.useState<PaginationMeta>({
-    page: 1,
-    per_page: 25,
-    total: 0,
-    pages: 0,
-  });
   const [page, setPage] = React.useState(1);
   const [search, setSearch] = React.useState("");
   const [label, setLabel] = React.useState("");
   const [riskMin, setRiskMin] = React.useState("");
-  const [loading, setLoading] = React.useState(true);
 
-  const fetchClaims = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const params: Record<string, string> = {
-        page: String(page),
-        per_page: "25",
-      };
-      if (search) params.npi = search;
-      if (label) params.case_label = label;
-      if (riskMin) params.risk_min = riskMin;
-      const res = await getClaims(params);
-      setClaims(res.data);
-      setMeta(res.meta);
-    } catch {
-      setClaims([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, search, label, riskMin]);
+  const debouncedSearch = useDebounce(search, 300);
 
+  // Reset to page 1 when filters change
   React.useEffect(() => {
-    fetchClaims();
-  }, [fetchClaims]);
+    setPage(1);
+  }, [debouncedSearch, label, riskMin]);
+
+  const { data, isLoading: loading } = useClaims({
+    page: String(page),
+    per_page: "25",
+    ...(debouncedSearch ? { npi: debouncedSearch } : {}),
+    ...(label ? { case_label: label } : {}),
+    ...(riskMin ? { risk_min: riskMin } : {}),
+  });
+
+  const claims = data?.data ?? [];
+  const meta = data?.meta ?? { page: 1, per_page: 25, total: 0, pages: 0 };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -78,7 +65,6 @@ export function Claims() {
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
-                setPage(1);
               }}
               className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-300 transition-all"
             />
@@ -87,7 +73,6 @@ export function Claims() {
             value={label}
             onChange={(e) => {
               setLabel(e.target.value);
-              setPage(1);
             }}
             className="min-w-[180px] px-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
           >
@@ -102,7 +87,6 @@ export function Claims() {
             value={riskMin}
             onChange={(e) => {
               setRiskMin(e.target.value);
-              setPage(1);
             }}
             className="w-32 px-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
           />

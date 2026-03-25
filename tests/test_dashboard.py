@@ -8,7 +8,7 @@ import httpx
 from fastapi import FastAPI
 
 from src.api.deps import get_db
-from src.api.routes.dashboard import router
+from src.api.routes.dashboard import invalidate_dashboard_cache, router
 
 # ---------------------------------------------------------------------------
 # Fake DB layer
@@ -51,41 +51,39 @@ HEATMAP_ROWS = [
     {"state": "TX", "provider_count": 100, "avg_risk_score": 35.1, "flagged_count": 10},
 ]
 
+# The dashboard now runs three queries via asyncio.gather, each opening its
+# own cursor.  We track which SQL was issued and return the right fixture.
 
-class _DashboardCursor:
-    """Multi-query cursor: counts → distribution → top providers."""
+_SQL_FIXTURES: dict[str, dict | list[dict]] = {
+    "count(*)::int AS total_providers": COUNTS_ROW,
+    "high_risk": DIST_ROW,
+    "ORDER BY max_seed_risk_score": TOP_ROWS,
+    "GROUP BY state": HEATMAP_ROWS,
+}
 
-    def __init__(self, counts: dict, dist: dict, top: list[dict]):
-        self._results: list = [counts, dist, top]
-        self._call = 0
 
-    async def execute(self, sql: str, params: list | None = None):
-        self._call += 1
+class _SmartCursor:
+    """Returns fixtures based on a keyword match in the SQL string."""
+
+    def __init__(self) -> None:
+        self._result: dict | list[dict] | None = None
+
+    async def execute(self, sql: str, params: list | None = None) -> None:
+        for keyword, fixture in _SQL_FIXTURES.items():
+            if keyword in sql:
+                self._result = fixture
+                return
+        self._result = None
 
     async def fetchone(self) -> dict | None:
-        return self._results[self._call - 1]
+        if isinstance(self._result, dict):
+            return self._result
+        return None
 
     async def fetchall(self) -> list[dict]:
-        return self._results[self._call - 1]
-
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, *args):
-        pass
-
-
-class _HeatmapCursor:
-    """Single-query cursor for heatmap."""
-
-    def __init__(self, rows: list[dict]):
-        self._rows = rows
-
-    async def execute(self, sql: str, params: list | None = None):
-        pass
-
-    async def fetchall(self) -> list[dict]:
-        return self._rows
+        if isinstance(self._result, list):
+            return self._result
+        return []
 
     async def __aenter__(self):
         return self
@@ -95,28 +93,11 @@ class _HeatmapCursor:
 
 
 class _FakeConn:
-    def __init__(
-        self,
-        *,
-        counts: dict = COUNTS_ROW,
-        dist: dict = DIST_ROW,
-        top: list[dict] = TOP_ROWS,
-        heatmap: list[dict] = HEATMAP_ROWS,
-        mode: str = "dashboard",
-    ):
-        self._counts = counts
-        self._dist = dist
-        self._top = top
-        self._heatmap = heatmap
-        self._mode = mode
-
     def cursor(self, row_factory=None):
-        if self._mode == "heatmap":
-            return _HeatmapCursor(self._heatmap)
-        return _DashboardCursor(self._counts, self._dist, self._top)
+        return _SmartCursor()
 
 
-def _make_app(mode: str = "dashboard", **kwargs) -> FastAPI:
+def _make_app() -> FastAPI:
     @asynccontextmanager
     async def _noop_lifespan(app: FastAPI):
         yield
@@ -124,7 +105,7 @@ def _make_app(mode: str = "dashboard", **kwargs) -> FastAPI:
     test_app = FastAPI(lifespan=_noop_lifespan)
     test_app.include_router(router, prefix="/api")
 
-    conn = _FakeConn(mode=mode, **kwargs)
+    conn = _FakeConn()
 
     async def fake_db():
         yield conn
@@ -140,6 +121,7 @@ def _make_app(mode: str = "dashboard", **kwargs) -> FastAPI:
 
 class TestDashboard:
     async def test_returns_200(self):
+        invalidate_dashboard_cache()
         app = _make_app()
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -149,6 +131,7 @@ class TestDashboard:
         assert resp.status_code == 200
 
     async def test_response_structure(self):
+        invalidate_dashboard_cache()
         app = _make_app()
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -162,6 +145,7 @@ class TestDashboard:
         assert "top_providers" in body
 
     async def test_counts(self):
+        invalidate_dashboard_cache()
         app = _make_app()
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -173,6 +157,7 @@ class TestDashboard:
         assert body["total_cases"] == 5000
 
     async def test_risk_distribution(self):
+        invalidate_dashboard_cache()
         app = _make_app()
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -185,6 +170,7 @@ class TestDashboard:
         assert dist["stable"] == 300
 
     async def test_top_providers(self):
+        invalidate_dashboard_cache()
         app = _make_app()
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -198,20 +184,38 @@ class TestDashboard:
         assert top[1]["risk_band"] == "high_risk"
 
     async def test_empty_data(self):
-        app = _make_app(
-            counts={"total_providers": 0, "total_cases": 0},
-            dist={"high_risk": 0, "review": 0, "stable": 0},
-            top=[],
-        )
+        invalidate_dashboard_cache()
+        # Override fixtures for empty scenario
+        saved = dict(_SQL_FIXTURES)
+        _SQL_FIXTURES["count(*)::int AS total_providers"] = {"total_providers": 0, "total_cases": 0}
+        _SQL_FIXTURES["high_risk"] = {"high_risk": 0, "review": 0, "stable": 0}
+        _SQL_FIXTURES["ORDER BY max_seed_risk_score"] = []
+        try:
+            app = _make_app()
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                resp = await client.get("/api/dashboard")
+
+            body = resp.json()
+            assert body["total_providers"] == 0
+            assert body["total_cases"] == 0
+            assert body["top_providers"] == []
+        finally:
+            _SQL_FIXTURES.update(saved)
+
+    async def test_cache_hit_returns_header(self):
+        invalidate_dashboard_cache()
+        app = _make_app()
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as client:
-            resp = await client.get("/api/dashboard")
+            resp1 = await client.get("/api/dashboard")
+            assert resp1.headers.get("x-cache") == "MISS"
 
-        body = resp.json()
-        assert body["total_providers"] == 0
-        assert body["total_cases"] == 0
-        assert body["top_providers"] == []
+            resp2 = await client.get("/api/dashboard")
+            assert resp2.headers.get("x-cache") == "HIT"
+            assert resp2.json() == resp1.json()
 
 
 # ---------------------------------------------------------------------------
@@ -221,7 +225,8 @@ class TestDashboard:
 
 class TestHeatmap:
     async def test_returns_200(self):
-        app = _make_app(mode="heatmap")
+        invalidate_dashboard_cache()
+        app = _make_app()
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as client:
@@ -230,7 +235,8 @@ class TestHeatmap:
         assert resp.status_code == 200
 
     async def test_response_structure(self):
-        app = _make_app(mode="heatmap")
+        invalidate_dashboard_cache()
+        app = _make_app()
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as client:
@@ -241,7 +247,8 @@ class TestHeatmap:
         assert len(body["data"]) == 3
 
     async def test_heatmap_entries(self):
-        app = _make_app(mode="heatmap")
+        invalidate_dashboard_cache()
+        app = _make_app()
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as client:
@@ -254,16 +261,23 @@ class TestHeatmap:
         assert entry["flagged_count"] == 30
 
     async def test_empty_heatmap(self):
-        app = _make_app(mode="heatmap", heatmap=[])
-        async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=app), base_url="http://test"
-        ) as client:
-            resp = await client.get("/api/dashboard/heatmap")
+        invalidate_dashboard_cache()
+        saved = _SQL_FIXTURES.get("GROUP BY state")
+        _SQL_FIXTURES["GROUP BY state"] = []
+        try:
+            app = _make_app()
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                resp = await client.get("/api/dashboard/heatmap")
 
-        assert resp.json()["data"] == []
+            assert resp.json()["data"] == []
+        finally:
+            _SQL_FIXTURES["GROUP BY state"] = saved  # type: ignore[assignment]
 
     async def test_all_states_present(self):
-        app = _make_app(mode="heatmap")
+        invalidate_dashboard_cache()
+        app = _make_app()
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as client:
@@ -273,3 +287,15 @@ class TestHeatmap:
         assert "CA" in states
         assert "NY" in states
         assert "TX" in states
+
+    async def test_heatmap_cache_hit(self):
+        invalidate_dashboard_cache()
+        app = _make_app()
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp1 = await client.get("/api/dashboard/heatmap")
+            assert resp1.headers.get("x-cache") == "MISS"
+
+            resp2 = await client.get("/api/dashboard/heatmap")
+            assert resp2.headers.get("x-cache") == "HIT"

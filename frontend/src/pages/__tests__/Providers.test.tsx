@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Providers } from "../Providers";
 import { getProviders } from "../../lib/api";
 
@@ -57,10 +58,15 @@ const mockProviderList = {
 };
 
 function renderProviders(initialPath = "/providers") {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
   return render(
-    <MemoryRouter initialEntries={[initialPath]}>
-      <Providers />
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[initialPath]}>
+        <Providers />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -274,16 +280,21 @@ describe("Providers", () => {
 
   it("clicking a provider row navigates to provider detail", async () => {
     const user = userEvent.setup();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    });
     const { container } = render(
-      <MemoryRouter initialEntries={["/providers"]}>
-        <Routes>
-          <Route path="/providers" element={<Providers />} />
-          <Route
-            path="/providers/:npi"
-            element={<div data-testid="provider-detail">Detail</div>}
-          />
-        </Routes>
-      </MemoryRouter>,
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/providers"]}>
+          <Routes>
+            <Route path="/providers" element={<Providers />} />
+            <Route
+              path="/providers/:npi"
+              element={<div data-testid="provider-detail">Detail</div>}
+            />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
     await waitFor(() => {
       expect(screen.getByText("Acme Clinic")).toBeInTheDocument();
@@ -298,22 +309,32 @@ describe("Providers", () => {
   });
 
   it("clicking Previous goes back a page when page > 1", async () => {
-    vi.mocked(getProviders).mockResolvedValue({
+    // Return dynamic page metadata based on the requested page
+    vi.mocked(getProviders).mockImplementation(async (params) => ({
       data: mockProviderList.data,
-      meta: { total: 100, page: 2, per_page: 50, pages: 2 },
-    });
+      meta: {
+        total: 100,
+        page: params?.page ?? 1,
+        per_page: 50,
+        pages: 2,
+      },
+    }));
     const user = userEvent.setup();
     renderProviders();
     await waitFor(() => {
       expect(screen.getByText("Acme Clinic")).toBeInTheDocument();
     });
+    // Navigate to page 2 first
+    const nextBtn = screen.getByRole("button", { name: "Next" });
+    await user.click(nextBtn);
+    await waitFor(() => {
+      expect(screen.getByText(/Page 2 of 2/)).toBeInTheDocument();
+    });
+    // Now click Previous — page state goes from 2 back to 1
     const prevBtn = screen.getByRole("button", { name: "Previous" });
-    expect(prevBtn).not.toBeDisabled();
-    const callsBefore = vi.mocked(getProviders).mock.calls.length;
     await user.click(prevBtn);
     await waitFor(() => {
-      const calls = vi.mocked(getProviders).mock.calls.slice(callsBefore);
-      expect(calls.some((c) => c[0]?.page === 1)).toBe(true);
+      expect(screen.getByText(/Page 1 of 2/)).toBeInTheDocument();
     });
   });
 });

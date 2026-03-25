@@ -18,7 +18,7 @@ export default defineConfig(({mode}) => {
       rollupOptions: {
         output: {
           manualChunks: {
-            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-react': ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
             'vendor-recharts': ['recharts'],
             'vendor-maps': ['react-simple-maps'],
             'vendor-motion': ['motion'],

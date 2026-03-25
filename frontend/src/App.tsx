@@ -51,36 +51,44 @@ const DataManagement = lazy(() =>
   import("./pages/DataManagement").then((m) => ({ default: m.DataManagement })),
 );
 
+/** Wrap LiveMonitor in its SSE provider so the connection is only
+ *  opened when the user navigates to /live (not on every page). */
+function LiveMonitorWithProvider() {
+  return (
+    <LiveStreamProvider>
+      <LiveMonitor />
+    </LiveStreamProvider>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <LiveStreamProvider>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Layout />}>
-                <Route index element={<Dashboard />} />
-                <Route path="simulate" element={<Simulate />} />
-                <Route path="providers" element={<Providers />} />
-                <Route path="providers/:npi" element={<ProviderDetail />} />
-                <Route path="claims" element={<Claims />} />
-                <Route path="claims/:caseId" element={<ClaimDetail />} />
-                <Route path="investigations" element={<Investigations />} />
-                <Route
-                  path="investigations/:caseId"
-                  element={<InvestigationDetail />}
-                />
-                <Route path="risk-map" element={<RiskMap />} />
-                <Route path="fairness" element={<Fairness />} />
-                <Route path="analytics" element={<Analytics />} />
-                <Route path="validation" element={<Validation />} />
-                <Route path="live" element={<LiveMonitor />} />
-                <Route path="data" element={<DataManagement />} />
-              </Route>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="simulate" element={<Simulate />} />
+              <Route path="providers" element={<Providers />} />
+              <Route path="providers/:npi" element={<ProviderDetail />} />
+              <Route path="claims" element={<Claims />} />
+              <Route path="claims/:caseId" element={<ClaimDetail />} />
+              <Route path="investigations" element={<Investigations />} />
+              <Route
+                path="investigations/:caseId"
+                element={<InvestigationDetail />}
+              />
+              <Route path="risk-map" element={<RiskMap />} />
+              <Route path="fairness" element={<Fairness />} />
+              <Route path="analytics" element={<Analytics />} />
+              <Route path="validation" element={<Validation />} />
+              <Route path="live" element={<LiveMonitorWithProvider />} />
+              <Route path="data" element={<DataManagement />} />
             </Route>
-          </Routes>
-        </LiveStreamProvider>
+          </Route>
+        </Routes>
       </AuthProvider>
     </BrowserRouter>
   );
