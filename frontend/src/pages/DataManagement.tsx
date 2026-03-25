@@ -66,6 +66,8 @@ const SOURCE_CADENCE: Record<string, string> = {
 };
 
 const STAGE_NAMES: Record<string, string> = {
+  data_generation: "Generate Synthetic Data",
+  data_loading: "Load Data Sources",
   ingest: "Ingest Raw Data",
   peer_baselines: "Compute Peer Baselines",
   z_scores: "Calculate Z-Scores",
@@ -74,7 +76,7 @@ const STAGE_NAMES: Record<string, string> = {
   ml_scoring: "ML Scoring & Composite",
 };
 
-const STAGE_ORDER = [
+const RECALIBRATE_STAGES = [
   "ingest",
   "peer_baselines",
   "z_scores",
@@ -82,6 +84,13 @@ const STAGE_ORDER = [
   "provider_profiles",
   "ml_scoring",
 ];
+
+const SEED_STAGES = ["data_generation", "data_loading", ...RECALIBRATE_STAGES];
+
+function stageOrderForRun(runType?: string): string[] {
+  if (runType === "seed_synthetic") return SEED_STAGES;
+  return RECALIBRATE_STAGES;
+}
 
 /* ── Stage status icon ─────────────────────────────────────── */
 
@@ -555,7 +564,7 @@ function RecalibrateSection({
             </div>
 
             {/* Stage cards */}
-            {STAGE_ORDER.map((stageKey) => {
+            {stageOrderForRun(run?.run_type).map((stageKey) => {
               const s = stageMap[stageKey];
               const stageStatus = s?.status ?? "pending";
               return (
