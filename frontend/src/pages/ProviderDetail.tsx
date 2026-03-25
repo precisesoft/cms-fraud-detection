@@ -740,14 +740,6 @@ export function ProviderDetail() {
             </div>
           )}
 
-          {/* Evidence Graph */}
-          {graph && graph.nodes.length > 0 && (
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-              <h3 className="font-bold text-slate-800 mb-4">Evidence Graph</h3>
-              <EvidenceGraph nodes={graph.nodes} edges={graph.edges} />
-            </div>
-          )}
-
           {/* Enrollment */}
           <div className="bg-slate-900 text-white p-6 rounded-xl shadow-xl">
             <h3 className="font-bold text-indigo-300 text-xs uppercase tracking-widest mb-4">
@@ -790,6 +782,14 @@ export function ProviderDetail() {
           </div>
         </div>
       </div>
+
+      {/* Evidence Graph — full-width for readability */}
+      {graph && graph.nodes.length > 0 && (
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <h3 className="font-bold text-slate-800 mb-4">Evidence Graph</h3>
+          <EvidenceGraph nodes={graph.nodes} edges={graph.edges} />
+        </div>
+      )}
 
       <AssistantDrawer
         isOpen={chatOpen}
