@@ -26,24 +26,6 @@ import { getValidation } from "../lib/api";
 import type { ValidationReport } from "../lib/api";
 import { cn } from "../lib/utils";
 
-/** Pixels allocated per bar row for dynamic chart height calculation. */
-const PIXELS_PER_BAR = 48;
-
-/**
- * Returns a short display label for a regulation reason string.
- * Strips a leading code prefix (e.g. "424.535(A)(1)") and truncates to maxLen.
- */
-export function shortLabel(reason: string, maxLen = 24): string {
-  if (reason.length <= maxLen) return reason;
-  // Extract description after a leading regulation-code prefix, e.g. "424.535(A)(1) Noncompliance…"
-  const match = reason.match(/^[\d.()\w]+\s+(.+)$/);
-  if (match) {
-    const desc = match[1];
-    return desc.length <= maxLen ? desc : desc.slice(0, maxLen - 1) + "…";
-  }
-  return reason.slice(0, maxLen - 1) + "…";
-}
-
 export function Validation() {
   const [report, setReport] = React.useState<ValidationReport | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -88,8 +70,6 @@ export function Validation() {
     count: d.count,
     detected: d.detected,
   }));
-
-  const chartHeight = Math.max(280, chartData.length * PIXELS_PER_BAR);
 
   const detected =
     report.total_revoked_providers - (report.provider_level?.stable ?? 0);
@@ -267,10 +247,7 @@ export function Validation() {
                   innerRadius={60}
                   outerRadius={90}
                   strokeWidth={2}
-                  label={
-                    /* istanbul ignore next */ ({ name, value }) =>
-                      `${name}: ${value}`
-                  }
+                  label={({ name, value }) => `${name}: ${value}`}
                 >
                   {pieData.map((entry, i) => (
                     <Cell key={i} fill={entry.color} />
@@ -370,34 +347,22 @@ export function Validation() {
           <ShieldCheck className="w-4 h-4 text-emerald-500" /> Detection Rate by
           Revocation Reason
         </h3>
-        <div style={{ height: chartHeight }}>
+        <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
-              layout="vertical"
-              margin={{ top: 5, right: 30, bottom: 5, left: 10 }}
+              margin={{ top: 5, right: 20, bottom: 60, left: 10 }}
             >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#f1f5f9"
-                horizontal={false}
-              />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis
-                type="number"
-                domain={[0, 100]}
-                tick={{ fontSize: 10, fill: "#64748b" }}
-                tickFormatter={
-                  /* istanbul ignore next */ (v: number) => `${v}%`
-                }
+                dataKey="reason"
+                tick={{ fontSize: 10, fontWeight: 600, fill: "#64748b" }}
+                angle={-45}
+                textAnchor="end"
               />
               <YAxis
-                type="category"
-                dataKey="reason"
-                width={160}
-                tick={{ fontSize: 10, fontWeight: 600, fill: "#64748b" }}
-                tickFormatter={
-                  /* istanbul ignore next */ (v: string) => shortLabel(v)
-                }
+                tick={{ fontSize: 10, fill: "#64748b" }}
+                tickFormatter={(v: number) => `${v}%`}
               />
               <Tooltip
                 contentStyle={{
@@ -405,17 +370,9 @@ export function Validation() {
                   borderRadius: 8,
                   border: "1px solid #e2e8f0",
                 }}
-                formatter={
-                  /* istanbul ignore next */ (value: number) => [
-                    `${value}%`,
-                    "Detection Rate",
-                  ]
-                }
-                labelFormatter={
-                  /* istanbul ignore next */ (label: string) => label
-                }
+                formatter={(value: number) => [`${value}%`, "Detection Rate"]}
               />
-              <Bar dataKey="rate" radius={[0, 4, 4, 0]}>
+              <Bar dataKey="rate" radius={[4, 4, 0, 0]}>
                 {chartData.map((entry, i) => (
                   <Cell
                     key={i}
@@ -440,34 +397,19 @@ export function Validation() {
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50/80">
               <tr>
-                <th
-                  scope="col"
-                  className="px-5 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-widest"
-                >
+                <th scope="col" className="px-5 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Revocation Reason
                 </th>
-                <th
-                  scope="col"
-                  className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest"
-                >
+                <th scope="col" className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Total
                 </th>
-                <th
-                  scope="col"
-                  className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest"
-                >
+                <th scope="col" className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Detected
                 </th>
-                <th
-                  scope="col"
-                  className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest"
-                >
+                <th scope="col" className="px-5 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Rate
                 </th>
-                <th
-                  scope="col"
-                  className="px-5 py-3.5 text-center text-xs font-bold text-slate-500 uppercase tracking-widest"
-                >
+                <th scope="col" className="px-5 py-3.5 text-center text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Status
                 </th>
               </tr>

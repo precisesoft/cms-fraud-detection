@@ -24,7 +24,7 @@ export function EvidenceGraph({
   }
 
   const width = 720;
-  const height = 460;
+  const height = 360;
   const cx = width / 2;
   const cy = height / 2;
 
@@ -34,7 +34,7 @@ export function EvidenceGraph({
   );
   const providerNode = nodes[providerIndex];
   const outerNodes = nodes.filter((_, index) => index !== providerIndex);
-  const outerRadius = Math.min(width, height) / 2 - 56;
+  const outerRadius = Math.min(width, height) / 2 - 64;
 
   const positions = new Map<string, { x: number; y: number }>();
   positions.set(providerNode.id, { x: cx, y: cy });
@@ -55,7 +55,7 @@ export function EvidenceGraph({
 
     for (const word of words) {
       const candidate = current ? `${current} ${word}` : word;
-      if (candidate.length <= 20) {
+      if (candidate.length <= 16) {
         current = candidate;
       } else {
         if (current) {
@@ -70,12 +70,12 @@ export function EvidenceGraph({
     }
 
     if (!lines.length) {
-      return [label.length > 20 ? `${label.slice(0, 18)}…` : label];
+      return [label.length > 16 ? `${label.slice(0, 14)}…` : label];
     }
 
     return lines.slice(0, 2).map((line, index, array) => {
-      if (index === array.length - 1 && line.length > 20) {
-        return `${line.slice(0, 18)}…`;
+      if (index === array.length - 1 && line.length > 16) {
+        return `${line.slice(0, 14)}…`;
       }
       return line;
     });
@@ -84,7 +84,7 @@ export function EvidenceGraph({
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
-      className="w-full h-auto min-h-[380px]"
+      className="w-full h-auto min-h-[320px]"
     >
       {edges.map((edge, i) => {
         const source = positions.get(edge.source);
@@ -123,10 +123,10 @@ export function EvidenceGraph({
               opacity={0.9}
             />
             <rect
-              x={position.x - 56}
+              x={position.x - 46}
               y={position.y + (isProvider ? 22 : 20)}
-              width={112}
-              height={labelLines.length > 1 ? 28 : 18}
+              width={92}
+              height={labelLines.length > 1 ? 26 : 16}
               rx={6}
               fill="white"
               fillOpacity={0.92}
@@ -136,9 +136,9 @@ export function EvidenceGraph({
               <text
                 key={`${node.id}-${index}`}
                 x={position.x}
-                y={position.y + (isProvider ? 35 : 33) + index * 11}
+                y={position.y + (isProvider ? 33 : 31) + index * 10}
                 textAnchor="middle"
-                fontSize={10}
+                fontSize={9}
                 fontWeight={600}
                 fill="#475569"
               >

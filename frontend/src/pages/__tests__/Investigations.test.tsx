@@ -74,9 +74,12 @@ describe("Investigations", () => {
     vi.mocked(getPendingCases).mockResolvedValue(mockCases);
   });
 
-  it("renders Investigations heading", () => {
+  it("renders Investigations heading", async () => {
     renderInvestigations();
     expect(screen.getByText("Investigations")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(getPendingCases).toHaveBeenCalledWith(100);
+    });
   });
 
   it("shows case cards after loading", async () => {
@@ -219,7 +222,7 @@ describe("Investigations", () => {
     expect(screen.getByText("3 cases pending review")).toBeInTheDocument();
   });
 
-  it("high_risk card has rose border class", async () => {
+  it("high_risk card keeps neutral border styling", async () => {
     const { container } = renderInvestigations();
     await waitFor(() =>
       expect(screen.getByText("Alpha Clinic")).toBeInTheDocument(),
@@ -228,10 +231,10 @@ describe("Investigations", () => {
     const highRiskLink = Array.from(links).find((el) =>
       el.textContent?.includes("Alpha Clinic"),
     );
-    expect(highRiskLink?.className).toMatch(/border-rose/);
+    expect(highRiskLink?.className).toMatch(/border-slate-200/);
   });
 
-  it("review card has amber border class", async () => {
+  it("review card keeps neutral border styling", async () => {
     const { container } = renderInvestigations();
     await waitFor(() =>
       expect(screen.getByText("Beta Health")).toBeInTheDocument(),
@@ -240,7 +243,23 @@ describe("Investigations", () => {
     const reviewLink = Array.from(links).find((el) =>
       el.textContent?.includes("Beta Health"),
     );
-    expect(reviewLink?.className).toMatch(/border-amber/);
+    expect(reviewLink?.className).toMatch(/border-slate-200/);
+  });
+
+  it("high_risk card shows rose accent treatment", async () => {
+    const { container } = renderInvestigations();
+    await waitFor(() =>
+      expect(screen.getByText("Alpha Clinic")).toBeInTheDocument(),
+    );
+    expect(container.querySelector(".bg-rose-500")).toBeInTheDocument();
+  });
+
+  it("review card shows amber accent treatment", async () => {
+    const { container } = renderInvestigations();
+    await waitFor(() =>
+      expect(screen.getByText("Beta Health")).toBeInTheDocument(),
+    );
+    expect(container.querySelector(".bg-amber-500")).toBeInTheDocument();
   });
 
   it("high_risk score renders with text-3xl class", async () => {

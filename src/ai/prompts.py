@@ -95,7 +95,7 @@ Key columns:
 - npi (TEXT) — the provider NPI
 - action (TEXT) — 'APPROVED', 'FLAGGED', 'DENIED', 'ESCALATED'
 - notes (TEXT) — analyst notes
-- analyst (TEXT) — analyst who took the action (default 'demo-analyst')
+- analyst_id (TEXT) — analyst who took the action (default 'system')
 - created_at (TIMESTAMPTZ) — when the action was recorded
 
 ## Data Characteristics
@@ -234,7 +234,7 @@ FEW_SHOT_EXAMPLES = [
     {
         "question": "What actions have been taken on this provider?",
         "sql": (
-            "SELECT ca.case_id, ca.action, ca.notes, ca.analyst, ca.created_at "
+            "SELECT ca.case_id, ca.action, ca.notes, ca.analyst_id, ca.created_at "
             "FROM case_actions ca WHERE ca.npi = '1821387911' "
             "ORDER BY ca.created_at DESC;"
         ),

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -37,6 +37,10 @@ def _mock_conn(rows, description=None):
     return conn, cur
 
 
+def _mock_request(host: str = "127.0.0.1"):
+    return MagicMock(client=MagicMock(host=host))
+
+
 # ---------------------------------------------------------------------------
 # record_action tests
 # ---------------------------------------------------------------------------
@@ -46,26 +50,27 @@ def _mock_conn(rows, description=None):
 async def test_record_action_success():
     """Real case — NPI resolved from provider_service_cases."""
     conn, cur = _mock_conn(None)
-    # First fetchone returns NPI from DB, second returns insert id
-    cur.fetchone = AsyncMock(side_effect=[("1234567890",), (42,)])
+    cur.fetchone = AsyncMock(return_value=("1234567890",))
     req = CaseActionRequest(action=CaseAction.flagged, notes="Suspicious billing")
 
-    result = await record_action("case-001", req, conn)
+    with patch("src.api.routes.cases.write_audit_entry", new_callable=AsyncMock) as mock_audit:
+        result = await record_action("case-001", req, _mock_request(), conn)
 
     assert result.case_id == "case-001"
     assert result.action == CaseAction.flagged
     assert "FLAGGED" in result.message
+    mock_audit.assert_awaited_once()
 
 
 @pytest.mark.asyncio
 async def test_record_action_simulated_case():
     """Simulated case — NPI extracted from pipe-delimited case_id."""
     conn, cur = _mock_conn(None)
-    # DB lookup returns None (case not in provider_service_cases)
-    cur.fetchone = AsyncMock(side_effect=[None, (1,)])
+    cur.fetchone = AsyncMock(return_value=None)
     req = CaseActionRequest(action=CaseAction.approved)
 
-    result = await record_action("1760461826|99215|O", req, conn)
+    with patch("src.api.routes.cases.write_audit_entry", new_callable=AsyncMock):
+        result = await record_action("1760461826|99215|O", req, _mock_request(), conn)
 
     assert result.case_id == "1760461826|99215|O"
     assert result.action == CaseAction.approved
@@ -77,9 +82,10 @@ async def test_record_action_all_types():
     """Verify all action types are accepted."""
     for action in CaseAction:
         conn, cur = _mock_conn(None)
-        cur.fetchone = AsyncMock(side_effect=[("1234567890",), (1,)])
+        cur.fetchone = AsyncMock(return_value=("1234567890",))
         req = CaseActionRequest(action=action)
-        result = await record_action("case-001", req, conn)
+        with patch("src.api.routes.cases.write_audit_entry", new_callable=AsyncMock):
+            result = await record_action("case-001", req, _mock_request(), conn)
         assert result.action == action
 
 
@@ -87,8 +93,7 @@ async def test_record_action_all_types():
 async def test_record_action_empty_npi_raises_400():
     """When case_id has no pipe and DB returns None, npi becomes '' → 400 (line 50)."""
     conn, cur = _mock_conn(None)
-    # DB returns None, and the case_id has no pipe so split gives [""]
-    cur.fetchone = AsyncMock(side_effect=[None, (1,)])
+    cur.fetchone = AsyncMock(return_value=None)
     req = CaseActionRequest(action=CaseAction.flagged)
 
     from fastapi import HTTPException
@@ -96,10 +101,27 @@ async def test_record_action_empty_npi_raises_400():
     # case_id with no NPI prefix — split("|")[0] is the whole string which is non-empty
     # To trigger the empty-npi path we need case_id="" so split gives [""]
     with pytest.raises(HTTPException) as exc_info:
-        await record_action("", req, conn)
+        await record_action("", req, _mock_request(), conn)
 
     assert exc_info.value.status_code == 400
     assert "Cannot resolve NPI" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_record_action_writes_audit_entry_details():
+    conn, cur = _mock_conn(None)
+    cur.fetchone = AsyncMock(return_value=("1234567890",))
+    req = CaseActionRequest(action=CaseAction.escalated, notes="Needs supervisor review")
+
+    with patch("src.api.routes.cases.write_audit_entry", new_callable=AsyncMock) as mock_audit:
+        await record_action("case-001", req, _mock_request(), conn)
+
+    _, kwargs = mock_audit.await_args
+    assert kwargs["event_type"].value == "CASE_ACTION"
+    assert kwargs["action"] == "ESCALATED"
+    assert kwargs["entity_type"] == "case"
+    assert kwargs["entity_id"] == "case-001"
+    assert kwargs["details"] == {"npi": "1234567890", "notes": "Needs supervisor review"}
 
 
 # ---------------------------------------------------------------------------

@@ -152,8 +152,21 @@ CREATE TABLE IF NOT EXISTS case_actions (
     npi         TEXT NOT NULL,
     action      TEXT NOT NULL,
     notes       TEXT,
-    analyst_id  TEXT,
+    analyst_id  TEXT NOT NULL DEFAULT 'system',
     created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Immutable audit trail for analyst actions and AI queries
+CREATE TABLE IF NOT EXISTS audit_log (
+    id SERIAL PRIMARY KEY,
+    event_type VARCHAR(50) NOT NULL,
+    entity_type VARCHAR(50),
+    entity_id VARCHAR(100),
+    analyst VARCHAR(100) NOT NULL,
+    action VARCHAR(100) NOT NULL,
+    details JSONB NOT NULL DEFAULT '{}'::jsonb,
+    ip_address INET,
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Raw CMS Part B service-level data (one row per provider-HCPCS combination)
@@ -277,6 +290,10 @@ CREATE INDEX IF NOT EXISTS idx_features_state ON provider_features (state);
 CREATE INDEX IF NOT EXISTS idx_features_risk ON provider_features (max_seed_risk_score DESC);
 CREATE INDEX IF NOT EXISTS idx_features_type ON provider_features (provider_type);
 CREATE INDEX IF NOT EXISTS idx_case_actions_case_id ON case_actions (case_id);
+CREATE INDEX IF NOT EXISTS idx_case_actions_npi ON case_actions (npi);
+CREATE INDEX IF NOT EXISTS idx_audit_analyst ON audit_log (analyst);
+CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_raw_part_b_service_npi ON raw_part_b_service (npi);
 CREATE INDEX IF NOT EXISTS idx_raw_part_b_service_version ON raw_part_b_service (source_version);
 CREATE INDEX IF NOT EXISTS idx_raw_part_b_provider_npi ON raw_part_b_provider (npi);

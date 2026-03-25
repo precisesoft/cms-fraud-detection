@@ -9,16 +9,20 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from psycopg import AsyncConnection
 
+from src.api.auth import get_current_user
 from src.api.deps import get_db
+from src.api.routes.audit import write_audit_entry
 from src.api.schemas import (
+    AuditEventType,
     CaseAction,
     CaseActionRecord,
     CaseActionRequest,
     CaseActionResponse,
     CaseActionsListResponse,
+    UserResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -30,7 +34,9 @@ router = APIRouter(prefix="/cases", tags=["cases"])
 async def record_action(
     case_id: str,
     req: CaseActionRequest,
+    request: Request,
     conn: AsyncConnection = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ) -> CaseActionResponse:
     """Record an analyst action on a case.
 
@@ -51,13 +57,29 @@ async def record_action(
 
         await cur.execute(
             """
-            INSERT INTO case_actions (case_id, npi, action, notes)
-            VALUES (%s, %s, %s, %s)
-            RETURNING id
+            INSERT INTO case_actions (case_id, npi, action, notes, analyst_id)
+            VALUES (%s, %s, %s, %s, %s)
             """,
-            (case_id, npi, req.action.value, req.notes),
+            (
+                case_id,
+                npi,
+                req.action.value,
+                req.notes,
+                getattr(current_user, "username", "system"),
+            ),
         )
-        await conn.commit()
+
+    await write_audit_entry(
+        conn,
+        event_type=AuditEventType.case_action,
+        analyst=getattr(current_user, "username", "system"),
+        action=req.action.value,
+        entity_type="case",
+        entity_id=case_id,
+        details={"npi": npi, "notes": req.notes},
+        ip_address=request.client.host if request.client else None,
+    )
+    await conn.commit()
 
     logger.info("Case %s npi=%s action=%s", case_id, npi, req.action.value)
 

@@ -188,8 +188,8 @@ async def get_fairness(
     spd_state, di_state = _compute_parity(by_state)
     spd_spec, di_spec = _compute_parity(by_specialty)
 
-    spd = max((x for x in [spd_state, spd_spec] if x is not None), default=None)
-    di = min((x for x in [di_state, di_spec] if x is not None), default=None)
+    spd = max(filter(None, [spd_state, spd_spec]), default=None)
+    di = min(filter(None, [di_state, di_spec]), default=None)
 
     if blind:
         revocation_impact = RevocationImpact(

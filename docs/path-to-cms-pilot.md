@@ -82,7 +82,7 @@ This directly addresses a documented gap. GAO Report GAO-17-710 criticized FPS f
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Connect real CMS data**        | Replace public datasets with internal claim feeds. Same schema, same scoring engine — only the data source changes.                                                                              |
 | **FedRAMP compliance**           | Deploy to AWS GovCloud. Bedrock is already FedRAMP High. Standard ATO process for the application layer.                                                                                         |
-| **RBAC + audit trail**           | Add role-based access and action logging. Framework is ready (FastAPI middleware).                                                                                                               |
+| **RBAC + audit trail**           | JWT-backed RBAC is live, and Argus now records analyst case dispositions and text-to-SQL queries in an immutable `audit_log` for accountability and review.                                   |
 | **Reviewer workflow**            | Add case assignment, disposition tracking, and status management.                                                                                                                                |
 | **Real-time scoring**            | The system already demonstrates real-time scoring at sub-50ms latency via SSE streaming. Connecting to a live CMS claims feed (SQS/Kafka) is a configuration change, not an architecture change. |
 | **Multi-year temporal analysis** | Connect 3-5 years of Part B data to detect year-over-year growth, billing acceleration, and code-mix shifts.                                                                                     |
@@ -97,6 +97,16 @@ This directly addresses a documented gap. GAO Report GAO-17-710 criticized FPS f
 - **ML enhancement** — Supervised models trained on reviewer feedback data
 - **System integration** — Connect to UPIC systems, MPI, existing CMS tools
 - **508 compliance** — Full accessibility audit ([see Accessibility Report](./accessibility-report.md))
+
+### Audit & Accountability
+
+Argus now captures a durable audit trail for the investigator workflow:
+
+- **Case actions** — every approve, flag, deny, or escalate action is stored with the case ID, NPI, analyst username, notes, timestamp, and source IP.
+- **AI query activity** — each natural-language text-to-SQL request is logged with the requesting analyst, generated SQL, timestamp, and source IP, without persisting result sets.
+- **Review support** — `/api/audit` supports filtered retrieval by analyst, entity, and event type so supervisors can reconstruct what happened during an investigation.
+
+This gives CMS a straightforward accountability layer for QA reviews, incident response, and downstream case-management integration.
 
 ## The Ask (30 seconds)
 

@@ -55,6 +55,7 @@ def create_app() -> FastAPI:
     # --- Protected routers (require valid JWT) ---
     _auth = [Depends(get_current_user)]
 
+    from src.api.routes.audit import router as audit_router
     from src.api.routes.cases import router as cases_router
     from src.api.routes.chat import router as chat_router
     from src.api.routes.claims import router as claims_router
@@ -72,6 +73,7 @@ def create_app() -> FastAPI:
     from src.api.routes.validation import router as validation_router
 
     app.include_router(providers_router, prefix="/api", dependencies=_auth)
+    app.include_router(audit_router, prefix="/api", dependencies=_auth)
     app.include_router(cases_router, prefix="/api", dependencies=_auth)
     app.include_router(claims_router, prefix="/api", dependencies=_auth)
     app.include_router(score_router, prefix="/api", dependencies=_auth)

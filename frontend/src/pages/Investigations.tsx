@@ -10,18 +10,29 @@ import { getPendingCases } from "../lib/api";
 import type { PendingCase, RiskBand } from "../lib/api";
 import { StatusBadge } from "../components/StatusBadge";
 import { cn } from "../lib/utils";
-import { scoreColor, formatUSD, formatCaseId } from "../lib/helpers";
+import { formatUSD, formatCaseId } from "../lib/helpers";
 
 type SortDir = "desc" | "asc";
 
-function cardBorderClass(label: string | null | undefined): string {
+function cardAccentClass(label: string | null | undefined): string {
   switch (label) {
     case "high_risk":
-      return "border-rose-300 shadow-rose-100 bg-rose-50/20";
+      return "bg-rose-500";
     case "review":
-      return "border-amber-200 shadow-amber-50";
+      return "bg-amber-500";
     default:
-      return "border-slate-200";
+      return "bg-emerald-500";
+  }
+}
+
+function scoreSurfaceClass(label: string | null | undefined): string {
+  switch (label) {
+    case "high_risk":
+      return "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200";
+    case "review":
+      return "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200";
+    default:
+      return "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200";
   }
 }
 
@@ -148,12 +159,16 @@ export function Investigations() {
             <Link
               key={c.case_id}
               to={`/investigations/${c.case_id}`}
-              className={cn(
-                "block bg-white rounded-xl border shadow-sm hover:border-indigo-200 hover:shadow-md transition-all p-5 group",
-                cardBorderClass(c.seed_case_label),
-              )}
+              className="group block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-indigo-200 hover:bg-indigo-50/20 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
             >
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div
+                  aria-hidden="true"
+                  className={cn(
+                    "mt-1 hidden h-16 w-1 rounded-full sm:block",
+                    cardAccentClass(c.seed_case_label),
+                  )}
+                />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2">
                     <span className="text-sm font-bold text-indigo-600 font-mono">
@@ -182,16 +197,20 @@ export function Investigations() {
                     <span>Charge: {formatUSD(c.avg_submitted_charge)}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                <div className="flex items-center gap-3 self-center">
+                  <div
+                    className={cn(
+                      "min-w-[5.5rem] rounded-2xl px-4 py-3 text-right",
+                      scoreSurfaceClass(c.seed_case_label),
+                    )}
+                  >
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-current/80">
                       Risk
                     </p>
                     <p
                       className={cn(
-                        "font-black",
+                        "font-black text-current",
                         scoreTextSize(c.seed_case_label),
-                        scoreColor(c.seed_risk_score),
                       )}
                     >
                       {c.seed_risk_score ?? "—"}
