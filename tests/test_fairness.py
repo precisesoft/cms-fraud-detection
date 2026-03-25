@@ -186,6 +186,28 @@ class TestFairnessEndpoint:
         assert body["by_state"] == []
         assert body["by_specialty"] == []
 
+    async def test_di_zero_not_dropped(self):
+        """di=0.0 must be returned, not silently replaced with None (filter-None bug)."""
+        app = _make_app(
+            overall={"total": 100, "flagged": 20},
+            states=[
+                {"cohort": "CA", "provider_count": 50, "flagged_count": 20},
+                {"cohort": "TX", "provider_count": 50, "flagged_count": 0},
+            ],
+            specialties=[
+                {"cohort": "Internal Medicine", "provider_count": 60, "flagged_count": 12},
+                {"cohort": "Cardiology", "provider_count": 40, "flagged_count": 8},
+            ],
+        )
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/fairness")
+
+        body = resp.json()
+        # State DI = 0.0/0.4 = 0.0; specialty DI = 0.2/0.2 = 1.0 → min = 0.0
+        assert body["disparate_impact_ratio"] == 0.0
+
 
 # ---------------------------------------------------------------------------
 # Tests — pure function unit tests
@@ -243,7 +265,20 @@ class TestComputeParity:
         assert spd is None
         assert di is None
 
-    def test_perfect_parity(self):
+    def test_zero_min_rate_di_preserved(self):
+        """di=0.0 must not be silently dropped when merging state/specialty parity values."""
+        cohorts = [
+            CohortFairness(
+                cohort="A", provider_count=50, flagged_count=10, flagging_rate=0.2, is_outlier=False
+            ),
+            CohortFairness(
+                cohort="B", provider_count=50, flagged_count=0, flagging_rate=0.0, is_outlier=False
+            ),
+        ]
+        spd, di = _compute_parity(cohorts)
+        assert spd == 0.2  # 0.2 - 0.0
+        assert di == 0.0  # 0.0 / 0.2 — must not be dropped as falsy
+
         cohorts = [
             CohortFairness(
                 cohort="A", provider_count=50, flagged_count=10, flagging_rate=0.2, is_outlier=False

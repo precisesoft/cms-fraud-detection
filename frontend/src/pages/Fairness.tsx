@@ -74,8 +74,16 @@ export function Fairness() {
             </div>
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Disparate Impact Ratio</p>
-              <p className={cn('text-3xl font-black', report.disparate_impact_ratio != null && report.disparate_impact_ratio < 0.8 ? 'text-rose-600' : 'text-emerald-600')}>
-                {report.disparate_impact_ratio != null ? report.disparate_impact_ratio.toFixed(3) : '—'}
+              <p className={cn('text-3xl font-black', report.disparate_impact_ratio == null ? 'text-slate-400' : report.disparate_impact_ratio < 0.8 ? 'text-rose-600' : 'text-emerald-600')}>
+                {report.disparate_impact_ratio != null ? report.disparate_impact_ratio.toFixed(3) : (
+                  <span
+                    className="flex items-center gap-1 text-xl"
+                    title="Cannot be computed: all cohorts share the same flagging rate, or fewer than two cohorts have providers."
+                    aria-label="N/A — Cannot be computed: all cohorts share the same flagging rate, or fewer than two cohorts have providers."
+                  >
+                    N/A <Info className="w-4 h-4" aria-hidden="true" />
+                  </span>
+                )}
               </p>
             </div>
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
