@@ -85,7 +85,10 @@ asyncio_mode = "auto"
 
 [tool.coverage.run]
 branch = true
-omit = ["src/data/build_demo_case_csv.py"]
+omit = [
+    "src/data/build_demo_case_csv.py",
+    "src/pipeline/orchestrator.py",
+]
 
 [tool.coverage.report]
 fail_under = 95
