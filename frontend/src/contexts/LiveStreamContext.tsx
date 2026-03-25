@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
-/* ── Types ──────────────────────────────────────────────────── */
+/* -- Types -------------------------------------------------------- */
 
 export interface LiveClaimEvent {
   event_id: string;
@@ -22,6 +22,7 @@ export interface LiveClaimEvent {
   hcpcs_code: string;
   hcpcs_desc: string;
   submitted_charge: number;
+  provider_type: string;
   risk_score: number;
   legitimacy_score: number;
   case_label: "high_risk" | "review" | "stable";
@@ -36,14 +37,19 @@ export interface LiveStats {
   totalLatency: number;
 }
 
-export type TpsPreset = 1 | 2 | 5 | 10;
+export interface QueueStatus {
+  running: boolean;
+  ready: boolean;
+  queue_size: number;
+  position: number;
+  total_emitted: number;
+  tps: number;
+  subscribers: number;
+  build_time_s: number;
+  distribution: Record<string, number>;
+}
 
-const TPS_TO_INTERVAL: Record<TpsPreset, number> = {
-  1: 1.0,
-  2: 0.5,
-  5: 0.2,
-  10: 0.1,
-};
+export type TpsPreset = 1 | 2 | 5 | 10;
 
 interface LiveStreamState {
   running: boolean;
@@ -51,6 +57,7 @@ interface LiveStreamState {
   events: LiveClaimEvent[];
   stats: LiveStats;
   stateDots: Map<string, LiveClaimEvent>;
+  queueStatus: QueueStatus | null;
   start: () => void;
   stop: () => void;
   reset: () => void;
@@ -59,12 +66,17 @@ interface LiveStreamState {
 
 const LiveStreamContext = createContext<LiveStreamState | null>(null);
 
-/* ── Provider ───────────────────────────────────────────────── */
+/* -- Provider ----------------------------------------------------- */
 
 const MAX_FEED_EVENTS = 200;
+const RECONNECT_BASE_MS = 1000;
+const RECONNECT_MAX_MS = 10000;
 
 export function LiveStreamProvider({ children }: { children: ReactNode }) {
   const esRef = useRef<EventSource | null>(null);
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectAttempt = useRef(0);
+  const intentionalClose = useRef(false);
   const [running, setRunning] = useState(false);
   const [tps, setTpsState] = useState<TpsPreset>(2);
   const [events, setEvents] = useState<LiveClaimEvent[]>([]);
@@ -76,6 +88,7 @@ export function LiveStreamProvider({ children }: { children: ReactNode }) {
   const [stateDots, setStateDots] = useState<Map<string, LiveClaimEvent>>(
     new Map(),
   );
+  const [queueStatus, setQueueStatus] = useState<QueueStatus | null>(null);
 
   const handleEvent = useCallback((evt: LiveClaimEvent) => {
     setEvents((prev) => [evt, ...prev].slice(0, MAX_FEED_EVENTS));
@@ -91,32 +104,63 @@ export function LiveStreamProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const openConnection = useCallback(
-    (interval: number) => {
+  // Use a ref to break the self-reference cycle for reconnect
+  const connectRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    connectRef.current = () => {
       if (esRef.current) esRef.current.close();
-      const es = new EventSource(
-        `${API_BASE}/api/live/stream?interval=${interval}`,
-      );
+      intentionalClose.current = false;
+
+      const es = new EventSource(`${API_BASE}/api/live/stream`);
+
       es.onmessage = (e) => {
         const data: LiveClaimEvent = JSON.parse(e.data);
         handleEvent(data);
+        reconnectAttempt.current = 0;
       };
+
+      es.onopen = () => {
+        setRunning(true);
+        reconnectAttempt.current = 0;
+      };
+
       es.onerror = () => {
         es.close();
         esRef.current = null;
         setRunning(false);
+
+        // Auto-reconnect unless intentionally stopped
+        if (!intentionalClose.current) {
+          const delay = Math.min(
+            RECONNECT_BASE_MS * Math.pow(2, reconnectAttempt.current),
+            RECONNECT_MAX_MS,
+          );
+          reconnectAttempt.current += 1;
+          reconnectTimer.current = setTimeout(() => {
+            connectRef.current();
+          }, delay);
+        }
       };
+
       esRef.current = es;
-      setRunning(true);
-    },
-    [handleEvent],
-  );
+    };
+  }, [handleEvent]);
 
   const start = useCallback(() => {
-    openConnection(TPS_TO_INTERVAL[tps]);
-  }, [tps, openConnection]);
+    if (reconnectTimer.current) {
+      clearTimeout(reconnectTimer.current);
+      reconnectTimer.current = null;
+    }
+    connectRef.current();
+  }, []);
 
   const stop = useCallback(() => {
+    intentionalClose.current = true;
+    if (reconnectTimer.current) {
+      clearTimeout(reconnectTimer.current);
+      reconnectTimer.current = null;
+    }
     esRef.current?.close();
     esRef.current = null;
     setRunning(false);
@@ -129,19 +173,44 @@ export function LiveStreamProvider({ children }: { children: ReactNode }) {
     setStateDots(new Map());
   }, [stop]);
 
-  const setTps = useCallback(
-    (newTps: TpsPreset) => {
-      setTpsState(newTps);
-      if (esRef.current) {
-        openConnection(TPS_TO_INTERVAL[newTps]);
-      }
-    },
-    [openConnection],
-  );
+  const setTps = useCallback((newTps: TpsPreset) => {
+    setTpsState(newTps);
+    // Tell the server to adjust emission rate
+    fetch(`${API_BASE}/api/live/tps?tps=${newTps}`, { method: "POST" }).catch(
+      () => {},
+    );
+    // If not connected, reconnect
+    if (!esRef.current) {
+      connectRef.current();
+    }
+  }, []);
 
-  // Cleanup only on full app unmount (not navigation)
+  // Fetch queue status periodically
+  useEffect(() => {
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/live/status`);
+        if (res.ok && !cancelled) {
+          setQueueStatus(await res.json());
+        }
+      } catch {
+        // ignore
+      }
+    };
+    poll();
+    const interval = setInterval(poll, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
+      intentionalClose.current = true;
+      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
       esRef.current?.close();
     };
   }, []);
@@ -154,6 +223,7 @@ export function LiveStreamProvider({ children }: { children: ReactNode }) {
         events,
         stats,
         stateDots,
+        queueStatus,
         start,
         stop,
         reset,
@@ -165,7 +235,7 @@ export function LiveStreamProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/* ── Hook ───────────────────────────────────────────────────── */
+/* -- Hook --------------------------------------------------------- */
 
 export function useLiveStream(): LiveStreamState {
   const ctx = useContext(LiveStreamContext);

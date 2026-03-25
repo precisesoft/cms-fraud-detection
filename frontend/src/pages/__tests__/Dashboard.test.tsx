@@ -36,6 +36,7 @@ vi.mock("../../lib/api", () => ({
 const mockStats = {
   total_providers: 1234,
   total_cases: 5678,
+  pending_count: 42,
   risk_distribution: { high_risk: 50, review: 200, stable: 984 },
   top_providers: [
     {

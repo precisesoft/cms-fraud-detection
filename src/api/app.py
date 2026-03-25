@@ -11,17 +11,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.api.auth import get_current_user
 from src.api.deps import close_pool, open_pool
 from src.api.graph_client import close_neo4j, open_neo4j
+from src.api.live_queue import start_queue, stop_queue
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manage startup/shutdown of the async DB pool and Neo4j driver."""
+    """Manage startup/shutdown of the async DB pool, Neo4j driver, and live queue."""
     await open_pool()
     try:
         await open_neo4j()
     except Exception:
         pass  # Neo4j is optional — API works without it
+    await start_queue()
     yield
+    await stop_queue()
     await close_neo4j()
     await close_pool()
 
