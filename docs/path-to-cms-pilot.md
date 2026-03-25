@@ -34,15 +34,15 @@ We built an **explainable, proactive provider risk detection system** that turns
 
 ## Technical Architecture (60 seconds)
 
-| Layer    | Technology                                   | Why                                         |
-| -------- | -------------------------------------------- | ------------------------------------------- |
-| API      | FastAPI (Python 3.12)                        | Async, auto-documented, 14 live endpoints   |
-| Scoring  | Deterministic rule engine + Isolation Forest | Auditable, reproducible, anomaly detection  |
-| Data     | PostgreSQL 16 + Neo4j 5                      | Relational queries + relationship traversal |
-| AI       | AWS Bedrock (Claude)                         | **FedRAMP High authorized**, GovCloud-ready |
-| Frontend | Vite + React 19 + Tailwind v4                | Fast SPA, modern React, utility-first CSS   |
-| Infra    | AWS EKS + Istio + ArgoCD                     | Container-native, horizontally scalable     |
-| CI/CD    | GitHub Actions (unified pipeline)            | Gate + security + quality + build + deploy  |
+| Layer    | Technology                                   | Why                                               |
+| -------- | -------------------------------------------- | ------------------------------------------------- |
+| API      | FastAPI (Python 3.12)                        | Async, auto-documented, 20 route modules          |
+| Scoring  | Deterministic rule engine + Isolation Forest | Auditable, reproducible, anomaly detection        |
+| Data     | PostgreSQL 16 + Neo4j 5                      | Relational queries + relationship traversal       |
+| AI       | AWS Bedrock (Claude Sonnet 4.6 + Haiku 4.5)  | **FedRAMP High authorized**, GovCloud-ready       |
+| Frontend | Vite + React 19 + Tailwind v4                | 15-page SPA, responsive, modern React             |
+| Infra    | AWS EKS + Istio + ArgoCD                     | Container-native, horizontally scalable           |
+| CI/CD    | GitHub Actions (8-stage pipeline)            | Gate + security + quality + build + scan + deploy |
 
 **Data sources** — 19GB of real, public CMS data:
 
@@ -56,12 +56,19 @@ The system is designed so the **MVP maps directly to a pilot** with minimal rewo
 
 ### Already Production-Ready Today
 
+- **Validated**: 91% of eventually-revoked providers detected from billing patterns alone (94% for billing abuse, 100% for felony-related revocations)
 - Cloud-native containerized architecture (EKS + ArgoCD + Terraform)
 - FedRAMP-authorized AI (Bedrock = FedRAMP High)
-- Fully explainable — every score has complete provenance
+- Fully explainable — every score has complete provenance (13 named signals)
 - 99% backend / 98% frontend test coverage
+- 8-stage CI/CD pipeline with 6 security tools and CycloneDX SBOMs on every build
 - No PHI required — works on public data today
-- **Validated**: 91% of eventually-revoked providers detected from billing patterns alone (94% for billing abuse, 100% for felony-related revocations)
+- **RBAC + audit trail live** — JWT authentication, immutable `audit_log` recording every analyst action and AI query with timestamps and source IPs
+- **Investigation workflow live** — case queue with approve/flag/deny/escalate actions, priority-based triage
+- **Real-time scoring live** — SSE-streamed Live Payment Monitor scores claims in under 50ms
+- **ML anomaly detection live** — Isolation Forest with per-provider feature importance (leave-one-out, <100ms)
+- **Fraud ring clustering live** — recursive CTE detects connected provider networks via shared zip/org
+- **Data management live** — upload CSVs, trigger recalibration, retrain ML models via admin endpoints
 
 ## Integration with Existing CMS Systems
 
@@ -78,17 +85,21 @@ This directly addresses a documented gap. GAO Report GAO-17-710 criticized FPS f
 
 ### Pilot Phase (6 months)
 
-| Change                           | What It Takes                                                                                                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Connect real CMS data**        | Replace public datasets with internal claim feeds. Same schema, same scoring engine — only the data source changes.                                                                              |
-| **FedRAMP compliance**           | Deploy to AWS GovCloud. Bedrock is already FedRAMP High. Standard ATO process for the application layer.                                                                                         |
-| **RBAC + audit trail**           | JWT-backed RBAC is live, and Argus now records analyst case dispositions and text-to-SQL queries in an immutable `audit_log` for accountability and review.                                   |
-| **Reviewer workflow**            | Add case assignment, disposition tracking, and status management.                                                                                                                                |
-| **Real-time scoring**            | The system already demonstrates real-time scoring at sub-50ms latency via SSE streaming. Connecting to a live CMS claims feed (SQS/Kafka) is a configuration change, not an architecture change. |
-| **Multi-year temporal analysis** | Connect 3-5 years of Part B data to detect year-over-year growth, billing acceleration, and code-mix shifts.                                                                                     |
-| **Feedback loop**                | Reviewer decisions (true positive, false positive) feed back into signal weight tuning.                                                                                                          |
-| **FPS lead ingestion**           | Ingest provider NPIs flagged by FPS as investigation triggers. Configuration change, not architecture change.                                                                                    |
-| **UCM integration**              | Push Argus evidence packages to CMS Unified Case Management system for UPIC workflow.                                                                                                            |
+Several capabilities that were originally scoped for pilot have already been built in the MVP (marked **Done**). The remaining pilot work focuses on connecting to real CMS data and integrating with existing systems.
+
+| Change                           | Status   | What It Takes                                                                                                                                                          |
+| -------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Connect real CMS data**        | Pilot    | Replace public datasets with internal claim feeds. Same schema, same scoring engine — only the data source changes.                                                    |
+| **FedRAMP compliance**           | Pilot    | Deploy to AWS GovCloud. Bedrock is already FedRAMP High. Standard ATO process for the application layer.                                                               |
+| **RBAC + audit trail**           | **Done** | JWT-backed RBAC is live. Immutable `audit_log` records every analyst action and AI query with timestamps and source IPs. `/api/audit` supports filtered retrieval.     |
+| **Reviewer workflow**            | **Done** | Case queue with approve/flag/deny/escalate actions, priority-based triage, investigation detail with AI narratives — all live at `/investigations`.                    |
+| **Real-time scoring**            | **Done** | SSE-streamed Live Payment Monitor scores claims in under 50ms. Connecting to a live CMS claims feed (SQS/Kafka) is a configuration change, not an architecture change. |
+| **ML anomaly detection**         | **Done** | Isolation Forest (200 estimators, 49 features) with per-provider feature importance. Score Agreement indicator compares rule-based and ML scores.                      |
+| **Data management pipeline**     | **Done** | Admin endpoints for CSV upload, recalibration, and ML model retraining. Source version tracking with freshness monitoring.                                             |
+| **Multi-year temporal analysis** | Pilot    | Connect 3-5 years of Part B data to detect year-over-year growth, billing acceleration, and code-mix shifts. Signal taxonomy supports these additions.                 |
+| **Feedback loop**                | Pilot    | Reviewer decisions (true positive, false positive) feed back into signal weight tuning. Audit trail already captures the data needed.                                  |
+| **FPS lead ingestion**           | Pilot    | Ingest provider NPIs flagged by FPS as investigation triggers. Configuration change, not architecture change.                                                          |
+| **UCM integration**              | Pilot    | Push Argus evidence packages to CMS Unified Case Management system for UPIC workflow.                                                                                  |
 
 ### Production Scale (12 months)
 
