@@ -63,6 +63,7 @@ def create_app() -> FastAPI:
     from src.api.routes.dashboard import router as dashboard_router
     from src.api.routes.fairness import router as fairness_router
     from src.api.routes.graph import router as graph_router
+    from src.api.routes.ingest import router as ingest_router
     from src.api.routes.network import router as network_router
     from src.api.routes.providers import router as providers_router
     from src.api.routes.score import router as score_router
@@ -74,6 +75,7 @@ def create_app() -> FastAPI:
 
     app.include_router(providers_router, prefix="/api", dependencies=_auth)
     app.include_router(audit_router, prefix="/api", dependencies=_auth)
+    app.include_router(ingest_router, prefix="/api", dependencies=_auth)
     app.include_router(cases_router, prefix="/api", dependencies=_auth)
     app.include_router(claims_router, prefix="/api", dependencies=_auth)
     app.include_router(score_router, prefix="/api", dependencies=_auth)
