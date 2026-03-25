@@ -88,7 +88,7 @@ export function ClaimDetail() {
           <div className="flex items-center gap-1.5 mb-4">
             <h3 className="font-bold text-slate-800">Z-Score Metrics</h3>
             <InfoButton title="Z-Score Metrics">
-              Statistical deviation from peer norms for this service line. Volume Peer Z compares service count to peers; Charge Peer Z compares submitted charges; Bene Peer Z compares beneficiary count; Service/Bene Z measures service intensity per beneficiary. Z &gt; 2 indicates a statistical outlier.
+              Statistical deviation from peer norms for this service line. Volume Peer Z compares service count to peers; Charge Peer Z compares submitted charges; Bene Peer Z compares beneficiary count; Service/Bene Z measures service intensity per beneficiary. Z > 2 indicates a statistical outlier.
             </InfoButton>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
