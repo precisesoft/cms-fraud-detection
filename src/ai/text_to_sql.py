@@ -68,15 +68,16 @@ def validate_sql(sql: str) -> str:
     if _MULTI_STATEMENT.search(cleaned):
         raise SQLValidationError("Multiple statements are not allowed")
 
-    if not _ALLOWED_START.match(cleaned):
-        raise SQLValidationError(f"SQL must start with SELECT or WITH, got: {cleaned[:50]}")
-
-    # Strip string literals before checking forbidden patterns so that
-    # legitimate values like 'Credit Union Bank' don't false-positive.
+    # Check forbidden keywords BEFORE the SELECT/WITH check so that
+    # dangerous statements (DROP, DELETE) are caught even when
+    # provider_context would treat them as direct answers.
     stripped = re.sub(r"'[^']*'", "''", cleaned)
     forbidden = _FORBIDDEN_PATTERNS.search(stripped)
     if forbidden:
         raise SQLValidationError(f"Forbidden keyword: {forbidden.group()}")
+
+    if not _ALLOWED_START.match(cleaned):
+        raise SQLValidationError(f"SQL must start with SELECT or WITH, got: {cleaned[:50]}")
 
     # Add LIMIT if missing
     if not re.search(r"\bLIMIT\b", cleaned, re.IGNORECASE):
@@ -90,19 +91,34 @@ async def text_to_sql(
     conn: AsyncConnection,
     *,
     history: list[dict[str, str]] | None = None,
+    provider_context: str | None = None,
     model: str = CHAT_MODEL,
 ) -> dict[str, Any]:
     """Convert natural language question to SQL, execute, return results.
 
+    When provider_context is supplied, Claude may answer directly from the
+    context without generating SQL. If the response is not valid SQL,
+    we return it as a direct text answer instead of raising.
+
     Returns dict with keys:
         - answer: formatted text answer
-        - sql: the generated SQL query
+        - sql: the generated SQL query (None for direct answers)
         - columns: list of column names
         - rows: list of row dicts
         - row_count: number of rows returned
         - duration_ms: query execution time
     """
     system_prompt = build_text_to_sql_system_prompt()
+    if provider_context:
+        system_prompt += (
+            "\n\n## Current Provider Context\n"
+            f"{provider_context}\n\n"
+            "Answer directly from this context when the data is sufficient. "
+            "Only generate a SQL query when the question requires data NOT "
+            "shown above (e.g. peer comparisons, state-level aggregates, "
+            "other providers). For direct answers, respond with natural "
+            "language \u2014 no SQL."
+        )
 
     # Build messages with conversation history for context
     messages: list[dict[str, str]] = []
@@ -119,14 +135,36 @@ async def text_to_sql(
         temperature=0.0,
     )
 
-    raw_sql = response["text"].strip()
+    raw_response = response["text"].strip()
 
     # Strip markdown code fences if present
-    if raw_sql.startswith("```"):
-        raw_sql = re.sub(r"^```(?:sql)?\s*", "", raw_sql)
-        raw_sql = re.sub(r"\s*```$", "", raw_sql)
+    cleaned = raw_response
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:sql)?\s*", "", cleaned)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
 
-    sql = validate_sql(raw_sql)
+    # Try to validate as SQL. If it fails and we have provider context,
+    # treat natural-language responses as direct answers.
+    try:
+        sql = validate_sql(cleaned)
+    except SQLValidationError as e:
+        err_msg = str(e)
+        is_natural_language = (
+            "SQL must start with SELECT or WITH" in err_msg
+            or "Empty SQL" in err_msg
+            or "UNANSWERABLE" in err_msg
+        )
+        if provider_context and is_natural_language:
+            logger.info("text_to_sql direct_answer question=%r", question[:80])
+            return {
+                "answer": raw_response,
+                "sql": None,
+                "columns": [],
+                "rows": [],
+                "row_count": 0,
+                "duration_ms": 0,
+            }
+        raise
 
     # Execute with timeout
     start = time.monotonic()

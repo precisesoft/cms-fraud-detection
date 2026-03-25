@@ -98,7 +98,7 @@ describe("AssistantDrawer", () => {
     await user.type(textarea, "What is the risk?");
     await user.keyboard("{Enter}");
     await waitFor(() => {
-      expect(chat).toHaveBeenCalledWith("What is the risk?", []);
+      expect(chat).toHaveBeenCalledWith("What is the risk?", [], "NPI-001");
     });
     await waitFor(() => {
       expect(
@@ -144,6 +144,7 @@ describe("AssistantDrawer", () => {
       expect(chat).toHaveBeenCalledWith(
         "What are the top risk signals for this provider?",
         [],
+        "NPI-001",
       );
     });
   });
@@ -272,7 +273,7 @@ describe("AssistantDrawer", () => {
     expect(sendBtn).toBeDefined();
     await user.click(sendBtn!);
     await waitFor(() => {
-      expect(chat).toHaveBeenCalledWith("Via button", []);
+      expect(chat).toHaveBeenCalledWith("Via button", [], "NPI-001");
     });
   });
 
@@ -316,4 +317,24 @@ describe("AssistantDrawer", () => {
     });
     expect(screen.queryByText("SQL")).not.toBeInTheDocument();
   });
+
+  it("passes undefined npi when entityId is empty", async () => {
+    vi.mocked(chat).mockResolvedValue(mockResponse);
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(
+      <AssistantDrawer
+        isOpen={true}
+        onClose={onClose}
+        context={{ type: "provider", entityId: "", label: "Empty" }}
+      />,
+    );
+    const textarea = screen.getByPlaceholderText("Ask about this provider...");
+    await user.type(textarea, "Test query");
+    await user.keyboard("{Enter}");
+    await waitFor(() => {
+      expect(chat).toHaveBeenCalledWith("Test query", [], undefined);
+    });
+  });
+
 });

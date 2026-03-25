@@ -578,3 +578,71 @@ def test_format_answer_single_col_scalar_float():
     """Scalar float result."""
     result = _format_answer("q", ["score"], [{"score": 3.14}])
     assert "3.14" in result
+
+
+# ---------------------------------------------------------------------------
+# Direct answer fallback tests (provider_context)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_direct_answer_when_context_and_natural_language():
+    """With provider_context, natural language is returned as direct answer."""
+    from src.ai.text_to_sql import text_to_sql
+
+    mock_response = {"text": "This provider has a risk score of 42."}
+
+    with patch(
+        "src.ai.text_to_sql.invoke",
+        new_callable=AsyncMock,
+        return_value=mock_response,
+    ):
+        result = await text_to_sql(
+            "What is the risk?",
+            conn=AsyncMock(),
+            provider_context="NPI: 1234567890\nRisk: 42",
+        )
+
+    assert result["answer"] == "This provider has a risk score of 42."
+    assert result["sql"] is None
+    assert result["rows"] == []
+
+
+@pytest.mark.asyncio
+async def test_direct_answer_not_triggered_without_context():
+    """Without provider_context, natural language response still raises."""
+    from src.ai.text_to_sql import text_to_sql
+
+    mock_response = {"text": "I need you to specify which provider."}
+
+    with (
+        patch(
+            "src.ai.text_to_sql.invoke",
+            new_callable=AsyncMock,
+            return_value=mock_response,
+        ),
+        pytest.raises(SQLValidationError, match="SQL must start with SELECT"),
+    ):
+        await text_to_sql("What is the risk?", conn=AsyncMock())
+
+
+@pytest.mark.asyncio
+async def test_security_violation_still_raises_with_context():
+    """Forbidden keyword errors must not be swallowed even with context."""
+    from src.ai.text_to_sql import text_to_sql
+
+    mock_response = {"text": "DROP TABLE provider_features"}
+
+    with (
+        patch(
+            "src.ai.text_to_sql.invoke",
+            new_callable=AsyncMock,
+            return_value=mock_response,
+        ),
+        pytest.raises(SQLValidationError, match="Forbidden keyword"),
+    ):
+        await text_to_sql(
+            "Delete everything",
+            conn=AsyncMock(),
+            provider_context="NPI: 1234567890",
+        )

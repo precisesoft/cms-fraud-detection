@@ -11,6 +11,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from psycopg import AsyncConnection
+from psycopg.rows import dict_row
 
 from src.ai.chart_spec import generate_chart_spec
 from src.ai.text_to_sql import SQLValidationError, text_to_sql
@@ -37,6 +38,60 @@ def _serialize_row(row: dict) -> dict[str, object]:
     return out
 
 
+async def _build_provider_context(
+    npi: str,
+    conn: AsyncConnection,
+) -> str | None:
+    """Fetch provider data and format as a text context block."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute("SELECT * FROM provider_features WHERE npi = %s", [npi])
+        pf = await cur.fetchone()
+
+    if not pf:
+        return None
+
+    name = pf.get("provider_name") or "Unknown"
+    risk = pf.get("max_seed_risk_score", "N/A")
+    n_high = pf.get("n_high_risk_lines", 0)
+    n_lines = pf.get("service_line_count", 0)
+
+    lines = [
+        f"NPI: {npi}",
+        f"Name: {name}",
+        f"Specialty: {pf.get('provider_type', 'N/A')}",
+        f"Location: {pf.get('city', '')}, {pf.get('state', '')}",
+        f"Entity: {'Individual' if pf.get('entity_code') == 'I' else 'Organization'}",
+        f"Enrolled (2025): {'Yes' if pf.get('enrolled_2025') else 'No'}",
+        f"Revoked (2026): {'Yes' if pf.get('revoked_2026') else 'No'}",
+        "",
+        "Scores:",
+        f"  Max Risk Score: {risk} (0-30 stable, 31-50 review, 51+ high_risk)",
+        f"  Avg Risk Score: {pf.get('avg_seed_risk_score', 'N/A')}",
+        f"  High-Risk Service Lines: {n_high} of {n_lines}",
+        "",
+        "Peer Z-Scores (0=mean, >2=outlier):",
+    ]
+
+    for key, label in [("mean_volume_z", "Volume"), ("mean_charge_z", "Charge")]:
+        val = pf.get(key)
+        z_str = f"{val:.2f}" if val is not None else "N/A"
+        lines.append(f"  {label}: {z_str}")
+
+    pay = pf.get("total_estimated_payment")
+    fmt_pay = f"${pay:,.0f}" if pay else "N/A"
+    lines += [
+        "",
+        "Billing Summary:",
+        f"  Total Beneficiaries: {pf.get('total_benes', 'N/A')}",
+        f"  Total Services: {pf.get('total_services', 'N/A')}",
+        f"  Total Estimated Payment: {fmt_pay}",
+        f"  Service HHI: {pf.get('service_hhi', 'N/A')}",
+        f"  Top Code Share: {pf.get('top_code_share', 'N/A')}",
+    ]
+
+    return "\n".join(lines)
+
+
 @router.post("", response_model=ChatResponse)
 async def chat(
     req: ChatRequest,
@@ -52,8 +107,17 @@ async def chat(
     """
     history = [{"role": m.role, "content": m.content} for m in req.history] or None
 
+    provider_context: str | None = None
+    if req.npi:
+        provider_context = await _build_provider_context(req.npi, conn)
+
     try:
-        result = await text_to_sql(req.message, conn, history=history)
+        result = await text_to_sql(
+            req.message,
+            conn,
+            history=history,
+            provider_context=provider_context,
+        )
     except SQLValidationError as e:
         if "UNANSWERABLE" in str(e):
             return ChatResponse(
@@ -80,7 +144,7 @@ async def chat(
         ) from None
 
     serialized_rows = [_serialize_row(r) for r in result["rows"]]
-    chart = generate_chart_spec(result["columns"], serialized_rows)
+    chart = generate_chart_spec(result["columns"], serialized_rows) if serialized_rows else None
 
     await write_audit_entry(
         write_conn,

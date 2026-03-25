@@ -91,7 +91,7 @@ export function AssistantDrawer({
     setLoading(true);
 
     try {
-      const response = await chat(content, history);
+      const response = await chat(content, history, context.entityId || undefined);
       const assistantMsg = {
         id: nextId(),
         role: "assistant" as const,
