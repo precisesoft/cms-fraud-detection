@@ -92,6 +92,45 @@ async def _build_provider_context(
     return "\n".join(lines)
 
 
+async def _build_case_line(
+    case_id: str,
+    conn: AsyncConnection,
+) -> str | None:
+    """Fetch a single case row and format as context."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            "SELECT * FROM provider_service_cases WHERE case_id = %s",
+            [case_id],
+        )
+        row = await cur.fetchone()
+
+    if not row:
+        return None
+
+    charge = row.get("avg_submitted_charge")
+    fmt_charge = f"${charge:,.2f}" if charge else "N/A"
+    signals = row.get("seed_risk_reasons") or "none"
+    legit = row.get("seed_legitimacy_reasons") or "none"
+
+    return "\n".join(
+        [
+            f"Case ID: {case_id}",
+            f"HCPCS: {row.get('hcpcs_cd', '')} - {row.get('hcpcs_desc', '')}",
+            f"Place of Service: {row.get('place_of_service', 'N/A')}",
+            f"Total Services: {row.get('tot_srvcs', 'N/A')}",
+            f"Total Beneficiaries: {row.get('tot_benes', 'N/A')}",
+            f"Avg Submitted Charge: {fmt_charge}",
+            f"Risk Score: {row.get('seed_risk_score', 'N/A')}",
+            f"Legitimacy Score: {row.get('seed_legitimacy_score', 'N/A')}",
+            f"Case Label: {row.get('seed_case_label', 'N/A')}",
+            f"Risk Signals: {signals}",
+            f"Legitimacy Signals: {legit}",
+            f"Volume Z: {row.get('service_volume_peer_z', 'N/A')}",
+            f"Charge Z: {row.get('submitted_to_allowed_peer_z', 'N/A')}",
+        ]
+    )
+
+
 @router.post("", response_model=ChatResponse)
 async def chat(
     req: ChatRequest,
@@ -107,16 +146,24 @@ async def chat(
     """
     history = [{"role": m.role, "content": m.content} for m in req.history] or None
 
-    provider_context: str | None = None
-    if req.npi:
-        provider_context = await _build_provider_context(req.npi, conn)
+    context: str | None = None
+    if req.case_id:
+        parts = req.case_id.split("|")
+        npi = parts[0] if parts and parts[0].isdigit() else None
+        prov_ctx = await _build_provider_context(npi, conn) if npi else None
+        case_ctx = await _build_case_line(req.case_id, conn)
+        pieces = [p for p in [prov_ctx, case_ctx] if p]
+        if pieces:
+            context = "\n\n".join(pieces)
+    elif req.npi:
+        context = await _build_provider_context(req.npi, conn)
 
     try:
         result = await text_to_sql(
             req.message,
             conn,
             history=history,
-            provider_context=provider_context,
+            provider_context=context,
         )
     except SQLValidationError as e:
         if "UNANSWERABLE" in str(e):
