@@ -220,10 +220,10 @@ SELECT
   e.enrollment_state_cd,
   COALESCE(r.present_in_2026_revocation_file, 0)   AS present_in_2026_revocation_file,
   r.revocation_reason_summary,
-  ROUND(s.tot_srvcs / NULLIF(s.tot_benes, 0), 4)                                AS services_per_bene,
-  ROUND(s.avg_submitted_charge / NULLIF(s.avg_medicare_allowed_amt, 0), 4)       AS submitted_to_allowed_ratio,
-  ROUND(s.avg_medicare_payment_amt / NULLIF(s.avg_medicare_allowed_amt, 0), 4)   AS payment_to_allowed_ratio,
-  ROUND(s.tot_srvcs * s.avg_medicare_payment_amt, 2)                             AS estimated_case_payment_amt
+  ROUND((s.tot_srvcs / NULLIF(s.tot_benes, 0))::numeric, 4)                                AS services_per_bene,
+  ROUND((s.avg_submitted_charge / NULLIF(s.avg_medicare_allowed_amt, 0))::numeric, 4)       AS submitted_to_allowed_ratio,
+  ROUND((s.avg_medicare_payment_amt / NULLIF(s.avg_medicare_allowed_amt, 0))::numeric, 4)   AS payment_to_allowed_ratio,
+  ROUND((s.tot_srvcs * s.avg_medicare_payment_amt)::numeric, 2)                             AS estimated_case_payment_amt
 FROM service s
 LEFT JOIN provider   p USING (npi)
 LEFT JOIN enrollment e USING (npi)
@@ -412,23 +412,23 @@ CREATE TEMP TABLE _etl_zscored AS
 SELECT
   *,
   ROUND(
-    CASE WHEN COALESCE(peer_std_tot_srvcs, 0) = 0 THEN 0
-         ELSE (tot_srvcs - peer_avg_tot_srvcs) / peer_std_tot_srvcs END,
+    (CASE WHEN COALESCE(peer_std_tot_srvcs, 0) = 0 THEN 0
+         ELSE (tot_srvcs - peer_avg_tot_srvcs) / peer_std_tot_srvcs END)::numeric,
     4
   ) AS service_volume_peer_z,
   ROUND(
-    CASE WHEN COALESCE(peer_std_services_per_bene, 0) = 0 THEN 0
-         ELSE (services_per_bene - peer_avg_services_per_bene) / peer_std_services_per_bene END,
+    (CASE WHEN COALESCE(peer_std_services_per_bene, 0) = 0 THEN 0
+         ELSE (services_per_bene - peer_avg_services_per_bene) / peer_std_services_per_bene END)::numeric,
     4
   ) AS services_per_bene_peer_z,
   ROUND(
-    CASE WHEN COALESCE(peer_std_charge_ratio, 0) = 0 THEN 0
-         ELSE (submitted_to_allowed_ratio - peer_avg_charge_ratio) / peer_std_charge_ratio END,
+    (CASE WHEN COALESCE(peer_std_charge_ratio, 0) = 0 THEN 0
+         ELSE (submitted_to_allowed_ratio - peer_avg_charge_ratio) / peer_std_charge_ratio END)::numeric,
     4
   ) AS submitted_to_allowed_peer_z,
   ROUND(
-    CASE WHEN COALESCE(peer_std_payment, 0) = 0 THEN 0
-         ELSE (avg_medicare_payment_amt - peer_avg_payment) / peer_std_payment END,
+    (CASE WHEN COALESCE(peer_std_payment, 0) = 0 THEN 0
+         ELSE (avg_medicare_payment_amt - peer_avg_payment) / peer_std_payment END)::numeric,
     4
   ) AS payment_peer_z
 FROM _etl_peers\
@@ -612,9 +612,7 @@ _UPSERT_COLUMNS = """\
   payment_peer_z,
   seed_risk_score,
   seed_legitimacy_score,
-  seed_case_label,
-  seed_risk_reasons,
-  seed_legitimacy_reasons\
+  seed_case_label\
 """
 
 _UPSERT_UPDATE_SET = """\
@@ -660,9 +658,7 @@ _UPSERT_UPDATE_SET = """\
   payment_peer_z                = EXCLUDED.payment_peer_z,
   seed_risk_score               = EXCLUDED.seed_risk_score,
   seed_legitimacy_score         = EXCLUDED.seed_legitimacy_score,
-  seed_case_label               = EXCLUDED.seed_case_label,
-  seed_risk_reasons             = EXCLUDED.seed_risk_reasons,
-  seed_legitimacy_reasons       = EXCLUDED.seed_legitimacy_reasons\
+  seed_case_label               = EXCLUDED.seed_case_label\
 """
 
 

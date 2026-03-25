@@ -50,7 +50,7 @@ COLUMN_MAPS: dict[str, dict[str, str]] = {
         "Rndrng_Prvdr_State_Abrvtn": "provider_state",
         "Rndrng_Prvdr_Zip5": "provider_zip5",
         "Rndrng_Prvdr_Type": "provider_type",
-        "Rndrng_Prvdr_Mdcr_Prtcptg_Ind": "medicare_participating",
+        "Rndrng_Prvdr_Mdcr_Prtcptg_Ind": "medicare_participating_ind",
         "Tot_HCPCS_Cds": "total_hcpcs_codes",
         "Tot_Benes": "total_benes",
         "Tot_Srvcs": "total_services",

@@ -217,10 +217,13 @@ def load_raw_csv(
     )
     conn.commit()
 
-    # Step 7 — archive original file
-    archive_dir = ARCHIVE_DIR / source_type / version
-    archive_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(file_path, archive_dir / file_path.name)
+    # Step 7 — archive original file (best-effort; may fail in read-only containers)
+    try:
+        archive_dir = ARCHIVE_DIR / source_type / version
+        archive_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(file_path, archive_dir / file_path.name)
+    except OSError:
+        logger.debug("Skipping file archive (directory not writable): %s", ARCHIVE_DIR)
 
     return LoadResult(
         row_count=row_count,

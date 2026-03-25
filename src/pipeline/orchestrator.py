@@ -352,8 +352,8 @@ def _run_recalibrate_sync(run_id: int, db_url: str) -> PipelineResult:
         versions_map = {r[0]: r[1] for r in version_rows}
 
         source_versions = SourceVersions(
-            service=versions_map.get("service", "demo"),
-            provider=versions_map.get("provider", "demo"),
+            service=versions_map.get("part_b_service", versions_map.get("service", "demo")),
+            provider=versions_map.get("part_b_provider", versions_map.get("provider", "demo")),
             enrollment=versions_map.get("enrollment", "demo"),
             revocations=versions_map.get("revocations", "demo"),
         )
