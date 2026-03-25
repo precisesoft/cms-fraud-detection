@@ -106,10 +106,10 @@ class TestPartBProviderMap:
         assert COLUMN_MAPS["part_b_provider"]["Rndrng_NPI"] == "npi"
 
     def test_tot_hcpcs_cds_mapped(self) -> None:
-        assert COLUMN_MAPS["part_b_provider"]["Tot_HCPCS_Cds"] == "tot_hcpcs_cds"
+        assert COLUMN_MAPS["part_b_provider"]["Tot_HCPCS_Cds"] == "total_hcpcs_codes"
 
     def test_tot_mdcr_pymt_amt_mapped(self) -> None:
-        assert COLUMN_MAPS["part_b_provider"]["Tot_Mdcr_Pymt_Amt"] == "tot_medicare_payment_amt"
+        assert COLUMN_MAPS["part_b_provider"]["Tot_Mdcr_Pymt_Amt"] == "total_payment_amt"
 
     def test_required_includes_npi_and_payment(self) -> None:
         required = REQUIRED_COLUMNS["part_b_provider"]
@@ -130,7 +130,7 @@ class TestEnrollmentMap:
         assert COLUMN_MAPS["enrollment"]["NPI"] == "npi"
 
     def test_enrlmt_id_mapped(self) -> None:
-        assert COLUMN_MAPS["enrollment"]["ENRLMT_ID"] == "enrlmt_id"
+        assert COLUMN_MAPS["enrollment"]["ENRLMT_ID"] == "enrollment_id"
 
     def test_provider_type_desc_mapped(self) -> None:
         assert COLUMN_MAPS["enrollment"]["PROVIDER_TYPE_DESC"] == "provider_type_desc"
@@ -158,7 +158,7 @@ class TestRevocationsMap:
         assert COLUMN_MAPS["revocations"]["NPI"] == "npi"
 
     def test_revocation_rsn_mapped(self) -> None:
-        assert COLUMN_MAPS["revocations"]["REVOCATION_RSN"] == "revocation_rsn"
+        assert COLUMN_MAPS["revocations"]["REVOCATION_RSN"] == "revocation_reason"
 
     def test_required_includes_npi_and_reason(self) -> None:
         required = REQUIRED_COLUMNS["revocations"]

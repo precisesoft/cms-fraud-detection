@@ -43,10 +43,9 @@ PART_B_PROVIDER_CSV = (
 )
 
 ENROLLMENT_CSV = (
-    "NPI,ENRLMT_ID,PROVIDER_TYPE_CODE,PROVIDER_TYPE_DESC,STATE_CD,"
-    "ENRLMT_STUS_EFCTV_DT,ENRLMT_END_DT,MDCR_STUS_CD\n"
-    "1234567890,I20240101001,14,INTERNAL MEDICINE,IL,01/01/2024,,A\n"
-    "9876543210,I20230601002,06,CARDIOLOGY,FL,06/01/2023,,A\n"
+    "NPI,ENRLMT_ID,PROVIDER_TYPE_CODE,PROVIDER_TYPE_DESC,STATE_CD\n"
+    "1234567890,I20240101001,14,INTERNAL MEDICINE,IL\n"
+    "9876543210,I20230601002,06,CARDIOLOGY,FL\n"
 )
 
 REVOCATIONS_CSV = "NPI,REVOCATION_RSN\n9876543210,Fraudulent billing scheme\n"
@@ -359,7 +358,7 @@ class TestLoadRawCsvDbInteractions:
         params = upsert_call.args[1]
         assert params[0] == "revocations"
         assert params[1] == "q1_2026"
-        assert params[4] == "analyst"
+        assert params[5] == "analyst"
 
     def test_calls_commit(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         p = _write_csv(tmp_path, "revocations")
@@ -405,7 +404,7 @@ class TestLoadRawCsvColumnRenaming:
         load_raw_csv(p, "enrollment", "q4_2025", mock_conn, "admin")
         copy_sql = mock_conn.cursor.return_value.copy.call_args.args[0]
         assert "npi" in copy_sql
-        assert "enrlmt_id" in copy_sql
+        assert "enrollment_id" in copy_sql
         assert "state_cd" in copy_sql
         assert "NPI" not in copy_sql
         assert "ENRLMT_ID" not in copy_sql

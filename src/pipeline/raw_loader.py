@@ -197,15 +197,18 @@ def load_raw_csv(
     conn.execute(
         """
         INSERT INTO data_source_versions
-            (source_type, version, file_hash, row_count, uploaded_by)
-        VALUES (%s, %s, %s, %s, %s)
-        ON CONFLICT (source_type, version) DO UPDATE SET
-            file_hash   = EXCLUDED.file_hash,
-            row_count   = EXCLUDED.row_count,
-            uploaded_by = EXCLUDED.uploaded_by,
-            loaded_at   = NOW()
+            (source_type, current_version, file_path, file_hash,
+             row_count, uploaded_at, uploaded_by)
+        VALUES (%s, %s, %s, %s, %s, NOW(), %s)
+        ON CONFLICT (source_type) DO UPDATE SET
+            current_version = EXCLUDED.current_version,
+            file_path       = EXCLUDED.file_path,
+            file_hash       = EXCLUDED.file_hash,
+            row_count       = EXCLUDED.row_count,
+            uploaded_at     = NOW(),
+            uploaded_by     = EXCLUDED.uploaded_by
         """,
-        [source_type, version, file_hash, row_count, uploaded_by],
+        [source_type, version, str(file_path), file_hash, row_count, uploaded_by],
     )
     conn.commit()
 
