@@ -405,6 +405,10 @@ class ChatRequest(BaseModel):
         default=None,
         description="Provider NPI for context-aware chat",
     )
+    case_id: str | None = Field(
+        default=None,
+        description="Case ID (NPI|HCPCS|POS) for claim-level context",
+    )
 
 
 class ChatResponse(BaseModel):

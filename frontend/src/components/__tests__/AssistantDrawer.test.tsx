@@ -98,7 +98,7 @@ describe("AssistantDrawer", () => {
     await user.type(textarea, "What is the risk?");
     await user.keyboard("{Enter}");
     await waitFor(() => {
-      expect(chat).toHaveBeenCalledWith("What is the risk?", [], "NPI-001");
+      expect(chat).toHaveBeenCalledWith("What is the risk?", [], "NPI-001", undefined);
     });
     await waitFor(() => {
       expect(
@@ -145,6 +145,7 @@ describe("AssistantDrawer", () => {
         "What are the top risk signals for this provider?",
         [],
         "NPI-001",
+        undefined,
       );
     });
   });
@@ -273,7 +274,7 @@ describe("AssistantDrawer", () => {
     expect(sendBtn).toBeDefined();
     await user.click(sendBtn!);
     await waitFor(() => {
-      expect(chat).toHaveBeenCalledWith("Via button", [], "NPI-001");
+      expect(chat).toHaveBeenCalledWith("Via button", [], "NPI-001", undefined);
     });
   });
 
@@ -333,7 +334,7 @@ describe("AssistantDrawer", () => {
     await user.type(textarea, "Test query");
     await user.keyboard("{Enter}");
     await waitFor(() => {
-      expect(chat).toHaveBeenCalledWith("Test query", [], undefined);
+      expect(chat).toHaveBeenCalledWith("Test query", [], undefined, undefined);
     });
   });
 
