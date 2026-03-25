@@ -182,7 +182,7 @@ export function LiveMonitor() {
   const navigate = useNavigate();
   const esRef = useRef<EventSource | null>(null);
   const [running, setRunning] = useState(false);
-  const [speed, setSpeed] = useState(1.5);
+  const [speed, setSpeed] = useState(0.5);
   const [events, setEvents] = useState<LiveClaimEvent[]>([]);
   const [stats, setStats] = useState<LiveStats>({
     total: 0,
@@ -280,17 +280,17 @@ export function LiveMonitor() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-xs text-slate-500 font-medium">Speed</label>
+          <label className="text-xs text-slate-500 font-medium">TPS</label>
           <input
             type="range"
-            min={0.5}
-            max={3}
-            step={0.5}
+            min={0.1}
+            max={2}
+            step={0.1}
             value={speed}
             onChange={(e) => setSpeed(Number(e.target.value))}
             className="w-24 accent-indigo-600"
           />
-          <span className="text-xs text-slate-600 font-mono w-8">{speed}s</span>
+          <span className="text-xs text-slate-600 font-mono w-12">~{Math.round(1 / speed)}/s</span>
           <button
             onClick={running ? stopStream : startStream}
             className={cn(

@@ -63,7 +63,7 @@ _FEATURES_SQL = """SELECT * FROM provider_features WHERE npi = %s"""
 
 @router.get("/stream")
 async def stream_claims(
-    interval: float = Query(default=1.5, ge=0.5, le=5.0),
+    interval: float = Query(default=0.5, ge=0.1, le=2.0),
     limit: int = Query(default=0, ge=0),
 ):
     """Stream scored claims as Server-Sent Events.
