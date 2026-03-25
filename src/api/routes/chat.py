@@ -9,13 +9,15 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from psycopg import AsyncConnection
 
 from src.ai.chart_spec import generate_chart_spec
 from src.ai.text_to_sql import SQLValidationError, text_to_sql
-from src.api.deps import get_readonly_db
-from src.api.schemas import ChatRequest, ChatResponse
+from src.api.auth import get_current_user
+from src.api.deps import get_db, get_readonly_db
+from src.api.routes.audit import write_audit_entry
+from src.api.schemas import AuditEventType, ChatRequest, ChatResponse, UserResponse
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +40,10 @@ def _serialize_row(row: dict) -> dict[str, object]:
 @router.post("", response_model=ChatResponse)
 async def chat(
     req: ChatRequest,
+    request: Request,
     conn: AsyncConnection = Depends(get_readonly_db),
+    write_conn: AsyncConnection = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ) -> ChatResponse:
     """Answer a natural language question about the CMS data.
 
@@ -76,6 +81,18 @@ async def chat(
 
     serialized_rows = [_serialize_row(r) for r in result["rows"]]
     chart = generate_chart_spec(result["columns"], serialized_rows)
+
+    await write_audit_entry(
+        write_conn,
+        event_type=AuditEventType.query,
+        analyst=getattr(current_user, "username", "system"),
+        action="TEXT_TO_SQL_QUERY",
+        entity_type="chat",
+        entity_id=None,
+        details={"message": req.message, "sql": result["sql"]},
+        ip_address=request.client.host if request.client else None,
+    )
+    await write_conn.commit()
 
     return ChatResponse(
         answer=result["answer"],

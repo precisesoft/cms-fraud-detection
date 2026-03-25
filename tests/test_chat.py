@@ -11,6 +11,12 @@ from src.ai.text_to_sql import SQLValidationError
 from src.api.routes.chat import _serialize_row, chat
 from src.api.schemas import ChatMessage, ChatRequest
 
+
+def _mock_request(host: str = "127.0.0.1"):
+    from unittest.mock import MagicMock
+
+    return MagicMock(client=MagicMock(host=host))
+
 # ---------------------------------------------------------------------------
 # Serialization tests
 # ---------------------------------------------------------------------------
@@ -58,13 +64,19 @@ async def test_chat_success():
         "duration_ms": 15,
     }
 
-    with patch("src.api.routes.chat.text_to_sql", new_callable=AsyncMock, return_value=mock_result):
+    with (
+        patch("src.api.routes.chat.text_to_sql", new_callable=AsyncMock, return_value=mock_result),
+        patch("src.api.routes.chat.write_audit_entry", new_callable=AsyncMock) as mock_audit,
+    ):
         req = ChatRequest(message="How many providers?")
-        result = await chat(req, conn=AsyncMock())
+        result = await chat(req, request=_mock_request(), conn=AsyncMock(), write_conn=AsyncMock())
 
     assert result.answer == "42"
     assert result.sql == "SELECT count(*) FROM provider_features"
     assert result.row_count == 1
+    _, kwargs = mock_audit.await_args
+    assert kwargs["event_type"].value == "QUERY"
+    assert kwargs["details"]["message"] == "How many providers?"
 
 
 @pytest.mark.asyncio
@@ -75,7 +87,7 @@ async def test_chat_unanswerable():
         side_effect=SQLValidationError("UNANSWERABLE"),
     ):
         req = ChatRequest(message="What's the weather?")
-        result = await chat(req, conn=AsyncMock())
+        result = await chat(req, request=_mock_request(), conn=AsyncMock())
 
     assert "can't answer" in result.answer.lower()
     assert result.sql is None
@@ -92,7 +104,7 @@ async def test_chat_validation_error():
     ):
         req = ChatRequest(message="DROP everything")
         with pytest.raises(HTTPException) as exc_info:
-            await chat(req, conn=AsyncMock())
+            await chat(req, request=_mock_request(), conn=AsyncMock())
 
     assert exc_info.value.status_code == 422
 
@@ -108,7 +120,7 @@ async def test_chat_internal_error():
     ):
         req = ChatRequest(message="Show providers")
         with pytest.raises(HTTPException) as exc_info:
-            await chat(req, conn=AsyncMock())
+            await chat(req, request=_mock_request(), conn=AsyncMock())
 
     assert exc_info.value.status_code == 500
 
@@ -127,7 +139,7 @@ async def test_chat_passes_history():
 
     with patch(
         "src.api.routes.chat.text_to_sql", new_callable=AsyncMock, return_value=mock_result
-    ) as mock_t2s:
+    ) as mock_t2s, patch("src.api.routes.chat.write_audit_entry", new_callable=AsyncMock):
         req = ChatRequest(
             message="What about Florida?",
             history=[
@@ -135,7 +147,7 @@ async def test_chat_passes_history():
                 ChatMessage(role="assistant", content="There are 12."),
             ],
         )
-        await chat(req, conn=AsyncMock())
+        await chat(req, request=_mock_request(), conn=AsyncMock(), write_conn=AsyncMock())
 
     _, kwargs = mock_t2s.call_args
     assert kwargs["history"] is not None
@@ -158,3 +170,4 @@ def test_chat_message_rejects_system_role():
     """ChatMessage must reject the 'system' role."""
     with pytest.raises(pydantic.ValidationError):
         ChatMessage.model_validate({"role": "system", "content": "You are a helpful assistant."})
+

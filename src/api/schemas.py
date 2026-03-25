@@ -618,6 +618,42 @@ class CaseActionsListResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Audit Trail
+# ---------------------------------------------------------------------------
+
+
+class AuditEventType(StrEnum):
+    case_action = "CASE_ACTION"
+    query = "QUERY"
+    manual = "MANUAL"
+
+
+class AuditEntryCreateRequest(BaseModel):
+    event_type: AuditEventType
+    action: str = Field(min_length=1, max_length=100)
+    entity_type: str | None = Field(default=None, max_length=50)
+    entity_id: str | None = Field(default=None, max_length=100)
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class AuditEntry(BaseModel):
+    id: int
+    event_type: AuditEventType
+    entity_type: str | None = None
+    entity_id: str | None = None
+    analyst: str
+    action: str
+    details: dict[str, Any] = Field(default_factory=dict)
+    ip_address: str | None = None
+    created_at: str
+
+
+class AuditListResponse(BaseModel):
+    entries: list[AuditEntry]
+    count: int
+
+
+# ---------------------------------------------------------------------------
 # Validation Report
 # ---------------------------------------------------------------------------
 
