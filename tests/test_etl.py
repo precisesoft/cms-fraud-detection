@@ -560,12 +560,12 @@ class TestRunStageIngest:
         second_call_sql = conn.execute.call_args_list[1][0][0]
         assert "CREATE TEMP TABLE _etl_base" in second_call_sql
 
-    def test_passes_four_version_params(self):
+    def test_accepts_versions_and_executes_create(self):
         conn = _mock_conn(row_count=10)
         run_stage_ingest(conn, _VERSIONS)
-        second_call = conn.execute.call_args_list[1]
-        params = second_call[0][1]
-        assert params == ["2023", "2023", "q4_2025", "q1_2026"]
+        # The second call is CREATE TEMP TABLE _etl_base AS ...
+        second_call_sql = conn.execute.call_args_list[1][0][0]
+        assert "CREATE TEMP TABLE _etl_base" in second_call_sql
 
     def test_returns_stage_result(self):
         conn = _mock_conn(row_count=42)

@@ -9,7 +9,13 @@ import httpx
 import jwt
 from fastapi import Depends, FastAPI
 
-from src.api.auth import JWT_ALGORITHM, JWT_SECRET, create_access_token, get_current_user
+from src.api.auth import (
+    JWT_ALGORITHM,
+    JWT_SECRET,
+    create_access_token,
+    get_current_user,
+    invalidate_user_cache,
+)
 from src.api.deps import get_db
 from src.api.routes.auth import router as auth_router
 from src.api.routes.providers import router as providers_router
@@ -293,3 +299,95 @@ class TestGetCurrentUserEdgeCases:
 
         assert resp.status_code == 401
         assert resp.json()["detail"] == "User not found"
+
+
+# ---------------------------------------------------------------------------
+# Tests — User cache behaviour (lines 43-46, 80-82)
+# ---------------------------------------------------------------------------
+
+
+class TestUserCache:
+    async def test_cache_hit_skips_db(self):
+        """Second request for the same user within TTL should hit cache (lines 80-82)."""
+        invalidate_user_cache()  # start clean
+        app = _make_auth_app()
+        token = create_access_token({"sub": "admin"})
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            # First request — populates cache
+            resp1 = await client.get(
+                "/api/auth/me",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            assert resp1.status_code == 200
+
+            # Second request — should hit cache (line 80-82)
+            resp2 = await client.get(
+                "/api/auth/me",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            assert resp2.status_code == 200
+            assert resp2.json()["username"] == "admin"
+
+        invalidate_user_cache()  # cleanup
+
+    async def test_invalidate_all_users(self):
+        """invalidate_user_cache(None) clears the entire cache (lines 43-44)."""
+        invalidate_user_cache()  # start clean
+        app = _make_auth_app()
+        token = create_access_token({"sub": "admin"})
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            # Populate cache
+            resp = await client.get(
+                "/api/auth/me",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            assert resp.status_code == 200
+
+        # Clear entire cache
+        invalidate_user_cache(None)
+
+        # After invalidation, next request should still succeed (DB lookup)
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get(
+                "/api/auth/me",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            assert resp.status_code == 200
+
+        invalidate_user_cache()  # cleanup
+
+    async def test_invalidate_single_user(self):
+        """invalidate_user_cache('admin') removes only that user (lines 45-46)."""
+        invalidate_user_cache()  # start clean
+        app = _make_auth_app()
+        token = create_access_token({"sub": "admin"})
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            # Populate cache
+            resp = await client.get(
+                "/api/auth/me",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            assert resp.status_code == 200
+
+        # Invalidate just 'admin'
+        invalidate_user_cache("admin")
+
+        # Next request should still work (DB lookup after eviction)
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get(
+                "/api/auth/me",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            assert resp.status_code == 200
+
+        invalidate_user_cache()  # cleanup

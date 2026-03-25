@@ -93,3 +93,126 @@ async def test_claim_score_details_returns_404_when_missing():
         response = await client.get("/api/claims/missing/score-details")
 
     assert response.status_code == 404
+
+
+# ---------- _hybrid_label_from_score fallback coverage ----------
+
+
+async def test_hybrid_label_fallback_when_risk_label_is_none():
+    """score_row exists but risk_label is falsy → _hybrid_label_from_score called."""
+    score_row_no_label = {
+        "predicted_probability": 55.0,
+        "composite_score": 71.4,
+        "risk_label": None,
+        "model_name": "weak_supervised_k8s_model",
+        "model_version": "v1",
+    }
+    app = _make_app(CLAIM_ROW, LATEST_MODEL, score_row_no_label)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get("/api/claims/1234567890-99213/score-details")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    # 71.4 >= 70 → "high"
+    assert body["hybrid_risk_label"] == "high"
+    assert body["hybrid_composite_score"] == 71.4
+
+
+async def test_hybrid_label_critical_threshold():
+    """composite_score >= 90 → critical."""
+    score_row = {
+        "predicted_probability": 95.0,
+        "composite_score": 92.5,
+        "risk_label": None,
+        "model_name": "weak_supervised_k8s_model",
+        "model_version": "v1",
+    }
+    app = _make_app(CLAIM_ROW, LATEST_MODEL, score_row)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get("/api/claims/1234567890-99213/score-details")
+
+    assert resp.status_code == 200
+    assert resp.json()["hybrid_risk_label"] == "critical"
+
+
+async def test_hybrid_label_medium_threshold():
+    """composite_score >= 40 and < 70 → medium."""
+    score_row = {
+        "predicted_probability": 40.0,
+        "composite_score": 55.0,
+        "risk_label": None,
+        "model_name": "weak_supervised_k8s_model",
+        "model_version": "v1",
+    }
+    app = _make_app(CLAIM_ROW, LATEST_MODEL, score_row)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get("/api/claims/1234567890-99213/score-details")
+
+    assert resp.status_code == 200
+    assert resp.json()["hybrid_risk_label"] == "medium"
+
+
+async def test_hybrid_label_low_threshold():
+    """composite_score < 40 → low."""
+    score_row = {
+        "predicted_probability": 10.0,
+        "composite_score": 20.0,
+        "risk_label": None,
+        "model_name": "weak_supervised_k8s_model",
+        "model_version": "v1",
+    }
+    app = _make_app(CLAIM_ROW, LATEST_MODEL, score_row)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get("/api/claims/1234567890-99213/score-details")
+
+    assert resp.status_code == 200
+    assert resp.json()["hybrid_risk_label"] == "low"
+
+
+async def test_hybrid_label_none_when_no_score_row():
+    """No score_row at all → hybrid_score is None → label is None."""
+    app = _make_app(CLAIM_ROW, LATEST_MODEL, None)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get("/api/claims/1234567890-99213/score-details")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["hybrid_risk_label"] is None
+    assert body["hybrid_composite_score"] is None
+    # model_name/model_version fall back to latest_model (lines 188-193)
+    assert body["model_name"] == "weak_supervised_k8s_model"
+    assert body["model_version"] == "v1"
+
+
+async def test_model_fallback_when_score_row_lacks_model_fields():
+    """score_row exists but model_name/model_version are None → fallback to latest_model."""
+    score_row_no_model = {
+        "predicted_probability": 50.0,
+        "composite_score": 45.0,
+        "risk_label": None,
+        "model_name": None,
+        "model_version": None,
+    }
+    app = _make_app(CLAIM_ROW, LATEST_MODEL, score_row_no_model)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get("/api/claims/1234567890-99213/score-details")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    # Falls back to latest_model for model_name/model_version (lines 188-193)
+    assert body["model_name"] == "weak_supervised_k8s_model"
+    assert body["model_version"] == "v1"
+    # 45.0 >= 40 → medium
+    assert body["hybrid_risk_label"] == "medium"
