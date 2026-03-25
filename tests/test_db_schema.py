@@ -47,6 +47,25 @@ def test_init_sql_raw_tables():
         assert f"CREATE TABLE IF NOT EXISTS {table}" in sql, f"{table} missing from init.sql"
 
 
+def test_init_sql_raw_zip_column_name():
+    """provider_zip5 must be used consistently — not provider_zip."""
+    sql = _read(INIT_SQL)
+    assert "provider_zip5" in sql, "raw tables must use provider_zip5 (not provider_zip)"
+    assert "    provider_zip " not in sql, "provider_zip (without 5) found — rename to provider_zip5"
+
+
+def test_init_sql_raw_medicare_column_name():
+    """raw_part_b_service and raw_part_b_provider must both use medicare_participating_ind."""
+    sql = _read(INIT_SQL)
+    # Extract the raw_part_b_provider table block and verify the column name
+    assert "medicare_participating_ind" in sql, "medicare_participating_ind not found"
+    # The raw provider table must not use the short form (provider_features uses the short form,
+    # so count occurrences: provider_features(1) + raw_part_b_service(1) + raw_part_b_provider(1)
+    assert sql.count("medicare_participating_ind") >= 2, (
+        "both raw_part_b_service and raw_part_b_provider must use medicare_participating_ind"
+    )
+
+
 def test_init_sql_tracking_tables():
     sql = _read(INIT_SQL)
     assert "CREATE TABLE IF NOT EXISTS data_source_versions" in sql
