@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Dashboard } from "../Dashboard";
 import { getDashboard, getPendingCases } from "../../lib/api";
 
@@ -68,10 +69,15 @@ const mockPending = [
 ];
 
 function renderDashboard() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
   return render(
-    <MemoryRouter>
-      <Dashboard />
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -113,18 +119,18 @@ describe("Dashboard", () => {
 
   it("shows Top Flagged Providers section with provider name", async () => {
     renderDashboard();
+    expect(screen.getByText("Top Flagged Providers")).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByText("Top Flagged Providers")).toBeInTheDocument();
+      expect(screen.getByText("Acme Clinic")).toBeInTheDocument();
     });
-    expect(screen.getByText("Acme Clinic")).toBeInTheDocument();
   });
 
   it("shows Pending Review Cases section with case data", async () => {
     renderDashboard();
+    expect(screen.getByText("Pending Review Cases")).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByText("Pending Review Cases")).toBeInTheDocument();
+      expect(screen.getByText("Beta Labs")).toBeInTheDocument();
     });
-    expect(screen.getByText("Beta Labs")).toBeInTheDocument();
   });
 
   it("shows error message when getDashboard rejects", async () => {

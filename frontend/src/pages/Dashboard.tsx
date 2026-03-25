@@ -1,9 +1,7 @@
-import React from 'react';
 import { ArrowRight, ShieldAlert, Users, FileText, AlertTriangle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
-import { getDashboard, getPendingCases } from '../lib/api';
-import type { DashboardStats, PendingCase } from '../lib/api';
+import { useDashboard, usePendingCases } from '../lib/hooks';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatCompactUSD, scoreColor, providerDisplayName } from '../lib/helpers';
 import { FreshnessBanner } from '../components/FreshnessBanner';
@@ -11,17 +9,11 @@ import { InfoButton } from '../components/InfoButton';
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const [stats, setStats] = React.useState<DashboardStats | null>(null);
-  const [pending, setPending] = React.useState<PendingCase[]>([]);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    getDashboard().then(setStats).catch((e) => setError(e.message));
-    getPendingCases(10).then(setPending).catch(() => {});
-  }, []);
+  const { data: stats, error } = useDashboard();
+  const { data: pending = [] } = usePendingCases(10);
 
   if (error) {
-    return <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-rose-700">{error}</div>;
+    return <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-rose-700">{error.message}</div>;
   }
 
   const kpis = [
