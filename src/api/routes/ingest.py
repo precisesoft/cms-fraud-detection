@@ -55,6 +55,7 @@ from src.api.schemas import (
 from src.pipeline.column_maps import SOURCE_TYPES
 from src.pipeline.orchestrator import recalibrate, retrain_and_recalibrate
 from src.pipeline.raw_loader import LoadResult, load_raw_csv
+from src.pipeline.synthetic import SYNTHETIC_VERSIONS, generate_all
 
 logger = logging.getLogger(__name__)
 
@@ -286,6 +287,162 @@ async def trigger_retrain(
         id=run_id,
         run_type="retrain_and_recalibrate",
         status="pending",
+        triggered_by=user.username,
+    )
+
+
+# ---------------------------------------------------------------------------
+# POST /ingest/seed — generate synthetic data + recalibrate (admin only)
+# ---------------------------------------------------------------------------
+
+
+def _seed_synthetic_sync(run_id: int, db_url: str) -> None:
+    """Generate synthetic CSVs, load into raw tables, then run recalibration.
+
+    Runs synchronously — designed to be called via ``asyncio.to_thread``.
+    """
+    import csv
+    import json
+
+    from src.pipeline.orchestrator import _run_recalibrate_sync, update_stage
+
+    with psycopg.connect(db_url) as conn:
+        # --- Stage: data_generation ---
+        update_stage(
+            conn,
+            run_id,
+            "data_generation",
+            "running",
+            {},
+            progress_pct=0,
+            stage_results=[],
+        )
+        ds = generate_all()
+        gen_metrics = {
+            "providers": len(ds.providers),
+            "service_rows": len(ds.service_rows),
+            "provider_rows": len(ds.provider_rows),
+            "enrollment_rows": len(ds.enrollment_rows),
+            "revocation_rows": len(ds.revocation_rows),
+        }
+        stage_records: list[dict[str, Any]] = [
+            {"stage": "data_generation", "status": "completed", "metrics": gen_metrics},
+        ]
+        update_stage(
+            conn,
+            run_id,
+            "data_generation",
+            "running",
+            gen_metrics,
+            progress_pct=5,
+            stage_results=stage_records,
+        )
+
+        # --- Stage: data_loading ---
+        update_stage(
+            conn,
+            run_id,
+            "data_loading",
+            "running",
+            {},
+            progress_pct=5,
+            stage_results=stage_records,
+        )
+        sources = [
+            ("part_b_service", ds.service_rows, SYNTHETIC_VERSIONS["part_b_service"]),
+            ("part_b_provider", ds.provider_rows, SYNTHETIC_VERSIONS["part_b_provider"]),
+            ("enrollment", ds.enrollment_rows, SYNTHETIC_VERSIONS["enrollment"]),
+            ("revocations", ds.revocation_rows, SYNTHETIC_VERSIONS["revocations"]),
+        ]
+        load_metrics: dict[str, Any] = {}
+        for source_type, rows, version in sources:
+            if not rows:
+                continue
+            # Write to temp CSV
+            tmp = tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w", newline="")
+            writer = csv.DictWriter(tmp, fieldnames=list(rows[0].keys()))
+            writer.writeheader()
+            writer.writerows(rows)
+            tmp.close()
+            result = load_raw_csv(Path(tmp.name), source_type, version, conn, "seed_synthetic")
+            Path(tmp.name).unlink(missing_ok=True)
+            load_metrics[source_type] = result.row_count
+
+        stage_records.append(
+            {"stage": "data_loading", "status": "completed", "metrics": load_metrics},
+        )
+        update_stage(
+            conn,
+            run_id,
+            "data_loading",
+            "running",
+            load_metrics,
+            progress_pct=20,
+            stage_results=stage_records,
+        )
+
+        # Store source versions on the run record
+        conn.execute(
+            "UPDATE pipeline_runs SET source_versions = %s::jsonb WHERE id = %s",
+            (json.dumps(SYNTHETIC_VERSIONS), run_id),
+        )
+        conn.commit()
+
+    # --- Stages 1-6: recalibration pipeline ---
+    _run_recalibrate_sync(run_id, db_url)
+
+
+async def _seed_synthetic_background(run_id: int, db_url: str) -> None:
+    """Async wrapper for the seed-synthetic background task."""
+    try:
+        await asyncio.to_thread(_seed_synthetic_sync, run_id, db_url)
+    except Exception as exc:
+        logger.exception("[%s] Seed synthetic pipeline failed", run_id)
+        try:
+            with psycopg.connect(db_url) as conn:
+                conn.execute(
+                    "UPDATE pipeline_runs SET status='failed', error_message=%s, "
+                    "completed_at=NOW() WHERE id=%s",
+                    (str(exc), run_id),
+                )
+                conn.commit()
+        except Exception:
+            logger.exception("[%s] Failed to update run status after seed failure", run_id)
+
+
+@router.post("/seed", response_model=PipelineRunDetail, status_code=202)
+async def seed_synthetic_data(
+    background_tasks: BackgroundTasks,
+    user: UserResponse = Depends(require_admin),
+    conn: AsyncConnection = Depends(get_db),
+) -> PipelineRunDetail:
+    """Generate synthetic CMS data and run full recalibration pipeline.
+
+    Creates 250 synthetic providers across 4 specialties, loads them into
+    the raw tables, and triggers a complete 6-stage recalibration. Progress
+    is tracked in ``pipeline_runs`` and can be polled via
+    ``GET /ingest/runs/{id}``.
+    """
+    await _assert_no_running_pipeline(conn)
+
+    cur = await conn.execute(
+        "INSERT INTO pipeline_runs (run_type, status, triggered_by, started_at) "
+        "VALUES (%s, 'running', %s, NOW()) RETURNING id",
+        ("seed_synthetic", user.username),
+    )
+    run_row = await cur.fetchone()
+    if run_row is None:
+        raise HTTPException(status_code=500, detail="Failed to create pipeline run record")
+    run_id: int = int(run_row[0])
+    await conn.commit()
+
+    background_tasks.add_task(_seed_synthetic_background, run_id, DATABASE_URL)
+    logger.info("Seed synthetic run %d triggered by %s", run_id, user.username)
+
+    return PipelineRunDetail(
+        id=run_id,
+        run_type="seed_synthetic",
+        status="running",
         triggered_by=user.username,
     )
 

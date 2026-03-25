@@ -734,6 +734,62 @@ class TestIngestStatus:
 
 
 # ---------------------------------------------------------------------------
+# Tests — POST /ingest/seed (synthetic data seeding)
+# ---------------------------------------------------------------------------
+
+
+class TestSeedSynthetic:
+    """Test the seed synthetic data endpoint."""
+
+    @pytest.mark.anyio
+    async def test_seed_returns_202_for_admin(self):
+        """Admin can trigger synthetic seed and gets 202 with run_id."""
+        # Fake conn: no running pipelines (count=0), then INSERT RETURNING id=99
+        no_running = _FakeCursor([(0,)])
+        insert_cur = _FakeCursor([(99,)])
+        conn = _MultiConn([no_running, insert_cur])
+        app = _make_app(fake_conn=conn)
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.post("/api/ingest/seed", headers=_admin_headers())
+
+        assert resp.status_code == 202
+        body = resp.json()
+        assert body["id"] == 99
+        assert body["run_type"] == "seed_synthetic"
+        assert body["status"] == "running"
+
+    @pytest.mark.anyio
+    async def test_seed_returns_403_for_analyst(self):
+        """Non-admin users cannot trigger seed."""
+        app = _make_app()
+        headers = _analyst_headers()
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.post("/api/ingest/seed", headers=headers)
+
+        assert resp.status_code == 403
+
+    @pytest.mark.anyio
+    async def test_seed_returns_409_when_pipeline_running(self):
+        """Seed rejects when a pipeline is already running."""
+        running_cur = _FakeCursor([(1,)])  # 1 running pipeline
+        conn = _MultiConn([running_cur])
+        app = _make_app(fake_conn=conn)
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.post("/api/ingest/seed", headers=_admin_headers())
+
+        assert resp.status_code == 409
+
+
+# ---------------------------------------------------------------------------
 # Tests — require_admin dependency directly
 # ---------------------------------------------------------------------------
 

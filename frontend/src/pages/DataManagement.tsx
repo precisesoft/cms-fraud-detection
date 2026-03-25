@@ -12,18 +12,25 @@ import {
   ChevronRight,
   XCircle,
   Play,
+  FlaskConical,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { useAuth } from "../contexts/AuthContext";
 import {
   uploadData,
   triggerRecalibrate,
   triggerRetrain,
+  seedSyntheticData,
   getPipelineRuns,
   getPipelineRun,
   getSourceVersions,
 } from "../lib/api";
-import type { SourceVersion, UploadResponse, PipelineRunDetail } from "../lib/api";
+import type {
+  SourceVersion,
+  UploadResponse,
+  PipelineRunDetail,
+} from "../lib/api";
 
 /* ── Helpers ───────────────────────────────────────────────── */
 
@@ -98,8 +105,18 @@ function DataSourcesSection({
   loading: boolean;
 }) {
   const fallback: SourceVersion[] = [
-    { source_type: "Part B Service", version: "—", uploaded_at: "", row_count: 0 },
-    { source_type: "Part B Provider", version: "—", uploaded_at: "", row_count: 0 },
+    {
+      source_type: "Part B Service",
+      version: "—",
+      uploaded_at: "",
+      row_count: 0,
+    },
+    {
+      source_type: "Part B Provider",
+      version: "—",
+      uploaded_at: "",
+      row_count: 0,
+    },
     { source_type: "Enrollment", version: "—", uploaded_at: "", row_count: 0 },
     { source_type: "Revocations", version: "—", uploaded_at: "", row_count: 0 },
   ];
@@ -107,7 +124,10 @@ function DataSourcesSection({
 
   return (
     <section aria-labelledby="sources-heading">
-      <h2 id="sources-heading" className="text-lg font-bold text-slate-800 mb-4">
+      <h2
+        id="sources-heading"
+        className="text-lg font-bold text-slate-800 mb-4"
+      >
         Data Sources
       </h2>
       {loading ? (
@@ -117,7 +137,9 @@ function DataSourcesSection({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {display.map((src) => {
-            const color = src.uploaded_at ? freshnessColor(src.uploaded_at) : "red";
+            const color = src.uploaded_at
+              ? freshnessColor(src.uploaded_at)
+              : "red";
             const label = freshnessLabel(color);
             const cadence = SOURCE_CADENCE[src.source_type] ?? "Annual";
             return (
@@ -150,14 +172,19 @@ function DataSourcesSection({
                     {label}
                   </span>
                 </div>
-                <p className="font-semibold text-slate-800 text-sm">{src.source_type}</p>
+                <p className="font-semibold text-slate-800 text-sm">
+                  {src.source_type}
+                </p>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Version: <span className="font-medium">{src.version || "—"}</span>
+                  Version:{" "}
+                  <span className="font-medium">{src.version || "—"}</span>
                 </p>
                 <p className="text-xs text-slate-500">
                   Uploaded:{" "}
                   <span className="font-medium">
-                    {src.uploaded_at ? new Date(src.uploaded_at).toLocaleDateString() : "—"}
+                    {src.uploaded_at
+                      ? new Date(src.uploaded_at).toLocaleDateString()
+                      : "—"}
                   </span>
                 </p>
                 <p className="text-xs text-slate-500">
@@ -307,12 +334,14 @@ function UploadSection({ onUploadComplete }: { onUploadComplete: () => void }) {
         >
           <Upload className="w-8 h-8 mx-auto mb-2 text-slate-400" />
           {file ? (
-            <p className="text-sm font-semibold text-emerald-700">{file.name}</p>
+            <p className="text-sm font-semibold text-emerald-700">
+              {file.name}
+            </p>
           ) : (
             <>
               <p className="text-sm text-slate-600">
-                Drag &amp; drop a <span className="font-semibold">.csv</span> file here, or
-                click to browse
+                Drag &amp; drop a <span className="font-semibold">.csv</span>{" "}
+                file here, or click to browse
               </p>
               <p className="text-xs text-slate-400 mt-1">Accepts .csv only</p>
             </>
@@ -354,7 +383,8 @@ function UploadSection({ onUploadComplete }: { onUploadComplete: () => void }) {
           <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-sm">
             <p className="font-semibold text-emerald-800">Upload successful</p>
             <p className="text-emerald-700 text-xs mt-1">
-              {result.row_count.toLocaleString()} rows · Version {result.version}
+              {result.row_count.toLocaleString()} rows · Version{" "}
+              {result.version}
               {result.duplicate_detected && " · ⚠ Duplicate detected"}
             </p>
             {result.warnings.length > 0 && (
@@ -429,7 +459,9 @@ function RecalibrateSection({
       const r = await triggerRecalibrate();
       onStart(r.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to start recalibration");
+      setError(
+        err instanceof Error ? err.message : "Failed to start recalibration",
+      );
     } finally {
       setTriggering(false);
     }
@@ -449,14 +481,18 @@ function RecalibrateSection({
   }
 
   // Build ordered stage map
-  const stageMap: Record<string, PipelineRunDetail["stage_results"][number]> = {};
+  const stageMap: Record<string, PipelineRunDetail["stage_results"][number]> =
+    {};
   (run?.stage_results ?? []).forEach((s) => {
     stageMap[s.stage] = s;
   });
 
   return (
     <section aria-labelledby="recalibrate-heading">
-      <h2 id="recalibrate-heading" className="text-lg font-bold text-slate-800 mb-4">
+      <h2
+        id="recalibrate-heading"
+        className="text-lg font-bold text-slate-800 mb-4"
+      >
         Recalibrate Scores
       </h2>
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
@@ -551,7 +587,9 @@ function RecalibrateSection({
                     </span>
                   )}
                   {stageStatus === "pending" && (
-                    <span className="text-xs text-slate-300 shrink-0">pending</span>
+                    <span className="text-xs text-slate-300 shrink-0">
+                      pending
+                    </span>
                   )}
                 </div>
               );
@@ -577,8 +615,12 @@ function RecalibrateSection({
               <div className="flex items-start gap-2 bg-rose-50 border border-rose-200 rounded-lg px-4 py-3 mt-2">
                 <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-rose-800">Pipeline failed</p>
-                  <p className="text-xs text-rose-700 mt-0.5">{run.error_message}</p>
+                  <p className="text-sm font-semibold text-rose-800">
+                    Pipeline failed
+                  </p>
+                  <p className="text-xs text-rose-700 mt-0.5">
+                    {run.error_message}
+                  </p>
                 </div>
                 <button
                   onClick={handleRecalibrate}
@@ -628,7 +670,10 @@ function RunHistorySection() {
 
   return (
     <section aria-labelledby="history-heading">
-      <h2 id="history-heading" className="text-lg font-bold text-slate-800 mb-4">
+      <h2
+        id="history-heading"
+        className="text-lg font-bold text-slate-800 mb-4"
+      >
         Run History
       </h2>
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -643,17 +688,23 @@ function RunHistorySection() {
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>
-                  {["Run ID", "Type", "Status", "Triggered By", "Started", "Completed", ""].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        scope="col"
-                        className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider"
-                      >
-                        {h}
-                      </th>
-                    ),
-                  )}
+                  {[
+                    "Run ID",
+                    "Type",
+                    "Status",
+                    "Triggered By",
+                    "Started",
+                    "Completed",
+                    "",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      scope="col"
+                      className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -663,7 +714,9 @@ function RunHistorySection() {
                       <td className="px-4 py-3 text-sm font-mono text-slate-700">
                         #{run.id}
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-700">{run.run_type}</td>
+                      <td className="px-4 py-3 text-xs text-slate-700">
+                        {run.run_type}
+                      </td>
                       <td className="px-4 py-3">
                         <span
                           className={cn(
@@ -721,15 +774,18 @@ function RunHistorySection() {
                                     {STAGE_NAMES[s.stage] ?? s.stage}
                                   </p>
                                   {s.error && (
-                                    <p className="text-xs text-rose-600">{s.error}</p>
-                                  )}
-                                  {s.metrics && Object.keys(s.metrics).length > 0 && (
-                                    <p className="text-xs text-slate-500">
-                                      {Object.entries(s.metrics)
-                                        .map(([k, v]) => `${k}: ${v}`)
-                                        .join(" · ")}
+                                    <p className="text-xs text-rose-600">
+                                      {s.error}
                                     </p>
                                   )}
+                                  {s.metrics &&
+                                    Object.keys(s.metrics).length > 0 && (
+                                      <p className="text-xs text-slate-500">
+                                        {Object.entries(s.metrics)
+                                          .map(([k, v]) => `${k}: ${v}`)
+                                          .join(" · ")}
+                                      </p>
+                                    )}
                                 </div>
                                 <span className="text-xs text-slate-400 shrink-0">
                                   {formatDuration(s.duration_s)}
@@ -744,6 +800,83 @@ function RunHistorySection() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ── Seed Synthetic Data ───────────────────────────────────── */
+
+function SeedSection({
+  onStart,
+  isRunning,
+}: {
+  onStart: (runId: number) => void;
+  isRunning: boolean;
+}) {
+  const [seeding, setSeeding] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  async function handleSeed() {
+    setSeeding(true);
+    setError(null);
+    try {
+      const r = await seedSyntheticData();
+      onStart(r.id);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to start synthetic seed",
+      );
+    } finally {
+      setSeeding(false);
+    }
+  }
+
+  return (
+    <section aria-labelledby="seed-heading">
+      <h2 id="seed-heading" className="text-lg font-bold text-slate-800 mb-4">
+        Demo Mode
+      </h2>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <FlaskConical className="w-8 h-8 text-indigo-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-slate-800">
+                Seed Synthetic Data
+              </p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Generate 250 synthetic providers (4,250 service lines) and run
+                full recalibration pipeline. After completion, visit{" "}
+                <Link
+                  to="/live"
+                  className="text-indigo-600 hover:text-indigo-800 font-medium"
+                >
+                  Live Monitor
+                </Link>{" "}
+                to see real-time scoring.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleSeed}
+            disabled={seeding || isRunning}
+            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+          >
+            {seeding ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FlaskConical className="w-4 h-4" />
+            )}
+            {seeding ? "Starting…" : "Seed Synthetic Data"}
+          </button>
+        </div>
+        {error && (
+          <div className="mt-3 flex items-start gap-2 bg-rose-50 border border-rose-200 rounded-lg px-4 py-3">
+            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+            <p className="text-sm text-rose-700">{error}</p>
           </div>
         )}
       </div>
@@ -777,7 +910,9 @@ export function DataManagement() {
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <AlertCircle className="w-12 h-12 text-rose-400" />
         <h1 className="text-2xl font-bold text-slate-800">Access Denied</h1>
-        <p className="text-slate-500">This page is only accessible to administrators.</p>
+        <p className="text-slate-500">
+          This page is only accessible to administrators.
+        </p>
       </div>
     );
   }
@@ -791,6 +926,7 @@ export function DataManagement() {
         </p>
       </div>
       <DataSourcesSection sources={sources} loading={sourcesLoading} />
+      <SeedSection onStart={setActiveRunId} isRunning={activeRunId != null} />
       <UploadSection onUploadComplete={loadSources} />
       <RecalibrateSection activeRunId={activeRunId} onStart={setActiveRunId} />
       <RunHistorySection />
