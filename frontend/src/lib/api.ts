@@ -627,10 +627,10 @@ export function getFairness(params?: { threshold?: number; blind?: boolean }) {
   return request<FairnessReport>(`/api/fairness${suffix}`);
 }
 
-export function chat(message: string, history: ChatMessage[] = []) {
+export function chat(message: string, history: ChatMessage[] = [], npi?: string) {
   return request<ChatResponse>("/api/chat", {
     method: "POST",
-    body: { message, history },
+    body: { message, history, ...(npi && { npi }) },
   });
 }
 
