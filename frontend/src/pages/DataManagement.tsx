@@ -135,14 +135,15 @@ function DataSourcesSection({
   return (
     <section aria-labelledby="sources-heading">
       <div className="flex items-center gap-1.5 mb-4">
-        <h2
-          id="sources-heading"
-          className="text-lg font-bold text-slate-800"
-        >
+        <h2 id="sources-heading" className="text-lg font-bold text-slate-800">
           Data Sources
         </h2>
         <InfoButton title="Data Sources">
-          Current CMS data files loaded into the system. Freshness badges indicate data currency: Current (uploaded &lt; 90 days ago), Aging (90–180 days), Stale (&gt; 180 days). Four source types: Part B Service (claims), Part B Provider (provider info), Enrollment (status), and Revocations (CMS actions).
+          Current CMS data files loaded into the system. Freshness badges
+          indicate data currency: Current (uploaded &lt; 90 days ago), Aging
+          (90–180 days), Stale (&gt; 180 days). Four source types: Part B
+          Service (claims), Part B Provider (provider info), Enrollment
+          (status), and Revocations (CMS actions).
         </InfoButton>
       </div>
       {loading ? (
@@ -286,7 +287,10 @@ function UploadSection({ onUploadComplete }: { onUploadComplete: () => void }) {
           Upload New Data
         </h2>
         <InfoButton title="Upload CMS Data">
-          Upload CMS data files in CSV format. Supports four source types matching CMS public use files. The optional auto-recalibrate checkbox triggers the full scoring pipeline immediately after upload to refresh all risk scores with the new data.
+          Upload CMS data files in CSV format. Supports four source types
+          matching CMS public use files. The optional auto-recalibrate checkbox
+          triggers the full scoring pipeline immediately after upload to refresh
+          all risk scores with the new data.
         </InfoButton>
       </div>
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
@@ -517,7 +521,10 @@ function RecalibrateSection({
           Recalibrate Scores
         </h2>
         <InfoButton title="Score Recalibration">
-          Triggers the full scoring pipeline: recomputes peer baselines, calculates z-scores, applies deterministic scoring rules, rebuilds provider profiles, and retrains ML models. Shows real-time progress through six pipeline stages with metrics and timing.
+          Triggers the full scoring pipeline: recomputes peer baselines,
+          calculates z-scores, applies deterministic scoring rules, rebuilds
+          provider profiles, and retrains ML models. Shows real-time progress
+          through six pipeline stages with metrics and timing.
         </InfoButton>
       </div>
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
@@ -696,14 +703,14 @@ function RunHistorySection() {
   return (
     <section aria-labelledby="history-heading">
       <div className="flex items-center gap-1.5 mb-4">
-        <h2
-          id="history-heading"
-          className="text-lg font-bold text-slate-800"
-        >
+        <h2 id="history-heading" className="text-lg font-bold text-slate-800">
           Run History
         </h2>
         <InfoButton title="Pipeline Run History">
-          Audit log of all pipeline executions showing run type, status, who triggered it, start/end times, and stage-by-stage details. Expand any row to see individual stage metrics, durations, and errors. Useful for tracking data lineage and debugging pipeline issues.
+          Audit log of all pipeline executions showing run type, status, who
+          triggered it, start/end times, and stage-by-stage details. Expand any
+          row to see individual stage metrics, durations, and errors. Useful for
+          tracking data lineage and debugging pipeline issues.
         </InfoButton>
       </div>
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -773,7 +780,7 @@ function RunHistorySection() {
                         {formatDate(run.completed_at)}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {run.stage_results.length > 0 && (
+                        {(run.stage_results ?? []).length > 0 && (
                           <button
                             onClick={() => toggleExpand(run.id)}
                             className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 ml-auto"
@@ -793,7 +800,7 @@ function RunHistorySection() {
                       <tr>
                         <td colSpan={7} className="px-6 pb-4 bg-slate-50">
                           <div className="mt-2 space-y-1.5">
-                            {run.stage_results.map((s) => (
+                            {(run.stage_results ?? []).map((s) => (
                               <div
                                 key={s.stage}
                                 className="flex items-start gap-3 bg-white rounded-lg border border-slate-100 px-4 py-2"
@@ -871,7 +878,11 @@ function SeedSection({
           Demo Mode
         </h2>
         <InfoButton title="Demo Mode — Synthetic Data">
-          One-click synthetic data generation for demonstrations. Creates 250 realistic synthetic providers with 4,250 service lines covering diverse specialties, states, and risk profiles. Then runs the full recalibration pipeline (peer baselines → z-scores → scoring → provider profiles → ML models).
+          One-click synthetic data generation for demonstrations. Creates 250
+          realistic synthetic providers with 4,250 service lines covering
+          diverse specialties, states, and risk profiles. Then runs the full
+          recalibration pipeline (peer baselines → z-scores → scoring → provider
+          profiles → ML models).
         </InfoButton>
       </div>
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
