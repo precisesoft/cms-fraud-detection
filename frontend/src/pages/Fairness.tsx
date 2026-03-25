@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { getFairness } from '../lib/api';
 import type { FairnessReport } from '../lib/api';
 import { cn } from '../lib/utils';
+import { InfoButton } from '../components/InfoButton';
 
 export function Fairness() {
   const [report, setReport] = React.useState<FairnessReport | null>(null);
@@ -63,17 +64,26 @@ export function Fairness() {
           {/* KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2">Overall Flagging Rate</p>
+              <div className="flex items-center gap-1 mb-2">
+                <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">Overall Flagging Rate</p>
+                <InfoButton title="Overall Flagging Rate">Global rate at which providers are flagged above the score threshold. This is the baseline used to compare whether specific cohorts (states or specialties) are flagged at disproportionately higher or lower rates.</InfoButton>
+              </div>
               <p className="text-3xl font-black text-slate-900">{(report.overall_flagging_rate * 100).toFixed(1)}%</p>
             </div>
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2">Statistical Parity Diff</p>
+              <div className="flex items-center gap-1 mb-2">
+                <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">Statistical Parity Diff</p>
+                <InfoButton title="Statistical Parity Difference">Maximum difference in flagging rates between any two cohorts. Values close to 0 indicate equitable treatment across groups. Values greater than 0.1 may indicate disparate impact and warrant further investigation.</InfoButton>
+              </div>
               <p className={cn('text-3xl font-black', report.statistical_parity_diff != null && Math.abs(report.statistical_parity_diff) > 0.1 ? 'text-rose-600' : 'text-emerald-600')}>
                 {report.statistical_parity_diff != null ? report.statistical_parity_diff.toFixed(3) : '—'}
               </p>
             </div>
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2">Disparate Impact Ratio</p>
+              <div className="flex items-center gap-1 mb-2">
+                <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">Disparate Impact Ratio</p>
+                <InfoButton title="Disparate Impact Ratio">Ratio of the lowest cohort flagging rate to the highest. A value ≥ 0.8 satisfies the four-fifths rule (EEOC standard for adverse impact). Values below 0.8 signal potential systematic bias in the scoring model.</InfoButton>
+              </div>
               <p className={cn('text-3xl font-black', report.disparate_impact_ratio == null ? 'text-slate-400' : report.disparate_impact_ratio < 0.8 ? 'text-rose-600' : 'text-emerald-600')}>
                 {report.disparate_impact_ratio != null ? report.disparate_impact_ratio.toFixed(3) : (
                   <span
@@ -87,14 +97,17 @@ export function Fairness() {
               </p>
             </div>
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2">Outlier Cohorts</p>
+              <div className="flex items-center gap-1 mb-2">
+                <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">Outlier Cohorts</p>
+                <InfoButton title="Outlier Cohorts">Number of cohorts (states or specialties) whose flagging rate is more than 2 standard deviations from the overall mean. These statistical outliers may indicate geographic or specialty-based bias that requires review.</InfoButton>
+              </div>
               <p className="text-3xl font-black text-amber-700">{cohorts.filter((c) => c.is_outlier).length}</p>
             </div>
           </div>
 
           {/* Chart */}
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h2 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-indigo-500" /> Flagging Rate by {tab === 'state' ? 'State' : 'Specialty'}</h2>
+            <h2 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-indigo-500" /> Flagging Rate by {tab === 'state' ? 'State' : 'Specialty'} <InfoButton title="Flagging Rate by Cohort">Bar chart showing the flagging rate for each state or specialty. The dashed reference line represents the overall average. Bars significantly above or below may indicate geographic or specialty bias in the scoring model.</InfoButton></h2>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 60, left: 10 }}>
@@ -112,7 +125,7 @@ export function Fairness() {
           {/* Revocation Impact */}
           {report.revocation_impact && (
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-              <h2 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Info className="w-4 h-4 text-sky-500" /> Revocation Impact Analysis</h2>
+              <h2 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Info className="w-4 h-4 text-sky-500" /> Revocation Impact Analysis <InfoButton title="Revocation Impact Analysis">Measures how the revocation-status signal impacts flagging equity. Compares flagging rates and disparate impact ratios with and without the revocation signal included, showing whether removing it improves fairness.</InfoButton></h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
                 <div>
                   <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">With Revocation</p>
@@ -136,6 +149,10 @@ export function Fairness() {
 
           {/* Table */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+              <h2 className="font-bold text-slate-800">Cohort Fairness Table</h2>
+              <InfoButton title="Cohort Fairness Table">Detailed breakdown of each cohort's provider count, flagged count, flagging rate, and outlier status. Outlier cohorts are highlighted in amber. Click column headers to identify cohorts with unusually high or low flagging rates.</InfoButton>
+            </div>
             <div className="overflow-x-auto" tabIndex={0} aria-label="Fairness cohort table">
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50/80">

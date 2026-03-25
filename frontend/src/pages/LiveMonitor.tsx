@@ -22,6 +22,7 @@ import { cn } from "../lib/utils";
 import { formatUSD } from "../lib/helpers";
 import { useLiveStream } from "../contexts/LiveStreamContext";
 import type { LiveClaimEvent, TpsPreset } from "../contexts/LiveStreamContext";
+import { InfoButton } from "../components/InfoButton";
 
 const GEO_URL = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
 
@@ -247,6 +248,10 @@ export function LiveMonitor() {
           value={stats.flagged.toLocaleString()}
           icon={<ShieldAlert className="w-5 h-5 text-rose-500" />}
           color={stats.flagged > 0 ? "text-rose-600" : "text-slate-900"}
+          info={{
+            title: "Flagged Claims",
+            children: "Number of claims that scored above the risk threshold since the stream started. In a production system, each flagged claim would trigger a review workflow for an analyst.",
+          }}
         />
         <BigStat
           label="Flag Rate"
@@ -259,6 +264,10 @@ export function LiveMonitor() {
                 ? "text-amber-600"
                 : "text-emerald-600"
           }
+          info={{
+            title: "Flag Rate",
+            children: "Percentage of all scanned claims that were flagged as risky. This rate helps calibrate scoring thresholds to match available investigator capacity — too high overwhelms reviewers, too low misses fraud.",
+          }}
         />
         <BigStat
           label="Avg Latency"
@@ -271,6 +280,10 @@ export function LiveMonitor() {
                 ? "text-amber-600"
                 : "text-emerald-600"
           }
+          info={{
+            title: "Average Scoring Latency",
+            children: "Average time in milliseconds to score each claim end-to-end through the risk engine. Demonstrates that the system can operate at production speed with sub-second response times, suitable for real-time payment screening.",
+          }}
         />
       </div>
 
@@ -278,6 +291,10 @@ export function LiveMonitor() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
         {/* US Map */}
         <div className="lg:col-span-3 bg-white rounded-xl border border-slate-200 shadow-sm p-4 overflow-hidden">
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="text-sm font-bold text-slate-800">Live Geographic View</h3>
+            <InfoButton title="Live Geographic View">Real-time geographic visualization of claims being scored. Dots pulse on the state where each provider is located, colored by risk band: green (stable, ≤ 30), amber (review, 31–50), red (high risk, ≥ 51). State backgrounds tint to match the most recent event.</InfoButton>
+          </div>
           <div className="aspect-[8/5]">
             <ComposableMap
               projection="geoAlbersUsa"
@@ -362,7 +379,10 @@ export function LiveMonitor() {
         {/* Live Feed */}
         <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-[500px]">
           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-800">Live Feed</h3>
+            <div className="flex items-center gap-1">
+              <h3 className="text-sm font-bold text-slate-800">Live Feed</h3>
+              <InfoButton title="Live Event Feed">Scrolling stream of individual claim scoring events. Each row shows the provider name, state, HCPCS procedure code, submitted charge, risk score, and scoring latency. Click any event to navigate to that provider's detail page.</InfoButton>
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-mono text-slate-400">
                 {events.length} events
@@ -502,11 +522,13 @@ function BigStat({
   value,
   icon,
   color,
+  info,
 }: {
   label: string;
   value: string;
   icon: React.ReactNode;
   color: string;
+  info?: { title: string; children: React.ReactNode };
 }) {
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-5 py-4">
@@ -515,6 +537,7 @@ function BigStat({
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
           {label}
         </p>
+        {info && <InfoButton title={info.title}>{info.children}</InfoButton>}
       </div>
       <p
         className={cn(

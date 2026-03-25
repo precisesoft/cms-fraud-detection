@@ -6,6 +6,7 @@ import { getHeatmap } from '../lib/api';
 import type { HeatmapEntry } from '../lib/api';
 import { cn } from '../lib/utils';
 import { scoreColor } from '../lib/helpers';
+import { InfoButton } from '../components/InfoButton';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json';
 
@@ -79,6 +80,7 @@ export function RiskMap() {
           <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative">
             <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-2">
               <Map className="w-4 h-4 text-indigo-500" /> State Risk Choropleth
+              <InfoButton title="State Risk Choropleth">US map where each state is colored by its average provider risk score. Green indicates low average risk (&lt; 20), yellow moderate (20–35), orange elevated (35–50), and red high (50+). Gray states have no data. Hover over any state to see provider count, average score, and flagged count.</InfoButton>
             </h2>
 
             <div role="img" aria-label="United States choropleth map showing average provider risk scores by state">
@@ -153,7 +155,7 @@ export function RiskMap() {
 
           {/* Rankings */}
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-4"><TrendingUp className="w-4 h-4 text-rose-500" /> Highest Risk States</h2>
+            <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-4"><TrendingUp className="w-4 h-4 text-rose-500" /> Highest Risk States <InfoButton title="Highest Risk States">States ranked by average provider risk score, highest first. Shows the number of providers and how many are flagged in each state. Click any state to navigate to the Providers page filtered to that state.</InfoButton></h2>
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
               {sortedByRisk.slice(0, 20).map((entry, i) => (
                 <Link
