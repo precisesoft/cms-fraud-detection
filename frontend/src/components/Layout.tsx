@@ -14,11 +14,19 @@ import {
   X,
   CheckCircle2,
   LogOut,
+  Upload,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useAuth } from "../contexts/AuthContext";
 
-const navigation = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  adminOnly?: boolean;
+}
+
+const navigation: NavItem[] = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Live Monitor", href: "/live", icon: Activity },
   { name: "Simulate", href: "/simulate", icon: PlayCircle },
@@ -29,6 +37,7 @@ const navigation = [
   { name: "Fairness", href: "/fairness", icon: ShieldCheck },
   { name: "Analytics", href: "/analytics", icon: Database },
   { name: "Validation", href: "/validation", icon: CheckCircle2 },
+  { name: "Data", href: "/data", icon: Upload, adminOnly: true },
 ];
 
 export function Layout() {
@@ -94,7 +103,7 @@ export function Layout() {
 
         {/* Nav links */}
         <nav aria-label="Primary" className="flex-1 overflow-y-auto p-4 space-y-1">
-          {navigation.map((item) => (
+          {navigation.filter((item) => !item.adminOnly || user?.role === "admin").map((item) => (
             <NavLink
               key={item.name}
               to={item.href}

@@ -675,6 +675,99 @@ export function getIngestStatus() {
   return request<IngestStatus>("/api/ingest/status");
 }
 
+/* ── Ingest data management ────────────────────────────────── */
+
+export interface SourceVersion {
+  source_type: string;
+  version: string;
+  uploaded_at: string;
+  row_count: number;
+}
+
+export interface UploadResponse {
+  source_type: string;
+  version: string;
+  row_count: number;
+  warnings: string[];
+  duplicate_detected: boolean;
+}
+
+export interface PipelineRunDetail {
+  id: number;
+  run_type: string;
+  status: string;
+  current_stage: string | null;
+  progress_pct: number;
+  source_versions: Record<string, unknown>;
+  stage_results: Array<{
+    stage: string;
+    status: string;
+    duration_s: number | null;
+    metrics: Record<string, unknown>;
+    error: string | null;
+  }>;
+  error_message: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  triggered_by: string | null;
+}
+
+export async function uploadData(
+  file: File,
+  sourceType: string,
+  version: string,
+): Promise<UploadResponse> {
+  const url = `${API_BASE}/api/ingest/upload`;
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("source_type", sourceType);
+  formData.append("version", version);
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+  if (response.status === 401) {
+    clearToken();
+    window.location.href = "/login";
+    throw new Error("Session expired");
+  }
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `Upload failed: ${response.status}`);
+  }
+  return response.json() as Promise<UploadResponse>;
+}
+
+export function triggerRecalibrate(): Promise<PipelineRunDetail> {
+  return request<PipelineRunDetail>("/api/ingest/runs", {
+    method: "POST",
+    body: { run_type: "recalibration", triggered_by: "admin_ui" },
+  });
+}
+
+export function triggerRetrain(): Promise<PipelineRunDetail> {
+  return request<PipelineRunDetail>("/api/ingest/runs", {
+    method: "POST",
+    body: { run_type: "retrain_and_recalibrate", triggered_by: "admin_ui" },
+  });
+}
+
+export function getPipelineRuns(): Promise<PipelineRunDetail[]> {
+  return request<PipelineRunDetail[]>("/api/ingest/runs?limit=20");
+}
+
+export function getPipelineRun(runId: number): Promise<PipelineRunDetail> {
+  return request<PipelineRunDetail>(`/api/ingest/runs/${runId}`);
+}
+
+export function getSourceVersions(): Promise<SourceVersion[]> {
+  return request<SourceVersion[]>("/api/ingest/sources");
+}
+
 /* ── Auth ──────────────────────────────────────────────────── */
 
 export interface AuthUser {
