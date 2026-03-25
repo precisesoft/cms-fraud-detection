@@ -758,6 +758,76 @@ class HealthResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Ingest / pipeline schemas
+# ---------------------------------------------------------------------------
+
+
+class UploadResponse(BaseModel):
+    """Result of a successful raw CSV upload."""
+
+    row_count: int
+    file_hash: str
+    validation_warnings: list[str] = Field(default_factory=list)
+    duplicate_detected: bool = False
+
+
+class SourceVersion(BaseModel):
+    """Current version metadata for one CMS data source."""
+
+    type: str
+    version: str
+    uploaded_at: str | None = None
+    row_count: int | None = None
+    file_hash: str | None = None
+    uploaded_by: str | None = None
+
+
+class LastRecalibration(BaseModel):
+    """Summary of the most recent completed pipeline run."""
+
+    run_id: int
+    completed_at: str | None = None
+    providers_scored: int | None = None
+    status: str
+
+
+class IngestStatus(BaseModel):
+    """Quick freshness summary for the dashboard banner."""
+
+    sources: list[SourceVersion]
+    last_recalibration: LastRecalibration | None = None
+    providers_in_system: int
+
+
+class PipelineRunSummary(BaseModel):
+    """Lightweight pipeline run record for list views."""
+
+    id: int
+    run_type: str
+    status: str
+    progress_pct: float = 0.0
+    started_at: str | None = None
+    completed_at: str | None = None
+    triggered_by: str | None = None
+
+
+class PipelineRunDetail(PipelineRunSummary):
+    """Full pipeline run record including per-stage results."""
+
+    current_stage: str | None = None
+    source_versions: dict[str, Any] = Field(default_factory=dict)
+    stage_results: list[dict[str, Any]] = Field(default_factory=list)
+    error_message: str | None = None
+
+
+class PipelineRunList(BaseModel):
+    """Paginated list of pipeline runs."""
+
+    data: list[PipelineRunSummary]
+    meta: PaginationMeta
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
