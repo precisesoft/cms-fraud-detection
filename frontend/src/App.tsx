@@ -1,6 +1,7 @@
 import { lazy } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { LiveStreamProvider } from "./contexts/LiveStreamContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Layout } from "./components/Layout";
 import { Login } from "./pages/Login";
@@ -54,30 +55,32 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route element={<ProtectedRoute />}>
-            <Route path="/" element={<Layout />}>
-              <Route index element={<Dashboard />} />
-              <Route path="simulate" element={<Simulate />} />
-              <Route path="providers" element={<Providers />} />
-              <Route path="providers/:npi" element={<ProviderDetail />} />
-              <Route path="claims" element={<Claims />} />
-              <Route path="claims/:caseId" element={<ClaimDetail />} />
-              <Route path="investigations" element={<Investigations />} />
-              <Route
-                path="investigations/:caseId"
-                element={<InvestigationDetail />}
-              />
-              <Route path="risk-map" element={<RiskMap />} />
-              <Route path="fairness" element={<Fairness />} />
-              <Route path="analytics" element={<Analytics />} />
-              <Route path="validation" element={<Validation />} />
-              <Route path="live" element={<LiveMonitor />} />
-              <Route path="data" element={<DataManagement />} />
+        <LiveStreamProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<Dashboard />} />
+                <Route path="simulate" element={<Simulate />} />
+                <Route path="providers" element={<Providers />} />
+                <Route path="providers/:npi" element={<ProviderDetail />} />
+                <Route path="claims" element={<Claims />} />
+                <Route path="claims/:caseId" element={<ClaimDetail />} />
+                <Route path="investigations" element={<Investigations />} />
+                <Route
+                  path="investigations/:caseId"
+                  element={<InvestigationDetail />}
+                />
+                <Route path="risk-map" element={<RiskMap />} />
+                <Route path="fairness" element={<Fairness />} />
+                <Route path="analytics" element={<Analytics />} />
+                <Route path="validation" element={<Validation />} />
+                <Route path="live" element={<LiveMonitor />} />
+                <Route path="data" element={<DataManagement />} />
+              </Route>
             </Route>
-          </Route>
-        </Routes>
+          </Routes>
+        </LiveStreamProvider>
       </AuthProvider>
     </BrowserRouter>
   );
