@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -20,37 +20,12 @@ import {
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { formatUSD } from "../lib/helpers";
+import { useLiveStream } from "../contexts/LiveStreamContext";
+import type { LiveClaimEvent, TpsPreset } from "../contexts/LiveStreamContext";
 
-const API_BASE = import.meta.env.DEV
-  ? ""
-  : import.meta.env.VITE_API_BASE_URL ?? "";
 const GEO_URL = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
 
-/* ── Types ──────────────────────────────────────────────────── */
-
-interface LiveClaimEvent {
-  event_id: string;
-  timestamp: string;
-  npi: string;
-  provider_name: string;
-  state: string;
-  city: string;
-  hcpcs_code: string;
-  hcpcs_desc: string;
-  submitted_charge: number;
-  risk_score: number;
-  legitimacy_score: number;
-  case_label: "high_risk" | "review" | "stable";
-  anomaly_score: number | null;
-  signals: string[];
-  scoring_latency_ms: number;
-}
-
-interface LiveStats {
-  total: number;
-  flagged: number;
-  totalLatency: number;
-}
+const TPS_OPTIONS: TpsPreset[] = [1, 2, 5, 10];
 
 /* ── State centroids (lon, lat) for geoAlbersUsa projection ── */
 
@@ -180,76 +155,9 @@ function labelDot(label: string): string {
 
 export function LiveMonitor() {
   const navigate = useNavigate();
-  const esRef = useRef<EventSource | null>(null);
-  const [running, setRunning] = useState(false);
-  const [speed, setSpeed] = useState(1.5);
-  const [events, setEvents] = useState<LiveClaimEvent[]>([]);
-  const [stats, setStats] = useState<LiveStats>({
-    total: 0,
-    flagged: 0,
-    totalLatency: 0,
-  });
-  const [stateDots, setStateDots] = useState<Map<string, LiveClaimEvent>>(
-    new Map(),
-  );
+  const { running, tps, events, stats, stateDots, start, stop, reset, setTps } =
+    useLiveStream();
   const [feedExpanded, setFeedExpanded] = useState(false);
-
-  const handleEvent = useCallback((evt: LiveClaimEvent) => {
-    setEvents((prev) => [evt, ...prev].slice(0, 50));
-    setStats((prev) => ({
-      total: prev.total + 1,
-      flagged: prev.flagged + (evt.case_label === "high_risk" ? 1 : 0),
-      totalLatency: prev.totalLatency + evt.scoring_latency_ms,
-    }));
-    setStateDots((prev) => {
-      const next = new Map(prev);
-      next.set(evt.state, evt);
-      return next;
-    });
-  }, []);
-
-  const startStream = useCallback(() => {
-    if (esRef.current) esRef.current.close();
-    const es = new EventSource(`${API_BASE}/api/live/stream?interval=${speed}`);
-    es.onmessage = (e) => {
-      const data: LiveClaimEvent = JSON.parse(e.data);
-      handleEvent(data);
-    };
-    es.onerror = () => {
-      es.close();
-      setRunning(false);
-    };
-    esRef.current = es;
-    setRunning(true);
-  }, [speed, handleEvent]);
-
-  const stopStream = useCallback(() => {
-    esRef.current?.close();
-    esRef.current = null;
-    setRunning(false);
-  }, []);
-
-  const resetStream = useCallback(() => {
-    stopStream();
-    setEvents([]);
-    setStats({ total: 0, flagged: 0, totalLatency: 0 });
-    setStateDots(new Map());
-  }, [stopStream]);
-
-  // Restart stream when speed changes while running
-  useEffect(() => {
-    if (running) {
-      startStream();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [speed]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      esRef.current?.close();
-    };
-  }, []);
 
   // Close modal on Escape
   useEffect(() => {
@@ -280,19 +188,25 @@ export function LiveMonitor() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-xs text-slate-500 font-medium">Speed</label>
-          <input
-            type="range"
-            min={0.5}
-            max={3}
-            step={0.5}
-            value={speed}
-            onChange={(e) => setSpeed(Number(e.target.value))}
-            className="w-24 accent-indigo-600"
-          />
-          <span className="text-xs text-slate-600 font-mono w-8">{speed}s</span>
+          <span className="text-xs text-slate-500 font-medium">TPS</span>
+          <div className="flex rounded-lg border border-slate-200 overflow-hidden">
+            {TPS_OPTIONS.map((t) => (
+              <button
+                key={t}
+                onClick={() => setTps(t)}
+                className={cn(
+                  "px-2.5 py-1 text-xs font-bold transition-colors",
+                  tps === t
+                    ? "bg-indigo-600 text-white"
+                    : "bg-white text-slate-600 hover:bg-slate-50",
+                )}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
           <button
-            onClick={running ? stopStream : startStream}
+            onClick={running ? stop : start}
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors",
               running
@@ -311,7 +225,7 @@ export function LiveMonitor() {
             )}
           </button>
           <button
-            onClick={resetStream}
+            onClick={reset}
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
             title="Reset"
           >
@@ -320,24 +234,24 @@ export function LiveMonitor() {
         </div>
       </div>
 
-      {/* Stats Bar */}
+      {/* Big Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard
-          label="Claims Processed"
+        <BigStat
+          label="Claims Scanned"
           value={stats.total.toLocaleString()}
-          icon={<Activity className="w-4 h-4 text-indigo-500" />}
-          color="text-slate-800"
+          icon={<Activity className="w-5 h-5 text-indigo-500" />}
+          color="text-slate-900"
         />
-        <StatCard
-          label="Flagged (High Risk)"
+        <BigStat
+          label="Flagged"
           value={stats.flagged.toLocaleString()}
-          icon={<ShieldAlert className="w-4 h-4 text-rose-500" />}
-          color={stats.flagged > 0 ? "text-rose-600" : "text-slate-800"}
+          icon={<ShieldAlert className="w-5 h-5 text-rose-500" />}
+          color={stats.flagged > 0 ? "text-rose-600" : "text-slate-900"}
         />
-        <StatCard
+        <BigStat
           label="Flag Rate"
           value={`${flagRate.toFixed(1)}%`}
-          icon={<TrendingUp className="w-4 h-4 text-amber-500" />}
+          icon={<TrendingUp className="w-5 h-5 text-amber-500" />}
           color={
             flagRate > 10
               ? "text-rose-600"
@@ -346,10 +260,10 @@ export function LiveMonitor() {
                 : "text-emerald-600"
           }
         />
-        <StatCard
+        <BigStat
           label="Avg Latency"
           value={`${avgLatency.toFixed(1)}ms`}
-          icon={<Zap className="w-4 h-4 text-emerald-500" />}
+          icon={<Zap className="w-5 h-5 text-emerald-500" />}
           color={
             avgLatency > 100
               ? "text-rose-600"
@@ -583,7 +497,7 @@ function FeedList({
   );
 }
 
-function StatCard({
+function BigStat({
   label,
   value,
   icon,
@@ -595,14 +509,21 @@ function StatCard({
   color: string;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex items-center gap-3">
-      <div className="p-2 rounded-lg bg-slate-50">{icon}</div>
-      <div>
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-5 py-4">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="p-1.5 rounded-lg bg-slate-50">{icon}</div>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
           {label}
         </p>
-        <p className={cn("text-lg font-bold", color)}>{value}</p>
       </div>
+      <p
+        className={cn(
+          "text-4xl font-bold font-mono tabular-nums tracking-tight",
+          color,
+        )}
+      >
+        {value}
+      </p>
     </div>
   );
 }
