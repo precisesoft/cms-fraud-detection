@@ -43,37 +43,37 @@ export function Fairness() {
       {/* Controls */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col md:flex-row items-start md:items-center gap-4">
         <div className="flex items-center gap-3">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Threshold</label>
-          <input type="number" value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} className="w-20 px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <label htmlFor="fairness-threshold" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Threshold</label>
+          <input id="fairness-threshold" type="number" value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} className="w-20 px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         </div>
-        <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-          <input type="checkbox" checked={blind} onChange={(e) => setBlind(e.target.checked)} className="rounded border-slate-300" />
+        <label htmlFor="fairness-blind-mode" className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+          <input id="fairness-blind-mode" type="checkbox" checked={blind} onChange={(e) => setBlind(e.target.checked)} className="rounded border-slate-300" />
           Revocation-blind mode
         </label>
         <div className="flex bg-slate-100 rounded-lg p-1 ml-auto">
-          <button onClick={() => setTab('state')} className={cn('px-4 py-1.5 text-xs font-bold rounded-md transition-all', tab === 'state' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700')}>By State</button>
-          <button onClick={() => setTab('specialty')} className={cn('px-4 py-1.5 text-xs font-bold rounded-md transition-all', tab === 'specialty' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700')}>By Specialty</button>
+          <button type="button" aria-pressed={tab === 'state'} onClick={() => setTab('state')} className={cn('px-4 py-1.5 text-xs font-bold rounded-md transition-all', tab === 'state' ? 'bg-white shadow text-slate-900' : 'text-slate-700 hover:text-slate-900')}>By State</button>
+          <button type="button" aria-pressed={tab === 'specialty'} onClick={() => setTab('specialty')} className={cn('px-4 py-1.5 text-xs font-bold rounded-md transition-all', tab === 'specialty' ? 'bg-white shadow text-slate-900' : 'text-slate-700 hover:text-slate-900')}>By Specialty</button>
         </div>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20"><span className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" /></div>
+        <div role="status" aria-label="Loading fairness report" className="flex items-center justify-center py-20"><span aria-hidden="true" className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" /></div>
       ) : report ? (
         <>
           {/* KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Overall Flagging Rate</p>
+              <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2">Overall Flagging Rate</p>
               <p className="text-3xl font-black text-slate-900">{(report.overall_flagging_rate * 100).toFixed(1)}%</p>
             </div>
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Statistical Parity Diff</p>
+              <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2">Statistical Parity Diff</p>
               <p className={cn('text-3xl font-black', report.statistical_parity_diff != null && Math.abs(report.statistical_parity_diff) > 0.1 ? 'text-rose-600' : 'text-emerald-600')}>
                 {report.statistical_parity_diff != null ? report.statistical_parity_diff.toFixed(3) : '—'}
               </p>
             </div>
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Disparate Impact Ratio</p>
+              <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2">Disparate Impact Ratio</p>
               <p className={cn('text-3xl font-black', report.disparate_impact_ratio == null ? 'text-slate-400' : report.disparate_impact_ratio < 0.8 ? 'text-rose-600' : 'text-emerald-600')}>
                 {report.disparate_impact_ratio != null ? report.disparate_impact_ratio.toFixed(3) : (
                   <span
@@ -87,21 +87,21 @@ export function Fairness() {
               </p>
             </div>
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Outlier Cohorts</p>
-              <p className="text-3xl font-black text-amber-600">{cohorts.filter((c) => c.is_outlier).length}</p>
+              <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2">Outlier Cohorts</p>
+              <p className="text-3xl font-black text-amber-700">{cohorts.filter((c) => c.is_outlier).length}</p>
             </div>
           </div>
 
           {/* Chart */}
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-indigo-500" /> Flagging Rate by {tab === 'state' ? 'State' : 'Specialty'}</h3>
+            <h2 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-indigo-500" /> Flagging Rate by {tab === 'state' ? 'State' : 'Specialty'}</h2>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 60, left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 600, fill: '#64748b' }} angle={-45} textAnchor="end" />
                   <YAxis tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(v: number) => `${v}%`} />
-                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }} formatter={(value: number) => [`${value}%`, 'Flagging Rate']} />
+                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0', color: '#334155' }} itemStyle={{ color: '#334155' }} labelStyle={{ color: '#334155' }} formatter={(value: number) => [`${value}%`, 'Flagging Rate']} />
                   <ReferenceLine y={report.overall_flagging_rate * 100} stroke="#94a3b8" strokeDasharray="4 4" label={{ value: 'Overall', position: 'right', fontSize: 10 }} />
                   <Bar dataKey="rate" fill="#6366f1" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -112,22 +112,22 @@ export function Fairness() {
           {/* Revocation Impact */}
           {report.revocation_impact && (
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-              <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Info className="w-4 h-4 text-sky-500" /> Revocation Impact Analysis</h3>
+              <h2 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Info className="w-4 h-4 text-sky-500" /> Revocation Impact Analysis</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
                 <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">With Revocation</p>
+                  <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">With Revocation</p>
                   <p className="text-lg font-bold text-slate-900">{(report.revocation_impact.overall_flagging_rate_with * 100).toFixed(1)}%</p>
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Without Revocation</p>
+                  <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">Without Revocation</p>
                   <p className="text-lg font-bold text-slate-900">{(report.revocation_impact.overall_flagging_rate_without * 100).toFixed(1)}%</p>
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Rate Delta</p>
+                  <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">Rate Delta</p>
                   <p className="text-lg font-bold text-amber-600">{(report.revocation_impact.flagging_rate_delta * 100).toFixed(2)}%</p>
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">DI Ratio (With)</p>
+                  <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">DI Ratio (With)</p>
                   <p className="text-lg font-bold text-slate-900">{report.revocation_impact.disparate_impact_with?.toFixed(3) ?? '—'}</p>
                 </div>
               </div>
@@ -136,7 +136,7 @@ export function Fairness() {
 
           {/* Table */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" tabIndex={0} aria-label="Fairness cohort table">
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50/80">
                   <tr>
@@ -155,7 +155,17 @@ export function Fairness() {
                       <td className="px-5 py-3 text-xs text-right text-slate-700">{c.flagged_count}</td>
                       <td className="px-5 py-3 text-xs text-right font-bold text-slate-900">{(c.flagging_rate * 100).toFixed(1)}%</td>
                       <td className="px-5 py-3 text-center">
-                        {c.is_outlier ? <AlertTriangle className="w-4 h-4 text-amber-500 mx-auto" /> : <CheckCircle className="w-4 h-4 text-emerald-400 mx-auto" />}
+                        {c.is_outlier ? (
+                          <>
+                            <AlertTriangle aria-hidden="true" className="w-4 h-4 text-amber-500 mx-auto" />
+                            <span className="sr-only">Outlier cohort</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle aria-hidden="true" className="w-4 h-4 text-emerald-400 mx-auto" />
+                            <span className="sr-only">Not an outlier cohort</span>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))}

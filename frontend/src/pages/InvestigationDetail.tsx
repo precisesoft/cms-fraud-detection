@@ -48,7 +48,7 @@ export function InvestigationDetail() {
       )}
       renderDetails={(data: Claim) => (
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-6">Case Details</h3>
+          <h2 className="font-bold text-slate-800 mb-6">Case Details</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
             {(
               [
@@ -60,7 +60,7 @@ export function InvestigationDetail() {
               ] as [string, string][]
             ).map(([name, value]) => (
               <div key={name}>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
+                <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">
                   {name}
                 </p>
                 <p className="text-sm font-semibold text-slate-800">{value}</p>

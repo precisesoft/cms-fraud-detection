@@ -77,7 +77,6 @@ export function Layout() {
       {/* Sidebar — full height on desktop, slide-in on mobile */}
       <aside
         id="sidebar-nav"
-        role="navigation"
         className={cn(
           "fixed inset-y-14 md:inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 flex flex-col transform transition-transform duration-200 ease-in-out md:translate-x-0",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
@@ -94,7 +93,7 @@ export function Layout() {
         </div>
 
         {/* Nav links */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+        <nav aria-label="Primary" className="flex-1 overflow-y-auto p-4 space-y-1">
           {navigation.map((item) => (
             <NavLink
               key={item.name}
@@ -137,7 +136,7 @@ export function Layout() {
                 <p className="text-sm font-medium text-slate-700 truncate">
                   {user.full_name ?? user.username}
                 </p>
-                <p className="text-xs text-slate-400 capitalize">{user.role}</p>
+                <p className="text-xs text-slate-600 capitalize">{user.role}</p>
               </div>
               <button
                 onClick={logout}
@@ -156,8 +155,8 @@ export function Layout() {
         <div className="max-w-7xl mx-auto">
           <Suspense
             fallback={
-              <div className="flex items-center justify-center h-64">
-                <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+              <div role="status" aria-label="Loading page content" className="flex items-center justify-center h-64">
+                <div aria-hidden="true" className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
               </div>
             }
           >

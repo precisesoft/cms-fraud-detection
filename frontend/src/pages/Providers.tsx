@@ -76,7 +76,7 @@ export function Providers() {
           </p>
         </div>
         <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
-          <Download className="w-4 h-4" />
+          <Download aria-hidden="true" className="w-4 h-4" />
           Export CSV
         </button>
       </div>
@@ -106,6 +106,7 @@ export function Providers() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
+            aria-label="Search providers by name or NPI"
             placeholder="Search by name, NPI..."
             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
             value={searchTerm}
@@ -114,6 +115,7 @@ export function Providers() {
         </div>
         <input
           type="text"
+          aria-label="Filter providers by state"
           placeholder="State (e.g. FL)"
           className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500 w-32"
           value={stateFilter}
@@ -122,6 +124,7 @@ export function Providers() {
           }
         />
         <select
+          aria-label="Filter providers by risk band"
           value={riskBandFilter}
           onChange={(e) => setRiskBandFilter(e.target.value)}
           className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500"
