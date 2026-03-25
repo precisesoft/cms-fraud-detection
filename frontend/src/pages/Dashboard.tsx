@@ -44,13 +44,13 @@ export function Dashboard() {
           <button
             key={kpi.name}
             onClick={() => navigate(kpi.href)}
-            className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow text-left"
+            className="group bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 hover:bg-indigo-50/30 transition-all text-left cursor-pointer"
           >
             <div className="flex items-start justify-between">
               <div className={cn('p-2 rounded-lg', kpi.bg)}>
                 <kpi.icon className={cn('w-5 h-5', kpi.color)} />
               </div>
-              <ArrowRight className="w-4 h-4 text-slate-300" />
+              <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-0.5 transition-all" />
             </div>
             <div className="mt-4">
               <p className="text-sm font-medium text-slate-500">{kpi.name}</p>
