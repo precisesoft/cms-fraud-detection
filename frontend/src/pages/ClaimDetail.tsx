@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { formatUSD } from "../lib/helpers";
 import { CaseDetailShell } from "../components/CaseDetailShell";
+import { InfoButton } from "../components/InfoButton";
 import type { Claim } from "../lib/api";
 
 export function ClaimDetail() {
@@ -51,9 +52,14 @@ export function ClaimDetail() {
       )}
       renderDetails={(claim: Claim) => (
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-6">
-            Service Line Details
-          </h3>
+          <div className="flex items-center gap-1.5 mb-6">
+            <h3 className="font-bold text-slate-800">
+              Service Line Details
+            </h3>
+            <InfoButton title="Service Line Details">
+              Detailed view of a single service line (provider–HCPCS code combination): procedure code, total services rendered, beneficiaries served, submitted charges, estimated Medicare payment, provider type, state, and place of service.
+            </InfoButton>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
             {(
               [
@@ -79,7 +85,12 @@ export function ClaimDetail() {
       )}
       extraSections={(claim: Claim) => (
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-4">Z-Score Metrics</h3>
+          <div className="flex items-center gap-1.5 mb-4">
+            <h3 className="font-bold text-slate-800">Z-Score Metrics</h3>
+            <InfoButton title="Z-Score Metrics">
+              Statistical deviation from peer norms for this service line. Volume Peer Z compares service count to peers; Charge Peer Z compares submitted charges; Bene Peer Z compares beneficiary count; Service/Bene Z measures service intensity per beneficiary. Z > 2 indicates a statistical outlier.
+            </InfoButton>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
             {(
               [

@@ -227,7 +227,7 @@ describe("DataManagement", () => {
 
   it("shows upload button disabled with no file selected", () => {
     renderPage();
-    const btn = screen.getByRole("button", { name: /upload/i });
+    const btn = screen.getByRole("button", { name: "Upload" });
     expect(btn).toBeDisabled();
   });
 

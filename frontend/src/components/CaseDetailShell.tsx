@@ -14,6 +14,7 @@ import { scoreColor } from "../lib/helpers";
 import { Timeline } from "./Timeline";
 import { AssistantDrawer } from "./AssistantDrawer";
 import { useCaseDetail } from "../hooks/useCaseDetail";
+import { InfoButton } from "./InfoButton";
 
 interface CaseDetailShellProps {
   backPath: string;
@@ -107,16 +108,25 @@ export function CaseDetailShell({
       value:
         ctx.scoreDetails?.explainable_risk_score ?? ctx.data.seed_risk_score,
       sub: "Primary transparent score",
+      infoTitle: "Explainable Risk Score",
+      infoText:
+        "Primary transparent score from deterministic rules applied to this specific case (provider–service code combination). Fully explainable — based on peer-comparison z-scores, enrollment signals, and billing pattern rules.",
     },
     {
       name: "Claim Anomaly",
       value: ctx.scoreDetails?.anomaly_score,
       sub: "Case-level anomaly signal",
+      infoTitle: "Claim Anomaly Score",
+      infoText:
+        "Case-level anomaly signal from the Isolation Forest unsupervised model. Measures how unusual this specific service line is compared to all cases in the dataset. Independent from the rule-based score.",
     },
     {
       name: "ML Suspicion",
       value: ctx.scoreDetails?.ml_predicted_probability,
       sub: "Weakly supervised probability",
+      infoTitle: "ML Suspicion Probability",
+      infoText:
+        "Weakly supervised model probability that this case exhibits fraud-like billing patterns. Trained on Isolation Forest labels. Used as an assistive signal — never the sole basis for classification.",
     },
     {
       name: "Hybrid Composite",
@@ -124,6 +134,9 @@ export function CaseDetailShell({
       sub: ctx.scoreDetails?.hybrid_risk_label
         ? `Assistive layer · ${ctx.scoreDetails.hybrid_risk_label}`
         : "Assistive hybrid layer",
+      infoTitle: "Hybrid Composite Score",
+      infoText:
+        "Combined score blending rule-based and ML signals for this case. Shows where both scoring approaches agree, increasing confidence in the risk assessment.",
     },
   ];
 
@@ -170,9 +183,12 @@ export function CaseDetailShell({
                 key={card.name}
                 className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm"
               >
-                <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2">
-                  {card.name}
-                </p>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">
+                    {card.name}
+                  </p>
+                  <InfoButton title={card.infoTitle}>{card.infoText}</InfoButton>
+                </div>
                 <p
                   className={cn(
                     "text-3xl font-black leading-none",
