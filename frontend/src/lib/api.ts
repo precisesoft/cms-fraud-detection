@@ -771,7 +771,9 @@ export function seedSyntheticData(): Promise<PipelineRunDetail> {
 }
 
 export function getPipelineRuns(): Promise<PipelineRunDetail[]> {
-  return request<PipelineRunDetail[]>("/api/ingest/runs?limit=20");
+  return request<{ data: PipelineRunDetail[]; meta: unknown }>(
+    "/api/ingest/runs?limit=20",
+  ).then((r) => r.data);
 }
 
 export function getPipelineRun(runId: number): Promise<PipelineRunDetail> {
