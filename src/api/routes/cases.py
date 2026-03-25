@@ -57,7 +57,7 @@ async def record_action(
 
         await cur.execute(
             """
-            INSERT INTO case_actions (case_id, npi, action, notes, analyst)
+            INSERT INTO case_actions (case_id, npi, action, notes, analyst_id)
             VALUES (%s, %s, %s, %s, %s)
             """,
             (
@@ -99,7 +99,7 @@ async def list_actions(
     async with conn.cursor() as cur:
         await cur.execute(
             """
-            SELECT id, case_id, npi, action, notes, analyst AS analyst_id,
+            SELECT id, case_id, npi, action, notes, analyst_id,
                    created_at::text AS created_at
             FROM case_actions
             WHERE case_id = %s
