@@ -913,6 +913,18 @@ export function DataManagement() {
     loadSources();
   }, [loadSources]);
 
+  // Auto-resume: detect any running pipeline on page load/refresh
+  React.useEffect(() => {
+    getPipelineRuns()
+      .then((runs) => {
+        const running = runs.find(
+          (r) => r.status === "running" || r.status === "pending",
+        );
+        if (running) setActiveRunId(running.id);
+      })
+      .catch(() => {});
+  }, []);
+
   // Admin guard — after hooks
   if (user && user.role !== "admin") {
     return (
