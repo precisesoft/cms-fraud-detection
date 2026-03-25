@@ -46,6 +46,9 @@ const Validation = lazy(() =>
 const LiveMonitor = lazy(() =>
   import("./pages/LiveMonitor").then((m) => ({ default: m.LiveMonitor })),
 );
+const DataManagement = lazy(() =>
+  import("./pages/DataManagement").then((m) => ({ default: m.DataManagement })),
+);
 
 export default function App() {
   return (
@@ -71,6 +74,7 @@ export default function App() {
               <Route path="analytics" element={<Analytics />} />
               <Route path="validation" element={<Validation />} />
               <Route path="live" element={<LiveMonitor />} />
+              <Route path="data" element={<DataManagement />} />
             </Route>
           </Route>
         </Routes>
