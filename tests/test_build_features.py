@@ -9,16 +9,19 @@ import polars as pl
 import pytest
 
 from src.pipeline.build_features import (
+    UpsertResult,
     build_charge_features,
     build_concentration_features,
     build_peer_z_features,
     build_provider_features,
+    build_provider_features_from_db,
     build_provider_metadata,
     build_risk_seed_features,
     build_volume_features,
     main,
     read_demo_csv,
     save_features,
+    upsert_provider_features,
 )
 
 DEMO_CSV = (
@@ -436,3 +439,260 @@ class TestBuildFeaturesMain:
         # "Null counts:" header is printed but no column-specific null lines follow
         combined = "\n".join(printed)
         assert "Null counts" in combined
+
+
+# ---------------------------------------------------------------------------
+# TestBuildProviderFeaturesFromDb
+# ---------------------------------------------------------------------------
+
+
+class TestBuildProviderFeaturesFromDb:
+    """Tests for build_provider_features_from_db()."""
+
+    def test_calls_read_database(self, synthetic_csv: Path) -> None:
+        """build_provider_features_from_db reads from provider_service_cases."""
+        # Build the expected DataFrame from CSV so we can return it from the mock
+        expected_df = pl.read_csv(
+            synthetic_csv,
+            infer_schema_length=5000,
+            null_values=["", "NA", "NULL"],
+        )
+
+        mock_conn = MagicMock()
+        with patch(
+            "src.pipeline.build_features.pl.read_database",
+            return_value=expected_df,
+        ) as mock_read:
+            df = build_provider_features_from_db(mock_conn)
+
+        mock_read.assert_called_once_with("SELECT * FROM provider_service_cases", mock_conn)
+        assert df.shape[0] == 2  # 2 unique NPIs in synthetic CSV
+
+    def test_produces_same_columns_as_csv_version(self, synthetic_csv: Path) -> None:
+        """build_provider_features_from_db returns the same columns as build_provider_features."""
+        csv_df = pl.read_csv(
+            synthetic_csv,
+            infer_schema_length=5000,
+            null_values=["", "NA", "NULL"],
+        )
+
+        mock_conn = MagicMock()
+        with patch("src.pipeline.build_features.pl.read_database", return_value=csv_df):
+            db_df = build_provider_features_from_db(mock_conn)
+
+        csv_result = build_provider_features(synthetic_csv)
+        assert sorted(db_df.columns) == sorted(csv_result.columns)
+
+    def test_aggregation_matches_csv_version(self, synthetic_csv: Path) -> None:
+        """Aggregated values are identical whether source is CSV or Postgres mock."""
+        csv_df = pl.read_csv(
+            synthetic_csv,
+            infer_schema_length=5000,
+            null_values=["", "NA", "NULL"],
+        )
+
+        mock_conn = MagicMock()
+        with patch("src.pipeline.build_features.pl.read_database", return_value=csv_df):
+            db_df = build_provider_features_from_db(mock_conn)
+
+        csv_result = build_provider_features(synthetic_csv)
+
+        # Sort both by npi for comparison
+        db_sorted = db_df.sort("npi")
+        csv_sorted = csv_result.sort("npi")
+
+        # Compare a few key aggregated columns
+        for col in ["max_seed_risk_score", "service_line_count", "service_hhi"]:
+            assert db_sorted[col].to_list() == csv_sorted[col].to_list(), f"Mismatch in {col}"
+
+
+# ---------------------------------------------------------------------------
+# TestUpsertProviderFeatures
+# ---------------------------------------------------------------------------
+
+
+def _make_upsert_df(n_providers: int = 2) -> pl.DataFrame:
+    """Build a minimal feature DataFrame for upsert tests."""
+    return pl.DataFrame(
+        {
+            "npi": [str(1111111111 + i) for i in range(n_providers)],
+            "provider_name": [f"Provider {i}" for i in range(n_providers)],
+            "max_seed_risk_score": [20 + i * 10 for i in range(n_providers)],
+        }
+    )
+
+
+def _make_upsert_copy_ctx(mock_conn: MagicMock) -> MagicMock:
+    """Wire up cursor().copy() on a mock connection for upsert tests."""
+    copy_ctx = MagicMock()
+    copy_obj = MagicMock()
+    copy_ctx.__enter__ = MagicMock(return_value=copy_obj)
+    copy_ctx.__exit__ = MagicMock(return_value=False)
+    mock_conn.cursor.return_value.copy.return_value = copy_ctx
+    return copy_obj
+
+
+def _upsert_execute_seq(
+    staging_count: int = 2,
+    unchanged_count: int = 0,
+    returning_rows: list[tuple[bool]] | None = None,
+) -> list[MagicMock]:
+    """Build the ordered execute() return values for upsert_provider_features."""
+    if returning_rows is None:
+        returning_rows = [(True,)] * staging_count
+    return [
+        MagicMock(),  # CREATE TEMP TABLE
+        MagicMock(fetchone=MagicMock(return_value=(unchanged_count,))),  # pre-count unchanged
+        MagicMock(fetchall=MagicMock(return_value=returning_rows)),  # INSERT RETURNING
+    ]
+
+
+class TestUpsertProviderFeatures:
+    """Tests for upsert_provider_features()."""
+
+    def test_returns_upsert_result(self) -> None:
+        """upsert_provider_features returns an UpsertResult."""
+        df = _make_upsert_df()
+        mock_conn = MagicMock()
+        mock_conn.execute.side_effect = _upsert_execute_seq()
+        _make_upsert_copy_ctx(mock_conn)
+
+        result = upsert_provider_features(df, mock_conn)
+
+        assert isinstance(result, UpsertResult)
+
+    def test_all_inserts(self) -> None:
+        """New NPIs → rows_inserted equals staging count."""
+        df = _make_upsert_df(n_providers=2)
+        mock_conn = MagicMock()
+        mock_conn.execute.side_effect = _upsert_execute_seq(
+            staging_count=2,
+            unchanged_count=0,
+            returning_rows=[(True,), (True,)],
+        )
+        _make_upsert_copy_ctx(mock_conn)
+
+        result = upsert_provider_features(df, mock_conn)
+
+        assert result.rows_inserted == 2
+        assert result.rows_updated == 0
+        assert result.rows_unchanged == 0
+        assert result.total == 2
+
+    def test_all_unchanged(self) -> None:
+        """Existing NPIs with identical data → rows_unchanged equals staging count."""
+        df = _make_upsert_df(n_providers=2)
+        mock_conn = MagicMock()
+        # Staging=2, pre-count unchanged=2, RETURNING returns 2 (existing rows, xmax!=0)
+        mock_conn.execute.side_effect = _upsert_execute_seq(
+            staging_count=2,
+            unchanged_count=2,
+            returning_rows=[(False,), (False,)],
+        )
+        _make_upsert_copy_ctx(mock_conn)
+
+        result = upsert_provider_features(df, mock_conn)
+
+        assert result.rows_inserted == 0
+        assert result.rows_unchanged == 2
+        assert result.rows_updated == 0
+
+    def test_mixed_delta(self) -> None:
+        """Mix of insert/update/unchanged is accounted for correctly."""
+        df = _make_upsert_df(n_providers=3)
+        mock_conn = MagicMock()
+        # 3 staging rows: 1 insert (True), 2 existing (False), 1 of those unchanged
+        mock_conn.execute.side_effect = _upsert_execute_seq(
+            staging_count=3,
+            unchanged_count=1,
+            returning_rows=[(True,), (False,), (False,)],
+        )
+        _make_upsert_copy_ctx(mock_conn)
+
+        result = upsert_provider_features(df, mock_conn)
+
+        assert result.rows_inserted == 1
+        assert result.rows_unchanged == 1
+        assert result.rows_updated == 1
+        assert result.total == 3
+
+    def test_uses_staging_table(self) -> None:
+        """A TEMP staging table is created (no TRUNCATE on provider_features)."""
+        df = _make_upsert_df()
+        mock_conn = MagicMock()
+        mock_conn.execute.side_effect = _upsert_execute_seq()
+        _make_upsert_copy_ctx(mock_conn)
+
+        upsert_provider_features(df, mock_conn)
+
+        execute_sqls = [c.args[0] for c in mock_conn.execute.call_args_list]
+        assert any("CREATE TEMP TABLE" in s for s in execute_sqls)
+        assert not any("TRUNCATE" in s for s in execute_sqls)
+
+    def test_upsert_sql_on_conflict_npi(self) -> None:
+        """INSERT statement uses ON CONFLICT (npi) DO UPDATE."""
+        df = _make_upsert_df()
+        mock_conn = MagicMock()
+        mock_conn.execute.side_effect = _upsert_execute_seq()
+        _make_upsert_copy_ctx(mock_conn)
+
+        upsert_provider_features(df, mock_conn)
+
+        execute_sqls = [c.args[0] for c in mock_conn.execute.call_args_list]
+        upsert_sql = next(s for s in execute_sqls if "ON CONFLICT" in s)
+        assert "ON CONFLICT (npi) DO UPDATE" in upsert_sql
+
+    def test_sets_last_scored_at(self) -> None:
+        """Upsert SQL always sets last_scored_at = NOW()."""
+        df = _make_upsert_df()
+        mock_conn = MagicMock()
+        mock_conn.execute.side_effect = _upsert_execute_seq()
+        _make_upsert_copy_ctx(mock_conn)
+
+        upsert_provider_features(df, mock_conn)
+
+        execute_sqls = [c.args[0] for c in mock_conn.execute.call_args_list]
+        upsert_sql = next(s for s in execute_sqls if "ON CONFLICT" in s)
+        assert "last_scored_at = NOW()" in upsert_sql
+
+    def test_sets_pipeline_run_id_when_provided(self) -> None:
+        """pipeline_run_id is included in the upsert when run_id is given."""
+        df = _make_upsert_df()
+        mock_conn = MagicMock()
+        mock_conn.execute.side_effect = _upsert_execute_seq()
+        _make_upsert_copy_ctx(mock_conn)
+
+        upsert_provider_features(df, mock_conn, run_id=42)
+
+        execute_sqls = [c.args[0] for c in mock_conn.execute.call_args_list]
+        upsert_sql = next(s for s in execute_sqls if "ON CONFLICT" in s)
+        assert "pipeline_run_id" in upsert_sql
+        assert "42" in upsert_sql
+
+    def test_no_pipeline_run_id_when_none(self) -> None:
+        """pipeline_run_id is omitted from the upsert when run_id is None."""
+        df = _make_upsert_df()
+        mock_conn = MagicMock()
+        mock_conn.execute.side_effect = _upsert_execute_seq()
+        _make_upsert_copy_ctx(mock_conn)
+
+        upsert_provider_features(df, mock_conn, run_id=None)
+
+        execute_sqls = [c.args[0] for c in mock_conn.execute.call_args_list]
+        upsert_sql = next(s for s in execute_sqls if "ON CONFLICT" in s)
+        # pipeline_run_id should not appear in the INSERT column list or SET clause
+        # when run_id is None
+        # (it may appear in other execute calls like unchanged pre-count)
+        insert_part = upsert_sql.split("ON CONFLICT")[0]
+        assert "pipeline_run_id" not in insert_part
+
+    def test_commits(self) -> None:
+        """upsert_provider_features calls conn.commit()."""
+        df = _make_upsert_df()
+        mock_conn = MagicMock()
+        mock_conn.execute.side_effect = _upsert_execute_seq()
+        _make_upsert_copy_ctx(mock_conn)
+
+        upsert_provider_features(df, mock_conn)
+
+        mock_conn.commit.assert_called_once()
