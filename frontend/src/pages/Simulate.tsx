@@ -4,6 +4,7 @@ import { simulateClaim } from '../lib/api';
 import type { ClaimSimulationResult, ClaimSimulationRequest } from '../lib/api';
 import { cn } from '../lib/utils';
 import { scoreColor, riskBandLabel, riskBandColor } from '../lib/helpers';
+import { InfoButton } from '../components/InfoButton';
 
 export function Simulate() {
   const [form, setForm] = React.useState<ClaimSimulationRequest>({
@@ -47,7 +48,15 @@ export function Simulate() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Input Form */}
         <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-6"><Zap className="w-5 h-5 text-indigo-500" /> Claim Parameters</h3>
+          <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-6">
+            <Zap className="w-5 h-5 text-indigo-500" /> Claim Parameters
+            <InfoButton title="Claim Parameters">
+              Enter hypothetical claim parameters to test how the risk engine
+              scores them. NPI identifies the provider; HCPCS is the procedure
+              code. Charges, service counts, and beneficiary counts are compared
+              against peer baselines for same-specialty, same-state providers.
+            </InfoButton>
+          </h3>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -117,7 +126,12 @@ export function Simulate() {
             <>
               {/* Score Header */}
               <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Risk Score</p>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Risk Score</p>
+                  <InfoButton title="Risk Score">
+                    Computed risk score from 0 to 100 combining deterministic rules and peer-comparison z-scores. Stable (≤ 30): normal billing patterns. Review (31–50): warrants closer look. High Risk (≥ 51): priority investigation. This is the primary, fully explainable score.
+                  </InfoButton>
+                </div>
                 <p className={cn('text-6xl font-black leading-none', scoreColor(result.risk_score))}>{result.risk_score}</p>
                 <div className="mt-3 flex items-center justify-center gap-3">
                   <span className={cn('px-3 py-1 rounded-full text-xs font-bold uppercase', riskBandColor(result.risk_band))}>
@@ -133,6 +147,9 @@ export function Simulate() {
                   <div className="flex items-center gap-2 text-slate-500 text-xs font-bold uppercase tracking-wider">
                     <Activity className="w-4 h-4 text-amber-500" />
                     Anomaly Score
+                    <InfoButton title="Anomaly Score">
+                      Isolation Forest unsupervised machine learning score measuring how unusual this provider&apos;s billing patterns are relative to all providers in the dataset. Computed independently from the rule-based score. Higher values indicate more anomalous billing.
+                    </InfoButton>
                   </div>
                   <p className="mt-3 text-3xl font-black text-slate-900">
                     {result.anomaly_score != null ? result.anomaly_score.toFixed(1) : '—'}
@@ -144,6 +161,9 @@ export function Simulate() {
                   <div className="flex items-center gap-2 text-slate-500 text-xs font-bold uppercase tracking-wider">
                     <Brain className="w-4 h-4 text-indigo-500" />
                     ML Suspicion
+                    <InfoButton title="ML Suspicion Probability">
+                      Weakly supervised model probability that this claim exhibits fraud-like patterns. Trained on Isolation Forest anomaly labels, not human labels. Used as an assistive signal to complement the primary rule-based score — never used alone for classification.
+                    </InfoButton>
                   </div>
                   <p className="mt-3 text-3xl font-black text-slate-900">
                     {result.ml_predicted_probability != null ? `${result.ml_predicted_probability.toFixed(1)}%` : '—'}
@@ -155,7 +175,12 @@ export function Simulate() {
               {/* Narrative */}
               {result.narrative && (
                 <div className="bg-slate-900 text-white p-6 rounded-xl shadow-xl">
-                  <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest mb-3">AI Narrative</p>
+                  <div className="flex items-center gap-2 mb-3">
+                    <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest">AI Narrative</p>
+                    <InfoButton title="AI-Generated Narrative">
+                      Natural language explanation generated by Claude (AWS Bedrock) describing why this claim received its risk score. Written for analysts to quickly understand key risk factors, peer deviations, and relevant context without reading raw data.
+                    </InfoButton>
+                  </div>
                   <p className="text-sm leading-relaxed text-slate-200">{result.narrative}</p>
                 </div>
               )}
@@ -163,7 +188,17 @@ export function Simulate() {
               {/* Signals */}
               {result.signals.length > 0 && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                  <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-500" /> Signals</h3>
+                  <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-500" /> Signals
+                    <InfoButton title="Risk & Legitimacy Signals">
+                      Individual signals from the scoring taxonomy that
+                      contributed to the final score. Risk signals (red)
+                      increase the score — e.g., billing volume 3x peer
+                      average. Legitimacy signals (green) reduce it — e.g.,
+                      consistent Medicare participation. Each signal has a
+                      category, description, and measured value.
+                    </InfoButton>
+                  </h3>
                   <div className="space-y-2">
                     {result.signals.map((s) => (
                       <div key={s.name} className={cn('p-3 rounded-lg border', s.direction === 'risk' ? 'bg-rose-50/50 border-rose-100' : 'bg-emerald-50/50 border-emerald-100')}>
@@ -181,7 +216,16 @@ export function Simulate() {
               {/* Peer Comparisons */}
               {result.peer_comparisons.length > 0 && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                  <h3 className="font-bold text-slate-800 mb-4">Peer Comparisons</h3>
+                  <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    Peer Comparisons
+                    <InfoButton title="Peer Comparison">
+                      How this provider&apos;s metrics compare to peers billing
+                      the same HCPCS code in the same specialty and state.
+                      Z-scores measure standard deviations from the peer mean.
+                      Z &gt; 2 indicates the provider is a statistical outlier
+                      for that metric.
+                    </InfoButton>
+                  </h3>
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-slate-200 text-xs">
                       <thead className="bg-slate-50">
