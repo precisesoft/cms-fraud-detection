@@ -80,7 +80,7 @@ def validate_csv(file_path: Path, source_type: str) -> ValidationResult:
     if source_type not in COLUMN_MAPS:
         raise ValueError(f"Unknown source_type {source_type!r}. Valid types: {sorted(COLUMN_MAPS)}")
 
-    file_columns = set(pl.read_csv(file_path, n_rows=0).columns)
+    file_columns = set(pl.read_csv(file_path, n_rows=0, infer_schema_length=0).columns)
     required = REQUIRED_COLUMNS[source_type]
     known_columns = set(COLUMN_MAPS[source_type].keys())
 
@@ -144,14 +144,19 @@ def load_raw_csv(
 
     # Step 2 — read only the columns that exist in both the file and the map
     col_map = COLUMN_MAPS[source_type]
-    file_columns = set(pl.read_csv(file_path, n_rows=0).columns)
+    file_columns = set(pl.read_csv(file_path, n_rows=0, infer_schema_length=0).columns)
     cols_to_read = [c for c in col_map if c in file_columns]
 
+    # Force all mapped columns to String to prevent Polars from
+    # inferring numeric types on mixed-format columns like HCPCS_Cd
+    # (e.g. "99213" looks like i64, but "G0439" is alphanumeric).
+    str_overrides = {c: pl.Utf8 for c in cols_to_read}
     df = pl.read_csv(
         file_path,
         infer_schema_length=5000,
         null_values=["", "NA", "NULL"],
         columns=cols_to_read,
+        schema_overrides=str_overrides,
     )
     rename_map = {src: dst for src, dst in col_map.items() if src in df.columns}
     df = df.rename(rename_map)
