@@ -23,6 +23,7 @@ import {
 import { chat } from "../lib/api";
 import type { ChatMessage, ChatResponse, ChartSpec } from "../lib/api";
 import { cn } from "../lib/utils";
+import { InfoButton } from "../components/InfoButton";
 
 const CHART_COLORS = [
   "#6366f1",
@@ -186,7 +187,10 @@ export function Analytics() {
     <div className="flex min-h-[calc(100vh-9rem)] flex-col animate-in fade-in duration-500">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Analytics</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-slate-900">Analytics</h1>
+            <InfoButton title="AI-Powered Analytics">Natural language analytics powered by text-to-SQL. Type questions about the data in plain English — the system converts your question to a SQL query, executes it against the database, and returns results with auto-generated charts and tables. Powered by Claude on AWS Bedrock.</InfoButton>
+          </div>
           <p className="text-sm text-slate-500">
             Ask questions about the data in natural language. Powered by
             text-to-SQL.
