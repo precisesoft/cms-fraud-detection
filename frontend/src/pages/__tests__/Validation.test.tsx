@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import { Validation } from "../Validation";
+import { Validation, shortLabel } from "../Validation";
 import { getValidation } from "../../lib/api";
 
 vi.mock("../../lib/api", () => ({
@@ -45,6 +45,32 @@ const mockReport = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+});
+
+describe("shortLabel", () => {
+  it("returns short strings unchanged", () => {
+    expect(shortLabel("Billing Abuse")).toBe("Billing Abuse");
+  });
+
+  it("truncates long strings with ellipsis", () => {
+    const long = "This is a very long reason that exceeds the limit";
+    const result = shortLabel(long, 24);
+    expect(result).toHaveLength(24);
+    expect(result.endsWith("…")).toBe(true);
+  });
+
+  it("strips regulation code prefix and returns description", () => {
+    expect(shortLabel("424.535(A)(1) Noncompliance", 24)).toBe("Noncompliance");
+  });
+
+  it("truncates long description after stripping prefix", () => {
+    const result = shortLabel(
+      "424.535(A)(1) Very long noncompliance description here",
+      24,
+    );
+    expect(result.length).toBeLessThanOrEqual(24);
+    expect(result.endsWith("…")).toBe(true);
+  });
 });
 
 describe("Validation", () => {

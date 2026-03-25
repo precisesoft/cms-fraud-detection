@@ -516,18 +516,18 @@ export function ProviderDetail() {
           {radarData.length > 0 && (
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
               <h3 className="font-bold text-slate-800 mb-6">Risk Radar</h3>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height={288}>
                   <RadarChart
                     cx="50%"
                     cy="50%"
-                    outerRadius="80%"
+                    outerRadius="65%"
                     data={radarData}
                   >
                     <PolarGrid stroke="#e2e8f0" />
                     <PolarAngleAxis
                       dataKey="subject"
-                      tick={{ fontSize: 10, fontWeight: 600, fill: "#64748b" }}
+                      tick={{ fontSize: 11, fontWeight: 600, fill: "#64748b" }}
                     />
                     <Radar
                       name="Provider"
@@ -740,14 +740,6 @@ export function ProviderDetail() {
             </div>
           )}
 
-          {/* Evidence Graph */}
-          {graph && graph.nodes.length > 0 && (
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-              <h3 className="font-bold text-slate-800 mb-4">Evidence Graph</h3>
-              <EvidenceGraph nodes={graph.nodes} edges={graph.edges} />
-            </div>
-          )}
-
           {/* Enrollment */}
           <div className="bg-slate-900 text-white p-6 rounded-xl shadow-xl">
             <h3 className="font-bold text-indigo-300 text-xs uppercase tracking-widest mb-4">
@@ -790,6 +782,14 @@ export function ProviderDetail() {
           </div>
         </div>
       </div>
+
+      {/* Evidence Graph — full-width for readability */}
+      {graph && graph.nodes.length > 0 && (
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <h3 className="font-bold text-slate-800 mb-4">Evidence Graph</h3>
+          <EvidenceGraph nodes={graph.nodes} edges={graph.edges} />
+        </div>
+      )}
 
       <AssistantDrawer
         isOpen={chatOpen}
