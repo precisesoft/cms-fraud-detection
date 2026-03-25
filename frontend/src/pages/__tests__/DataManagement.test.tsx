@@ -10,6 +10,7 @@ import {
   uploadData,
   triggerRecalibrate,
   triggerRetrain,
+  seedSyntheticData,
 } from "../../lib/api";
 
 /* ── Auth mock ─────────────────────────────────────────────── */
@@ -29,6 +30,7 @@ vi.mock("../../lib/api", () => ({
   uploadData: vi.fn(),
   triggerRecalibrate: vi.fn(),
   triggerRetrain: vi.fn(),
+  seedSyntheticData: vi.fn(),
 }));
 
 /* ── Shared fixtures ───────────────────────────────────────── */
@@ -151,7 +153,9 @@ describe("DataManagement", () => {
     renderPage();
     expect(screen.getByText("Data Management")).toBeInTheDocument();
     expect(
-      screen.getByText("Upload CMS data, trigger recalibration, and monitor pipeline runs."),
+      screen.getByText(
+        "Upload CMS data, trigger recalibration, and monitor pipeline runs.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -195,7 +199,12 @@ describe("DataManagement", () => {
 
   it("shows Stale badge for sources with no uploaded_at", async () => {
     vi.mocked(getSourceVersions).mockResolvedValue([
-      { source_type: "Part B Service", version: "—", uploaded_at: "", row_count: 0 },
+      {
+        source_type: "Part B Service",
+        version: "—",
+        uploaded_at: "",
+        row_count: 0,
+      },
     ]);
     renderPage();
     await waitFor(() => {
@@ -261,7 +270,9 @@ describe("DataManagement", () => {
 
     // Simulate file selection via the hidden input
     const fileInput = screen.getByLabelText("File input");
-    const mockFile = new File(["col1,col2\n1,2"], "data.csv", { type: "text/csv" });
+    const mockFile = new File(["col1,col2\n1,2"], "data.csv", {
+      type: "text/csv",
+    });
     await user.upload(fileInput, mockFile);
 
     // Now the upload button should be enabled
@@ -282,7 +293,9 @@ describe("DataManagement", () => {
   });
 
   it("shows upload error message on failure", async () => {
-    vi.mocked(uploadData).mockRejectedValue(new Error("Server error: invalid file"));
+    vi.mocked(uploadData).mockRejectedValue(
+      new Error("Server error: invalid file"),
+    );
 
     const user = userEvent.setup();
     renderPage();
@@ -291,7 +304,9 @@ describe("DataManagement", () => {
     await user.type(versionInput, "2025");
 
     const fileInput = screen.getByLabelText("File input");
-    const mockFile = new File(["col1,col2\n1,2"], "data.csv", { type: "text/csv" });
+    const mockFile = new File(["col1,col2\n1,2"], "data.csv", {
+      type: "text/csv",
+    });
     await user.upload(fileInput, mockFile);
 
     const uploadBtn = screen.getByRole("button", { name: /^Upload$/ });
@@ -319,7 +334,9 @@ describe("DataManagement", () => {
     await user.type(versionInput, "Q1-2025");
 
     const fileInput = screen.getByLabelText("File input");
-    const mockFile = new File(["npi\n1234"], "enroll.csv", { type: "text/csv" });
+    const mockFile = new File(["npi\n1234"], "enroll.csv", {
+      type: "text/csv",
+    });
     await user.upload(fileInput, mockFile);
 
     await user.click(screen.getByRole("button", { name: /^Upload$/ }));
@@ -327,7 +344,9 @@ describe("DataManagement", () => {
     await waitFor(() => {
       expect(screen.getByText(/Duplicate detected/)).toBeInTheDocument();
     });
-    expect(screen.getByText("Column 'npi' has 3 null values")).toBeInTheDocument();
+    expect(
+      screen.getByText("Column 'npi' has 3 null values"),
+    ).toBeInTheDocument();
   });
 
   it("triggers recalibration after upload when auto-recalibrate is checked", async () => {
@@ -347,7 +366,10 @@ describe("DataManagement", () => {
     await user.type(screen.getByLabelText("Version"), "2025");
 
     const fileInput = screen.getByLabelText("File input");
-    await user.upload(fileInput, new File(["a,b"], "data.csv", { type: "text/csv" }));
+    await user.upload(
+      fileInput,
+      new File(["a,b"], "data.csv", { type: "text/csv" }),
+    );
 
     await user.click(screen.getByRole("button", { name: /^Upload$/ }));
 
@@ -360,24 +382,41 @@ describe("DataManagement", () => {
 
   it("shows Recalibrate Scores section", () => {
     renderPage();
-    expect(screen.getByRole("heading", { name: "Recalibrate Scores" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Recalibrate Scores" }),
+    ).toBeInTheDocument();
   });
 
   it("shows Recalibrate Scores and Retrain Models buttons", () => {
     renderPage();
-    expect(screen.getByRole("button", { name: /Recalibrate Scores/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Retrain Models/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Recalibrate Scores/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Retrain Models/i }),
+    ).toBeInTheDocument();
   });
 
   it("triggers recalibration and shows run panel", async () => {
-    const runningRun = { ...mockRun, id: 99, status: "running", progress_pct: 20 };
+    const runningRun = {
+      ...mockRun,
+      id: 99,
+      status: "running",
+      progress_pct: 20,
+    };
     vi.mocked(triggerRecalibrate).mockResolvedValue(runningRun);
-    vi.mocked(getPipelineRun).mockResolvedValue({ ...runningRun, status: "completed", progress_pct: 100 });
+    vi.mocked(getPipelineRun).mockResolvedValue({
+      ...runningRun,
+      status: "completed",
+      progress_pct: 100,
+    });
 
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: /Recalibrate Scores/i }));
+    await user.click(
+      screen.getByRole("button", { name: /Recalibrate Scores/i }),
+    );
     await waitFor(() => {
       expect(vi.mocked(triggerRecalibrate)).toHaveBeenCalledOnce();
     });
@@ -403,12 +442,16 @@ describe("DataManagement", () => {
   });
 
   it("shows error when recalibration trigger fails", async () => {
-    vi.mocked(triggerRecalibrate).mockRejectedValue(new Error("Service unavailable"));
+    vi.mocked(triggerRecalibrate).mockRejectedValue(
+      new Error("Service unavailable"),
+    );
 
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: /Recalibrate Scores/i }));
+    await user.click(
+      screen.getByRole("button", { name: /Recalibrate Scores/i }),
+    );
 
     await waitFor(() => {
       expect(screen.getByText("Service unavailable")).toBeInTheDocument();
@@ -456,7 +499,9 @@ describe("DataManagement", () => {
   it("shows Details button for runs with stage results", async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Details/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Details/i }),
+      ).toBeInTheDocument();
     });
   });
 
@@ -465,7 +510,9 @@ describe("DataManagement", () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Details/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Details/i }),
+      ).toBeInTheDocument();
     });
 
     await user.click(screen.getByRole("button", { name: /Details/i }));
@@ -481,7 +528,9 @@ describe("DataManagement", () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Details/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Details/i }),
+      ).toBeInTheDocument();
     });
 
     const detailsBtn = screen.getByRole("button", { name: /Details/i });
@@ -503,7 +552,9 @@ describe("DataManagement", () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Details/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Details/i }),
+      ).toBeInTheDocument();
     });
 
     await user.click(screen.getByRole("button", { name: /Details/i }));
@@ -540,7 +591,9 @@ describe("DataManagement", () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: /Recalibrate Scores/i }));
+    await user.click(
+      screen.getByRole("button", { name: /Recalibrate Scores/i }),
+    );
 
     await waitFor(() => {
       // The run panel header should appear
@@ -552,14 +605,21 @@ describe("DataManagement", () => {
   });
 
   it("shows progress bar after run is triggered", async () => {
-    const completedRun = { ...mockRun, id: 55, status: "completed", progress_pct: 100 };
+    const completedRun = {
+      ...mockRun,
+      id: 55,
+      status: "completed",
+      progress_pct: 100,
+    };
     vi.mocked(triggerRecalibrate).mockResolvedValue(completedRun);
     vi.mocked(getPipelineRun).mockResolvedValue(completedRun);
 
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: /Recalibrate Scores/i }));
+    await user.click(
+      screen.getByRole("button", { name: /Recalibrate Scores/i }),
+    );
 
     await waitFor(() => {
       expect(screen.getByText("Overall progress")).toBeInTheDocument();
@@ -581,12 +641,75 @@ describe("DataManagement", () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: /Recalibrate Scores/i }));
+    await user.click(
+      screen.getByRole("button", { name: /Recalibrate Scores/i }),
+    );
 
     await waitFor(() => {
       expect(screen.getByText("Pipeline failed")).toBeInTheDocument();
     });
     expect(screen.getByText("Database connection lost")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Retry/i })).toBeInTheDocument();
+  });
+
+  /* ── Seed Synthetic Data section ────────────────────────── */
+
+  it("shows Demo Mode section with seed button", () => {
+    renderPage();
+    expect(
+      screen.getByRole("heading", { name: "Demo Mode" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Seed Synthetic Data/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("triggers seed and starts polling when clicked", async () => {
+    const seedRun = {
+      ...mockRun,
+      id: 77,
+      run_type: "seed_synthetic",
+      status: "running",
+      progress_pct: 0,
+    };
+    vi.mocked(seedSyntheticData).mockResolvedValue(seedRun);
+    vi.mocked(getPipelineRun).mockResolvedValue({
+      ...seedRun,
+      status: "completed",
+      progress_pct: 100,
+    });
+
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(
+      screen.getByRole("button", { name: /Seed Synthetic Data/i }),
+    );
+
+    await waitFor(() => {
+      expect(vi.mocked(seedSyntheticData)).toHaveBeenCalledOnce();
+    });
+
+    // Should poll getPipelineRun with the returned run id
+    await waitFor(() => {
+      expect(vi.mocked(getPipelineRun)).toHaveBeenCalledWith(77);
+    });
+  });
+
+  it("shows error when seed trigger fails", async () => {
+    vi.mocked(seedSyntheticData).mockRejectedValue(
+      new Error("Pipeline already running"),
+    );
+
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(
+      screen.getByRole("button", { name: /Seed Synthetic Data/i }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Pipeline already running")).toBeInTheDocument();
+    });
   });
 });

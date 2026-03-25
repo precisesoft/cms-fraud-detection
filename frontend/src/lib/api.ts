@@ -6,7 +6,7 @@
 
 const API_BASE = import.meta.env.DEV
   ? ""
-  : import.meta.env.VITE_API_BASE_URL ?? "";
+  : (import.meta.env.VITE_API_BASE_URL ?? "");
 
 /* ── Auth token management ─────────────────────────────────── */
 
@@ -753,16 +753,20 @@ export async function uploadData(
 }
 
 export function triggerRecalibrate(): Promise<PipelineRunDetail> {
-  return request<PipelineRunDetail>("/api/ingest/runs", {
+  return request<PipelineRunDetail>("/api/ingest/recalibrate", {
     method: "POST",
-    body: { run_type: "recalibration", triggered_by: "admin_ui" },
   });
 }
 
 export function triggerRetrain(): Promise<PipelineRunDetail> {
-  return request<PipelineRunDetail>("/api/ingest/runs", {
+  return request<PipelineRunDetail>("/api/ingest/retrain", {
     method: "POST",
-    body: { run_type: "retrain_and_recalibrate", triggered_by: "admin_ui" },
+  });
+}
+
+export function seedSyntheticData(): Promise<PipelineRunDetail> {
+  return request<PipelineRunDetail>("/api/ingest/seed", {
+    method: "POST",
   });
 }
 
