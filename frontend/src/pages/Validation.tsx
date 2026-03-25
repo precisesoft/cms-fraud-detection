@@ -25,6 +25,7 @@ import {
 import { getValidation } from "../lib/api";
 import type { ValidationReport } from "../lib/api";
 import { cn } from "../lib/utils";
+import { InfoButton } from "../components/InfoButton";
 
 export function Validation() {
   const [report, setReport] = React.useState<ValidationReport | null>(null);
@@ -96,7 +97,7 @@ export function Validation() {
       <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6">
         <div className="flex items-start gap-3">
           <ShieldCheck className="w-6 h-6 text-emerald-600 mt-0.5 shrink-0" />
-          <div>
+          <div className="flex-1">
             <p className="font-bold text-emerald-900 text-lg">
               {(report.overall_detection_rate * 100).toFixed(1)}% of revoked
               providers detected from billing patterns alone
@@ -109,6 +110,12 @@ export function Validation() {
               — the same data available before CMS acted.
             </p>
           </div>
+          <InfoButton title="Key Insight">
+            Headline result of retrospective validation: what percentage of
+            CMS-revoked providers our system would have flagged using only
+            billing patterns, without ever seeing the revocation flag. This
+            proves the system can identify fraud proactively.
+          </InfoButton>
         </div>
       </div>
 
@@ -122,6 +129,12 @@ export function Validation() {
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Detection Rate
             </span>
+            <InfoButton title="Detection Rate">
+              Percentage of eventually-revoked providers that our behavioral
+              signals identified as high-risk or review — scored blind, without
+              access to the revocation flag. Higher values indicate stronger
+              predictive power.
+            </InfoButton>
           </div>
           <p
             className={cn(
@@ -165,6 +178,12 @@ export function Validation() {
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Detection Lift
             </span>
+            <InfoButton title="Detection Lift">
+              How many times more likely a revoked provider is to be flagged
+              compared to a non-revoked provider. For example, 3.0x means
+              revoked providers are three times more likely to trigger a flag.
+              Higher values indicate better signal specificity.
+            </InfoButton>
           </div>
           <p className="text-4xl font-black text-indigo-600">
             {report.detection_lift ?? "—"}x
@@ -182,6 +201,11 @@ export function Validation() {
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Baseline Rate
             </span>
+            <InfoButton title="Baseline Flagging Rate">
+              Percentage of non-revoked providers that are also flagged by our
+              behavioral signals. Lower values mean fewer false positives. This
+              represents the background noise level of the scoring engine.
+            </InfoButton>
           </div>
           <p className="text-4xl font-black text-slate-900">
             {(report.baseline_flagging_rate * 100).toFixed(1)}%
@@ -213,6 +237,14 @@ export function Validation() {
           <p className="ml-2 text-sm font-bold text-indigo-600">
             {report.detection_lift ?? "—"}x more likely
           </p>
+          <span className="ml-2">
+            <InfoButton title="Revoked vs Non-Revoked Comparison">
+              Side-by-side comparison of flagging rates. The left panel shows
+              what percentage of revoked providers were flagged; the right shows
+              the same for non-revoked providers. The multiplier in the center
+              is the detection lift.
+            </InfoButton>
+          </span>
         </div>
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm text-center">
           <Users className="w-5 h-5 text-slate-400 mx-auto mb-2" />
@@ -234,6 +266,12 @@ export function Validation() {
           <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
             <Target className="w-4 h-4 text-emerald-500" /> Provider-Level
             Outcome
+            <InfoButton title="Provider-Level Outcome">
+              Donut chart showing how many revoked providers were correctly
+              detected (flagged as high-risk or review) versus missed (labeled
+              stable) by blind behavioral scoring. The detected segment
+              validates the system&apos;s effectiveness.
+            </InfoButton>
           </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -280,6 +318,12 @@ export function Validation() {
           <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
             <FileText className="w-4 h-4 text-indigo-500" /> Blind Scoring Label
             Distribution
+            <InfoButton title="Blind Scoring Labels">
+              How the scoring engine labeled revoked providers without seeing
+              the revocation flag: High Risk, Review, or Stable (missed). A
+              good system pushes most revoked providers into High Risk or Review
+              bands.
+            </InfoButton>
           </h3>
           <p className="text-xs text-slate-500 mb-4">
             How revoked providers were labeled without seeing the revocation
@@ -346,6 +390,11 @@ export function Validation() {
         <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-500" /> Detection Rate by
           Revocation Reason
+          <InfoButton title="Detection by Revocation Reason">
+            Bar chart showing detection rates broken down by CMS revocation
+            reason (e.g., fraud, abuse, felony conviction). Some reasons
+            correlate more strongly with billing anomalies than others.
+          </InfoButton>
         </h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
@@ -393,6 +442,14 @@ export function Validation() {
 
       {/* Detail Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-slate-200 flex items-center gap-2">
+          <h3 className="text-sm font-bold text-slate-700">Detection Detail by Reason</h3>
+          <InfoButton title="Detection Detail by Reason">
+            Tabular breakdown showing total providers, detected count, and
+            detection rate for each revocation reason category. Green checkmarks
+            indicate ≥ 70% detection; amber/red indicate lower rates.
+          </InfoButton>
+        </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50/80">
@@ -459,9 +516,17 @@ export function Validation() {
 
       {/* Methodology Flow */}
       <div className="bg-slate-900 text-white p-6 rounded-xl shadow-xl">
-        <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest mb-4">
-          Methodology
-        </p>
+        <div className="flex items-center gap-2 mb-4">
+          <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest">
+            Methodology
+          </p>
+          <InfoButton title="Validation Methodology">
+            Three-step blind evaluation: (1) Remove the revocation flag from
+            scoring inputs, (2) Score providers using only peer z-scores,
+            enrollment status, and billing patterns, (3) Compare predicted risk
+            labels against actual CMS revocation outcomes.
+          </InfoButton>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {[
             {
