@@ -1,13 +1,14 @@
 """Load demo CSV and feature Parquet into PostgreSQL.
 
 Reads provider_service_cases_demo.csv and provider_features.parquet,
-then bulk-loads them into the cms_fraud database using COPY.
+then upserts them into the cms_fraud database using staging table + ON CONFLICT.
 """
 
 from __future__ import annotations
 
 import io
 import os
+from dataclasses import dataclass
 from pathlib import Path
 
 import psycopg
@@ -24,19 +25,42 @@ DATABASE_URL = os.environ.get(
 )
 
 
+@dataclass
+class UpsertResult:
+    """Delta counts returned by upsert operations."""
+
+    rows_inserted: int
+    rows_updated: int
+    rows_unchanged: int
+
+    @property
+    def total(self) -> int:
+        return self.rows_inserted + self.rows_updated + self.rows_unchanged
+
+
 def get_connection() -> psycopg.Connection:
     return psycopg.connect(DATABASE_URL)
 
 
-def load_service_cases(conn: psycopg.Connection, csv_path: Path = DEMO_CSV) -> int:
-    """Bulk-load the demo service cases CSV into provider_service_cases."""
-    conn.execute("TRUNCATE provider_service_cases")
+def load_service_cases(conn: psycopg.Connection, csv_path: Path = DEMO_CSV) -> UpsertResult:
+    """Upsert service cases from CSV into provider_service_cases via staging table.
 
+    Uses ``INSERT … ON CONFLICT (case_id) DO UPDATE`` so the operation is
+    idempotent.  Returns delta counts for rows inserted, updated, and unchanged.
+    """
     with open(csv_path) as f:
         header_line = f.readline().strip()
-        cols = ", ".join(header_line.split(","))
-        copy_sql = f"COPY provider_service_cases ({cols}) FROM STDIN WITH (FORMAT CSV)"
+    csv_cols = header_line.split(",")
+    cols = ", ".join(csv_cols)
 
+    # Staging table — dropped automatically when the transaction commits
+    conn.execute(
+        "CREATE TEMP TABLE _load_staging_service_cases (LIKE provider_service_cases) ON COMMIT DROP"
+    )
+
+    copy_sql = f"COPY _load_staging_service_cases ({cols}) FROM STDIN WITH (FORMAT CSV)"
+    with open(csv_path) as f:
+        f.readline()  # skip header
         with conn.cursor().copy(copy_sql) as copy:
             while True:
                 chunk = f.read(65536)
@@ -44,28 +68,59 @@ def load_service_cases(conn: psycopg.Connection, csv_path: Path = DEMO_CSV) -> i
                     break
                 copy.write(chunk)
 
+    row = conn.execute("SELECT COUNT(*) FROM _load_staging_service_cases").fetchone()
+    total_staging = row[0] if row else 0
+
+    # Build the SET and IS-DISTINCT-FROM clauses dynamically
+    update_cols = [c for c in csv_cols if c != "case_id"]
+    set_clause = ", ".join(f"{c} = EXCLUDED.{c}" for c in update_cols)
+    lhs = ", ".join(f"provider_service_cases.{c}" for c in update_cols)
+    rhs = ", ".join(f"EXCLUDED.{c}" for c in update_cols)
+
+    upsert_sql = (
+        f"INSERT INTO provider_service_cases ({cols}) "
+        f"SELECT {cols} FROM _load_staging_service_cases "
+        f"ON CONFLICT (case_id) DO UPDATE SET {set_clause} "
+        f"WHERE ROW({lhs}) IS DISTINCT FROM ROW({rhs}) "
+        f"RETURNING (xmax = 0)"
+    )
+    returned = conn.execute(upsert_sql).fetchall()
+    rows_inserted = sum(1 for r in returned if r[0])
+    rows_updated = len(returned) - rows_inserted
+    rows_unchanged = total_staging - len(returned)
+
     conn.commit()
-    row = conn.execute("SELECT COUNT(*) FROM provider_service_cases").fetchone()
-    return row[0] if row else 0
+    return UpsertResult(
+        rows_inserted=rows_inserted,
+        rows_updated=rows_updated,
+        rows_unchanged=rows_unchanged,
+    )
 
 
-def load_features(conn: psycopg.Connection, parquet_path: Path = FEATURES_PARQUET) -> int:
-    """Load the feature Parquet into provider_features via CSV intermediary."""
+def load_features(conn: psycopg.Connection, parquet_path: Path = FEATURES_PARQUET) -> UpsertResult:
+    """Upsert provider features from Parquet into provider_features via staging table.
+
+    Uses ``INSERT … ON CONFLICT (npi) DO UPDATE`` so the operation is idempotent.
+    Only the columns present in the Parquet file are updated; metadata columns
+    (``last_scored_at``, ``pipeline_run_id``) are left untouched by this function.
+    Returns delta counts for rows inserted, updated, and unchanged.
+    """
     import polars as pl
 
-    conn.execute("TRUNCATE provider_features")
-
     df = pl.read_parquet(parquet_path)
+    csv_cols = df.columns
+    cols = ", ".join(csv_cols)
 
     # Convert to CSV in memory for COPY
     csv_buffer = io.StringIO()
     df.write_csv(csv_buffer)
     csv_buffer.seek(0)
+    csv_buffer.readline()  # skip header
 
-    header_line = csv_buffer.readline()  # skip header
-    cols = ", ".join(header_line.strip().split(","))
+    # Staging table — dropped automatically when the transaction commits
+    conn.execute("CREATE TEMP TABLE _load_staging_features (LIKE provider_features) ON COMMIT DROP")
 
-    copy_sql = f"COPY provider_features ({cols}) FROM STDIN WITH (FORMAT CSV, NULL '')"
+    copy_sql = f"COPY _load_staging_features ({cols}) FROM STDIN WITH (FORMAT CSV, NULL '')"
     with conn.cursor().copy(copy_sql) as copy:
         while True:
             chunk = csv_buffer.read(65536)
@@ -73,9 +128,33 @@ def load_features(conn: psycopg.Connection, parquet_path: Path = FEATURES_PARQUE
                 break
             copy.write(chunk)
 
+    row = conn.execute("SELECT COUNT(*) FROM _load_staging_features").fetchone()
+    total_staging = row[0] if row else 0
+
+    # Build the SET and IS-DISTINCT-FROM clauses for the columns we're loading
+    update_cols = [c for c in csv_cols if c != "npi"]
+    set_clause = ", ".join(f"{c} = EXCLUDED.{c}" for c in update_cols)
+    lhs = ", ".join(f"provider_features.{c}" for c in update_cols)
+    rhs = ", ".join(f"EXCLUDED.{c}" for c in update_cols)
+
+    upsert_sql = (
+        f"INSERT INTO provider_features ({cols}) "
+        f"SELECT {cols} FROM _load_staging_features "
+        f"ON CONFLICT (npi) DO UPDATE SET {set_clause} "
+        f"WHERE ROW({lhs}) IS DISTINCT FROM ROW({rhs}) "
+        f"RETURNING (xmax = 0)"
+    )
+    returned = conn.execute(upsert_sql).fetchall()
+    rows_inserted = sum(1 for r in returned if r[0])
+    rows_updated = len(returned) - rows_inserted
+    rows_unchanged = total_staging - len(returned)
+
     conn.commit()
-    row = conn.execute("SELECT COUNT(*) FROM provider_features").fetchone()
-    return row[0] if row else 0
+    return UpsertResult(
+        rows_inserted=rows_inserted,
+        rows_updated=rows_updated,
+        rows_unchanged=rows_unchanged,
+    )
 
 
 def main() -> None:
@@ -84,15 +163,19 @@ def main() -> None:
 
     if DEMO_CSV.exists():
         print(f"Loading service cases from {DEMO_CSV}...")
-        n = load_service_cases(conn, DEMO_CSV)
-        print(f"  Loaded {n:,} service case rows")
+        result = load_service_cases(conn, DEMO_CSV)
+        print(
+            f"  inserted={result.rows_inserted:,} updated={result.rows_updated:,} unchanged={result.rows_unchanged:,}"
+        )
     else:
         print(f"  SKIP: {DEMO_CSV} not found")
 
     if FEATURES_PARQUET.exists():
         print(f"Loading features from {FEATURES_PARQUET}...")
-        n = load_features(conn, FEATURES_PARQUET)
-        print(f"  Loaded {n:,} provider feature rows")
+        result = load_features(conn, FEATURES_PARQUET)
+        print(
+            f"  inserted={result.rows_inserted:,} updated={result.rows_updated:,} unchanged={result.rows_unchanged:,}"
+        )
     else:
         print(f"  SKIP: {FEATURES_PARQUET} not found (run build_features first)")
 

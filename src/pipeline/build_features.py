@@ -1,4 +1,4 @@
-"""Provider-level feature engineering from demo case CSV.
+"""Provider-level feature engineering from demo case CSV or Postgres.
 
 Reads per-service rows and aggregates to one row per NPI with features
 designed for anomaly detection and supervised fraud classification.
@@ -6,9 +6,16 @@ designed for anomaly detection and supervised fraud classification.
 
 from __future__ import annotations
 
+import io
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import polars as pl
+
+from src.data.load_postgres import UpsertResult
+
+if TYPE_CHECKING:
+    import psycopg
 
 ROOT = Path(__file__).resolve().parents[2]
 DEMO_CSV = ROOT / "data" / "processed" / "demo" / "provider_service_cases_demo.csv"
@@ -145,15 +152,12 @@ def build_provider_metadata(lf: pl.LazyFrame) -> pl.LazyFrame:
     )
 
 
-def build_provider_features(csv_path: Path = DEMO_CSV) -> pl.DataFrame:
-    """Build the full provider-level feature matrix.
+def _assemble_features(lf: pl.LazyFrame) -> pl.LazyFrame:
+    """Join all feature groups and compute derived columns.
 
-    Joins volume, charge, concentration, peer z-score, risk seed,
-    and metadata features into a single DataFrame — one row per NPI.
+    Shared by :func:`build_provider_features` and
+    :func:`build_provider_features_from_db`.
     """
-    lf = read_demo_csv(csv_path)
-
-    # Build each feature group independently, then join on NPI
     metadata = build_provider_metadata(lf)
     volume = build_volume_features(lf)
     charges = build_charge_features(lf)
@@ -161,7 +165,6 @@ def build_provider_features(csv_path: Path = DEMO_CSV) -> pl.DataFrame:
     peer_z = build_peer_z_features(lf)
     risk_seed = build_risk_seed_features(lf)
 
-    # Join all feature groups
     features = (
         metadata.join(volume, on="npi")
         .join(charges, on="npi")
@@ -180,21 +183,37 @@ def build_provider_features(csv_path: Path = DEMO_CSV) -> pl.DataFrame:
     features = features.with_columns([pl.col(c).fill_null(0.0) for c in std_cols])
 
     # Compute derived features after join
-    features = features.with_columns(
-        # Risk-legitimacy gap (positive = more risk than legitimacy)
+    return features.with_columns(
         (pl.col("max_seed_risk_score") - pl.col("min_seed_legitimacy_score")).alias(
             "risk_legitimacy_gap"
         ),
-        # Fraction of service lines that are outliers
         (
             pl.col("n_volume_outlier_lines").cast(pl.Float64)
             / pl.col("service_line_count").cast(pl.Float64)
         ).alias("frac_volume_outlier_lines"),
-        # Charge volatility: std/mean of submitted charges (coefficient of variation)
         (pl.col("std_submitted_charge") / pl.col("mean_submitted_charge")).alias("charge_cv"),
     )
 
-    return features.collect()
+
+def build_provider_features(csv_path: Path = DEMO_CSV) -> pl.DataFrame:
+    """Build the full provider-level feature matrix.
+
+    Joins volume, charge, concentration, peer z-score, risk seed,
+    and metadata features into a single DataFrame — one row per NPI.
+    """
+    lf = read_demo_csv(csv_path)
+    return _assemble_features(lf).collect()
+
+
+def build_provider_features_from_db(conn: psycopg.Connection) -> pl.DataFrame:  # type: ignore[name-defined]
+    """Build the provider-level feature matrix by reading from Postgres.
+
+    Reads all rows from ``provider_service_cases`` via
+    ``pl.read_database`` and applies the same aggregation logic as
+    :func:`build_provider_features`.  Returns a DataFrame ready for upsert.
+    """
+    df = pl.read_database("SELECT * FROM provider_service_cases", conn)
+    return _assemble_features(df.lazy()).collect()
 
 
 def save_features(df: pl.DataFrame, output_path: Path = OUTPUT_PARQUET) -> Path:
@@ -202,6 +221,93 @@ def save_features(df: pl.DataFrame, output_path: Path = OUTPUT_PARQUET) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.write_parquet(output_path)
     return output_path
+
+
+def upsert_provider_features(
+    df: pl.DataFrame,
+    conn: psycopg.Connection,  # type: ignore[name-defined]
+    run_id: int | None = None,
+) -> UpsertResult:
+    """Upsert a provider feature DataFrame into ``provider_features``.
+
+    Uses a staging-table pattern (``COPY`` → ``INSERT … ON CONFLICT (npi)
+    DO UPDATE``) so the operation is idempotent.
+
+    ``last_scored_at`` and ``pipeline_run_id`` are updated on every call;
+    other columns are updated only when the feature data has changed.
+    ``rows_unchanged`` counts NPIs whose feature data was identical to what
+    is already stored (metadata timestamps are still refreshed for those rows).
+
+    Args:
+        df: Provider feature DataFrame (typically from
+            :func:`build_provider_features` or
+            :func:`build_provider_features_from_db`).
+        conn: Open psycopg connection (not in autocommit mode).
+        run_id: Optional ``pipeline_runs.id`` to record on each upserted row.
+
+    Returns:
+        :class:`UpsertResult` with delta counts.
+    """
+    feature_cols = df.columns  # columns produced by the feature pipeline
+    cols = ", ".join(feature_cols)
+
+    # Convert to CSV in memory for COPY
+    csv_buffer = io.StringIO()
+    df.write_csv(csv_buffer)
+    csv_buffer.seek(0)
+    csv_buffer.readline()  # skip header
+
+    # Staging table — dropped on commit
+    conn.execute(
+        "CREATE TEMP TABLE _upsert_staging_features (LIKE provider_features) ON COMMIT DROP"
+    )
+
+    copy_sql = f"COPY _upsert_staging_features ({cols}) FROM STDIN WITH (FORMAT CSV, NULL '')"
+    with conn.cursor().copy(copy_sql) as copy:
+        while True:
+            chunk = csv_buffer.read(65536)
+            if not chunk:
+                break
+            copy.write(chunk)
+
+    # Pre-count rows whose feature data is already identical (unchanged)
+    # We compare only the feature columns (not metadata like last_scored_at).
+    update_cols = [c for c in feature_cols if c != "npi"]
+    lhs_feature = ", ".join(f"provider_features.{c}" for c in update_cols)
+    rhs_feature = ", ".join(f"s.{c}" for c in update_cols)
+    # Column names come from the trusted DataFrame schema, not external input — safe to interpolate.
+    unchanged_row = conn.execute(
+        f"SELECT COUNT(*) FROM _upsert_staging_features s "  # noqa: S608
+        f"JOIN provider_features ON provider_features.npi = s.npi "
+        f"WHERE ROW({lhs_feature}) IS NOT DISTINCT FROM ROW({rhs_feature})"
+    ).fetchone()
+    rows_unchanged = unchanged_row[0] if unchanged_row else 0
+
+    # Always update last_scored_at and pipeline_run_id; update feature columns
+    set_clause = ", ".join(f"{c} = EXCLUDED.{c}" for c in update_cols)
+    set_clause += ", last_scored_at = NOW()"
+    if run_id is not None:
+        set_clause += f", pipeline_run_id = {run_id}"
+
+    insert_cols = cols + ", last_scored_at" + (", pipeline_run_id" if run_id is not None else "")
+    select_cols = cols + ", NOW()" + (f", {run_id}" if run_id is not None else "")
+
+    upsert_sql = (
+        f"INSERT INTO provider_features ({insert_cols}) "
+        f"SELECT {select_cols} FROM _upsert_staging_features "
+        f"ON CONFLICT (npi) DO UPDATE SET {set_clause} "
+        f"RETURNING (xmax = 0)"
+    )
+    returned = conn.execute(upsert_sql).fetchall()
+    rows_inserted = sum(1 for r in returned if r[0])
+    rows_updated = len(returned) - rows_inserted - rows_unchanged
+
+    conn.commit()
+    return UpsertResult(
+        rows_inserted=rows_inserted,
+        rows_updated=rows_updated,
+        rows_unchanged=rows_unchanged,
+    )
 
 
 def main() -> None:

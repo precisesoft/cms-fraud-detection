@@ -14,6 +14,7 @@ import pytest
 import src.data.load_postgres as lp
 from src.data.load_postgres import (
     DATABASE_URL,
+    UpsertResult,
     get_connection,
     load_features,
     load_service_cases,
@@ -50,6 +51,34 @@ def _make_copy_ctx(mock_conn: MagicMock) -> MagicMock:
     copy_ctx.__exit__ = MagicMock(return_value=False)
     mock_conn.cursor.return_value.copy.return_value = copy_ctx
     return copy_obj
+
+
+def _make_service_cases_execute_seq(
+    staging_count: int = 2,
+    returning_rows: list[tuple[bool]] | None = None,
+) -> list[MagicMock]:
+    """Build the ordered list of execute() return values for load_service_cases."""
+    if returning_rows is None:
+        returning_rows = [(True,)] * staging_count  # all inserts by default
+    return [
+        MagicMock(),  # CREATE TEMP TABLE
+        MagicMock(fetchone=MagicMock(return_value=(staging_count,))),  # COUNT staging
+        MagicMock(fetchall=MagicMock(return_value=returning_rows)),  # INSERT RETURNING
+    ]
+
+
+def _make_features_execute_seq(
+    staging_count: int = 2,
+    returning_rows: list[tuple[bool]] | None = None,
+) -> list[MagicMock]:
+    """Build the ordered list of execute() return values for load_features."""
+    if returning_rows is None:
+        returning_rows = [(True,)] * staging_count
+    return [
+        MagicMock(),  # CREATE TEMP TABLE
+        MagicMock(fetchone=MagicMock(return_value=(staging_count,))),  # COUNT staging
+        MagicMock(fetchall=MagicMock(return_value=returning_rows)),  # INSERT RETURNING
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -90,70 +119,176 @@ def test_get_connection_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 # ---------------------------------------------------------------------------
-# load_service_cases — COPY SQL generation
+# UpsertResult
 # ---------------------------------------------------------------------------
 
 
-def test_load_service_cases_truncates_before_load(tmp_path: Path) -> None:
-    """load_service_cases always TRUNCATEs the target table first."""
+def test_upsert_result_total() -> None:
+    """UpsertResult.total sums all three delta counts."""
+    r = UpsertResult(rows_inserted=3, rows_updated=2, rows_unchanged=5)
+    assert r.total == 10
+
+
+def test_upsert_result_all_zero() -> None:
+    """UpsertResult.total is 0 when all counts are zero."""
+    r = UpsertResult(rows_inserted=0, rows_updated=0, rows_unchanged=0)
+    assert r.total == 0
+
+
+# ---------------------------------------------------------------------------
+# load_service_cases — staging table and upsert SQL
+# ---------------------------------------------------------------------------
+
+
+def test_load_service_cases_uses_staging_table(tmp_path: Path) -> None:
+    """load_service_cases creates a staging temp table, not TRUNCATE."""
     csv_file = _make_csv_file(tmp_path)
     mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_service_cases_execute_seq()
     _make_copy_ctx(mock_conn)
-    mock_conn.execute.return_value.fetchone.return_value = (2,)
 
     load_service_cases(mock_conn, csv_file)
 
-    first_execute_call = mock_conn.execute.call_args_list[0]
-    assert "TRUNCATE" in first_execute_call.args[0]
-    assert "provider_service_cases" in first_execute_call.args[0]
+    execute_sqls = [c.args[0] for c in mock_conn.execute.call_args_list]
+    assert any("CREATE TEMP TABLE" in s for s in execute_sqls)
+    assert not any("TRUNCATE" in s for s in execute_sqls)
 
 
-def test_load_service_cases_copy_sql_uses_csv_header(tmp_path: Path) -> None:
-    """The COPY statement uses the column list derived from the CSV header."""
+def test_load_service_cases_upsert_sql_uses_on_conflict(tmp_path: Path) -> None:
+    """The INSERT statement targets the staging table and uses ON CONFLICT."""
     csv_file = _make_csv_file(tmp_path)
     mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_service_cases_execute_seq()
     _make_copy_ctx(mock_conn)
-    mock_conn.execute.return_value.fetchone.return_value = (2,)
+
+    load_service_cases(mock_conn, csv_file)
+
+    execute_sqls = [c.args[0] for c in mock_conn.execute.call_args_list]
+    upsert_sql = next(s for s in execute_sqls if "ON CONFLICT" in s)
+    assert "provider_service_cases" in upsert_sql
+    assert "ON CONFLICT (case_id) DO UPDATE" in upsert_sql
+    assert "RETURNING" in upsert_sql
+
+
+def test_load_service_cases_copy_targets_staging(tmp_path: Path) -> None:
+    """COPY writes into the staging table, not directly into provider_service_cases."""
+    csv_file = _make_csv_file(tmp_path)
+    mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_service_cases_execute_seq()
+    _make_copy_ctx(mock_conn)
 
     load_service_cases(mock_conn, csv_file)
 
     copy_sql = mock_conn.cursor.return_value.copy.call_args.args[0]
-    assert "COPY provider_service_cases" in copy_sql
-    assert "case_id" in copy_sql
-    assert "npi" in copy_sql
+    assert "_load_staging_service_cases" in copy_sql
     assert "FORMAT CSV" in copy_sql
 
 
-def test_load_service_cases_returns_row_count(tmp_path: Path) -> None:
-    """load_service_cases returns the integer row count from SELECT COUNT(*)."""
+def test_load_service_cases_copy_sql_uses_csv_header(tmp_path: Path) -> None:
+    """The COPY statement includes column names derived from the CSV header."""
     csv_file = _make_csv_file(tmp_path)
     mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_service_cases_execute_seq()
     _make_copy_ctx(mock_conn)
-    mock_conn.execute.return_value.fetchone.return_value = (42,)
+
+    load_service_cases(mock_conn, csv_file)
+
+    copy_sql = mock_conn.cursor.return_value.copy.call_args.args[0]
+    assert "case_id" in copy_sql
+    assert "npi" in copy_sql
+
+
+def test_load_service_cases_returns_upsert_result(tmp_path: Path) -> None:
+    """load_service_cases returns an UpsertResult (not a plain int)."""
+    csv_file = _make_csv_file(tmp_path)
+    mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_service_cases_execute_seq(
+        staging_count=2, returning_rows=[(True,), (True,)]
+    )
+    _make_copy_ctx(mock_conn)
 
     result = load_service_cases(mock_conn, csv_file)
 
-    assert result == 42
+    assert type(result).__name__ == "UpsertResult"
+    assert hasattr(result, "rows_inserted")
+    assert hasattr(result, "rows_updated")
+    assert hasattr(result, "rows_unchanged")
 
 
-def test_load_service_cases_returns_zero_on_null_count(tmp_path: Path) -> None:
-    """load_service_cases returns 0 when the COUNT query returns None."""
+def test_load_service_cases_all_inserts(tmp_path: Path) -> None:
+    """All-new rows → rows_inserted equals staging count, updated/unchanged = 0."""
     csv_file = _make_csv_file(tmp_path)
     mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_service_cases_execute_seq(
+        staging_count=2, returning_rows=[(True,), (True,)]
+    )
     _make_copy_ctx(mock_conn)
-    mock_conn.execute.return_value.fetchone.return_value = None
 
     result = load_service_cases(mock_conn, csv_file)
 
-    assert result == 0
+    assert result.rows_inserted == 2
+    assert result.rows_updated == 0
+    assert result.rows_unchanged == 0
+    assert result.total == 2
+
+
+def test_load_service_cases_all_updates(tmp_path: Path) -> None:
+    """Existing rows with changed data → rows_updated equals staging count."""
+    csv_file = _make_csv_file(tmp_path)
+    mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_service_cases_execute_seq(
+        staging_count=2, returning_rows=[(False,), (False,)]
+    )
+    _make_copy_ctx(mock_conn)
+
+    result = load_service_cases(mock_conn, csv_file)
+
+    assert result.rows_inserted == 0
+    assert result.rows_updated == 2
+    assert result.rows_unchanged == 0
+
+
+def test_load_service_cases_all_unchanged(tmp_path: Path) -> None:
+    """Existing rows with identical data → rows_unchanged equals staging count."""
+    csv_file = _make_csv_file(tmp_path)
+    mock_conn = MagicMock()
+    # Staging has 2 rows but RETURNING is empty (WHERE clause skipped updates)
+    mock_conn.execute.side_effect = _make_service_cases_execute_seq(
+        staging_count=2, returning_rows=[]
+    )
+    _make_copy_ctx(mock_conn)
+
+    result = load_service_cases(mock_conn, csv_file)
+
+    assert result.rows_inserted == 0
+    assert result.rows_updated == 0
+    assert result.rows_unchanged == 2
+
+
+def test_load_service_cases_mixed_delta(tmp_path: Path) -> None:
+    """Mix of insert/update/unchanged is accounted for correctly."""
+    csv_file = _make_csv_file(tmp_path)
+    mock_conn = MagicMock()
+    # 3 staging rows: 1 insert (True) + 1 update (False) + 1 unchanged (not returned)
+    mock_conn.execute.side_effect = _make_service_cases_execute_seq(
+        staging_count=3, returning_rows=[(True,), (False,)]
+    )
+    _make_copy_ctx(mock_conn)
+
+    result = load_service_cases(mock_conn, csv_file)
+
+    assert result.rows_inserted == 1
+    assert result.rows_updated == 1
+    assert result.rows_unchanged == 1
+    assert result.total == 3
 
 
 def test_load_service_cases_commits(tmp_path: Path) -> None:
     """load_service_cases calls conn.commit() after writing data."""
     csv_file = _make_csv_file(tmp_path)
     mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_service_cases_execute_seq()
     _make_copy_ctx(mock_conn)
-    mock_conn.execute.return_value.fetchone.return_value = (1,)
 
     load_service_cases(mock_conn, csv_file)
 
@@ -164,12 +299,11 @@ def test_load_service_cases_writes_data_chunks(tmp_path: Path) -> None:
     """load_service_cases writes file content to the COPY object."""
     csv_file = _make_csv_file(tmp_path)
     mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_service_cases_execute_seq()
     copy_obj = _make_copy_ctx(mock_conn)
-    mock_conn.execute.return_value.fetchone.return_value = (2,)
 
     load_service_cases(mock_conn, csv_file)
 
-    # write() must have been called at least once with non-empty data
     write_calls = copy_obj.write.call_args_list
     assert len(write_calls) >= 1
     all_written = "".join(c.args[0] for c in write_calls)
@@ -196,7 +330,7 @@ def test_load_service_cases_connection_failure(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# load_features — COPY SQL generation and Parquet handling
+# load_features — staging table and upsert SQL
 # ---------------------------------------------------------------------------
 
 
@@ -216,31 +350,47 @@ def _write_synthetic_parquet(tmp_path: Path) -> Path:
     return p
 
 
-def test_load_features_truncates_before_load(tmp_path: Path) -> None:
-    """load_features TRUNCATEs provider_features before writing new data."""
+def test_load_features_uses_staging_table(tmp_path: Path) -> None:
+    """load_features creates a staging temp table, not TRUNCATE."""
     parquet_path = _write_synthetic_parquet(tmp_path)
     mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_features_execute_seq()
     _make_copy_ctx(mock_conn)
-    mock_conn.execute.return_value.fetchone.return_value = (2,)
 
     load_features(mock_conn, parquet_path)
 
-    first_call = mock_conn.execute.call_args_list[0]
-    assert "TRUNCATE" in first_call.args[0]
-    assert "provider_features" in first_call.args[0]
+    execute_sqls = [c.args[0] for c in mock_conn.execute.call_args_list]
+    assert any("CREATE TEMP TABLE" in s for s in execute_sqls)
+    assert not any("TRUNCATE" in s for s in execute_sqls)
 
 
-def test_load_features_copy_sql_format(tmp_path: Path) -> None:
-    """COPY SQL for features uses FORMAT CSV, NULL '' and correct table name."""
+def test_load_features_upsert_sql_uses_on_conflict(tmp_path: Path) -> None:
+    """The INSERT statement uses ON CONFLICT (npi) DO UPDATE."""
     parquet_path = _write_synthetic_parquet(tmp_path)
     mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_features_execute_seq()
     _make_copy_ctx(mock_conn)
-    mock_conn.execute.return_value.fetchone.return_value = (2,)
+
+    load_features(mock_conn, parquet_path)
+
+    execute_sqls = [c.args[0] for c in mock_conn.execute.call_args_list]
+    upsert_sql = next(s for s in execute_sqls if "ON CONFLICT" in s)
+    assert "provider_features" in upsert_sql
+    assert "ON CONFLICT (npi) DO UPDATE" in upsert_sql
+    assert "RETURNING" in upsert_sql
+
+
+def test_load_features_copy_targets_staging(tmp_path: Path) -> None:
+    """COPY writes into the staging table, not directly into provider_features."""
+    parquet_path = _write_synthetic_parquet(tmp_path)
+    mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_features_execute_seq()
+    _make_copy_ctx(mock_conn)
 
     load_features(mock_conn, parquet_path)
 
     copy_sql = mock_conn.cursor.return_value.copy.call_args.args[0]
-    assert "COPY provider_features" in copy_sql
+    assert "_load_staging_features" in copy_sql
     assert "FORMAT CSV" in copy_sql
     assert "NULL ''" in copy_sql
 
@@ -249,8 +399,8 @@ def test_load_features_copy_sql_columns_match_parquet(tmp_path: Path) -> None:
     """COPY column list matches the columns present in the Parquet file."""
     parquet_path = _write_synthetic_parquet(tmp_path)
     mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_features_execute_seq()
     _make_copy_ctx(mock_conn)
-    mock_conn.execute.return_value.fetchone.return_value = (2,)
 
     load_features(mock_conn, parquet_path)
 
@@ -259,36 +409,90 @@ def test_load_features_copy_sql_columns_match_parquet(tmp_path: Path) -> None:
         assert col in copy_sql
 
 
-def test_load_features_returns_row_count(tmp_path: Path) -> None:
-    """load_features returns the integer COUNT from the post-load query."""
+def test_load_features_returns_upsert_result(tmp_path: Path) -> None:
+    """load_features returns an UpsertResult."""
     parquet_path = _write_synthetic_parquet(tmp_path)
     mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_features_execute_seq()
     _make_copy_ctx(mock_conn)
-    mock_conn.execute.return_value.fetchone.return_value = (7,)
 
     result = load_features(mock_conn, parquet_path)
 
-    assert result == 7
+    assert type(result).__name__ == "UpsertResult"
+    assert hasattr(result, "rows_inserted")
+    assert hasattr(result, "rows_updated")
+    assert hasattr(result, "rows_unchanged")
 
 
-def test_load_features_returns_zero_on_null_count(tmp_path: Path) -> None:
-    """load_features returns 0 when the COUNT query returns None."""
+def test_load_features_all_inserts(tmp_path: Path) -> None:
+    """All-new NPIs → rows_inserted equals staging count."""
     parquet_path = _write_synthetic_parquet(tmp_path)
     mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_features_execute_seq(
+        staging_count=2, returning_rows=[(True,), (True,)]
+    )
     _make_copy_ctx(mock_conn)
-    mock_conn.execute.return_value.fetchone.return_value = None
 
     result = load_features(mock_conn, parquet_path)
 
-    assert result == 0
+    assert result.rows_inserted == 2
+    assert result.rows_updated == 0
+    assert result.rows_unchanged == 0
+
+
+def test_load_features_all_updates(tmp_path: Path) -> None:
+    """Existing NPIs with changed data → rows_updated equals staging count."""
+    parquet_path = _write_synthetic_parquet(tmp_path)
+    mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_features_execute_seq(
+        staging_count=2, returning_rows=[(False,), (False,)]
+    )
+    _make_copy_ctx(mock_conn)
+
+    result = load_features(mock_conn, parquet_path)
+
+    assert result.rows_inserted == 0
+    assert result.rows_updated == 2
+    assert result.rows_unchanged == 0
+
+
+def test_load_features_all_unchanged(tmp_path: Path) -> None:
+    """Existing NPIs with identical data → rows_unchanged equals staging count."""
+    parquet_path = _write_synthetic_parquet(tmp_path)
+    mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_features_execute_seq(staging_count=2, returning_rows=[])
+    _make_copy_ctx(mock_conn)
+
+    result = load_features(mock_conn, parquet_path)
+
+    assert result.rows_inserted == 0
+    assert result.rows_updated == 0
+    assert result.rows_unchanged == 2
+
+
+def test_load_features_mixed_delta(tmp_path: Path) -> None:
+    """Mix of insert/update/unchanged is counted correctly."""
+    parquet_path = _write_synthetic_parquet(tmp_path)
+    mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_features_execute_seq(
+        staging_count=3, returning_rows=[(True,), (False,)]
+    )
+    _make_copy_ctx(mock_conn)
+
+    result = load_features(mock_conn, parquet_path)
+
+    assert result.rows_inserted == 1
+    assert result.rows_updated == 1
+    assert result.rows_unchanged == 1
+    assert result.total == 3
 
 
 def test_load_features_commits(tmp_path: Path) -> None:
     """load_features calls conn.commit() after writing data."""
     parquet_path = _write_synthetic_parquet(tmp_path)
     mock_conn = MagicMock()
+    mock_conn.execute.side_effect = _make_features_execute_seq()
     _make_copy_ctx(mock_conn)
-    mock_conn.execute.return_value.fetchone.return_value = (2,)
 
     load_features(mock_conn, parquet_path)
 
@@ -316,7 +520,6 @@ def test_load_features_null_values_in_csv(tmp_path: Path) -> None:
     p = tmp_path / "nulls.parquet"
     df.write_parquet(p)
 
-    # Capture the CSV written to the COPY stream
     written_chunks: list[str] = []
 
     class _CaptureCopy:
@@ -331,13 +534,11 @@ def test_load_features_null_values_in_csv(tmp_path: Path) -> None:
 
     mock_conn = MagicMock()
     mock_conn.cursor.return_value.copy.return_value = _CaptureCopy()
-    mock_conn.execute.return_value.fetchone.return_value = (1,)
+    mock_conn.execute.side_effect = _make_features_execute_seq(staging_count=1)
 
     load_features(mock_conn, p)
 
     all_written = "".join(written_chunks)
-    # Polars writes null as empty string; the NULL '' clause maps it back in PG
-    # Check the CSV row contains empty fields (consecutive commas or trailing comma)
     assert "1111111111" in all_written
 
 
@@ -363,14 +564,12 @@ def test_load_service_cases_copy_content_excludes_header(tmp_path: Path) -> None
 
     mock_conn = MagicMock()
     mock_conn.cursor.return_value.copy.return_value = _CaptureCopy()
-    mock_conn.execute.return_value.fetchone.return_value = (2,)
+    mock_conn.execute.side_effect = _make_service_cases_execute_seq()
 
     load_service_cases(mock_conn, csv_file)
 
     all_written = "".join(written_chunks)
-    # Header should NOT appear in the COPY data stream (it was consumed by readline)
     assert SYNTHETIC_CSV_HEADER not in all_written
-    # But the data rows should be present
     assert "1111111111" in all_written
 
 
@@ -381,7 +580,6 @@ def test_load_service_cases_copy_content_excludes_header(tmp_path: Path) -> None
 
 def test_load_service_cases_chunks_large_file(tmp_path: Path) -> None:
     """Files larger than 65536 bytes are written in multiple write() calls."""
-    # Create a CSV just over 65536 bytes
     rows = "\n".join(
         f"{1000000000 + i}|99213|O,{1000000000 + i},Provider {i},Internal Medicine,IL,{i},50"
         for i in range(2000)
@@ -406,7 +604,9 @@ def test_load_service_cases_chunks_large_file(tmp_path: Path) -> None:
 
     mock_conn = MagicMock()
     mock_conn.cursor.return_value.copy.return_value = _CaptureCopy()
-    mock_conn.execute.return_value.fetchone.return_value = (2000,)
+    mock_conn.execute.side_effect = _make_service_cases_execute_seq(
+        staging_count=2000, returning_rows=[(True,)] * 2000
+    )
 
     load_service_cases(mock_conn, csv_file)
 
@@ -419,31 +619,42 @@ def test_load_service_cases_chunks_large_file(tmp_path: Path) -> None:
 
 
 def test_load_service_cases_idempotent(tmp_path: Path) -> None:
-    """Calling load_service_cases twice results in two TRUNCATE calls."""
+    """Calling load_service_cases twice produces the same result (no TRUNCATE)."""
     csv_file = _make_csv_file(tmp_path)
     mock_conn = MagicMock()
+    # Provide execute results for two sequential calls (6 execute calls total)
+    mock_conn.execute.side_effect = _make_service_cases_execute_seq(
+        staging_count=2, returning_rows=[(True,), (True,)]
+    ) + _make_service_cases_execute_seq(staging_count=2, returning_rows=[(False,), (False,)])
     _make_copy_ctx(mock_conn)
-    mock_conn.execute.return_value.fetchone.return_value = (2,)
 
-    load_service_cases(mock_conn, csv_file)
-    load_service_cases(mock_conn, csv_file)
+    result1 = load_service_cases(mock_conn, csv_file)
+    result2 = load_service_cases(mock_conn, csv_file)
 
-    truncate_calls = [c for c in mock_conn.execute.call_args_list if "TRUNCATE" in c.args[0]]
-    assert len(truncate_calls) == 2
+    # First call: all inserts; second call: all updates (same data → could be unchanged)
+    assert result1.rows_inserted == 2
+    assert result2.rows_updated == 2
+    execute_sqls = [c.args[0] for c in mock_conn.execute.call_args_list]
+    assert not any("TRUNCATE" in s for s in execute_sqls)
 
 
 def test_load_features_idempotent(tmp_path: Path) -> None:
-    """Calling load_features twice issues two TRUNCATE statements."""
+    """Calling load_features twice produces consistent results (no TRUNCATE)."""
     parquet_path = _write_synthetic_parquet(tmp_path)
     mock_conn = MagicMock()
+    mock_conn.execute.side_effect = (
+        _make_features_execute_seq(staging_count=2, returning_rows=[(True,), (True,)])
+        + _make_features_execute_seq(staging_count=2, returning_rows=[])  # second: unchanged
+    )
     _make_copy_ctx(mock_conn)
-    mock_conn.execute.return_value.fetchone.return_value = (2,)
 
-    load_features(mock_conn, parquet_path)
-    load_features(mock_conn, parquet_path)
+    result1 = load_features(mock_conn, parquet_path)
+    result2 = load_features(mock_conn, parquet_path)
 
-    truncate_calls = [c for c in mock_conn.execute.call_args_list if "TRUNCATE" in c.args[0]]
-    assert len(truncate_calls) == 2
+    assert result1.rows_inserted == 2
+    assert result2.rows_unchanged == 2
+    execute_sqls = [c.args[0] for c in mock_conn.execute.call_args_list]
+    assert not any("TRUNCATE" in s for s in execute_sqls)
 
 
 # ---------------------------------------------------------------------------
@@ -474,7 +685,15 @@ def test_main_loads_when_files_exist(tmp_path: Path, capsys: pytest.CaptureFixtu
 
     mock_conn = MagicMock()
     _make_copy_ctx(mock_conn)
-    mock_conn.execute.return_value.fetchone.return_value = (2,)
+    mock_conn.execute.side_effect = (
+        _make_service_cases_execute_seq(staging_count=2, returning_rows=[(True,), (True,)])
+        + _make_features_execute_seq(staging_count=2, returning_rows=[(True,), (True,)])
+        + [
+            MagicMock(fetchone=MagicMock(return_value=(2,))),  # validation: cases
+            MagicMock(fetchone=MagicMock(return_value=(0,))),  # validation: features
+            MagicMock(fetchone=MagicMock(return_value=(0,))),  # top5 check
+        ]
+    )
 
     with (
         patch("src.data.load_postgres.get_connection", return_value=mock_conn),
@@ -484,7 +703,7 @@ def test_main_loads_when_files_exist(tmp_path: Path, capsys: pytest.CaptureFixtu
         main()
 
     captured = capsys.readouterr()
-    assert "Loaded" in captured.out
+    assert "inserted=" in captured.out
 
 
 def test_main_prints_validation_counts(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
@@ -494,7 +713,15 @@ def test_main_prints_validation_counts(tmp_path: Path, capsys: pytest.CaptureFix
 
     mock_conn = MagicMock()
     _make_copy_ctx(mock_conn)
-    mock_conn.execute.return_value.fetchone.return_value = (0,)
+    mock_conn.execute.side_effect = (
+        _make_service_cases_execute_seq(staging_count=2, returning_rows=[])
+        + _make_features_execute_seq(staging_count=2, returning_rows=[])
+        + [
+            MagicMock(fetchone=MagicMock(return_value=(0,))),  # validation: cases
+            MagicMock(fetchone=MagicMock(return_value=(0,))),  # validation: features
+            MagicMock(fetchone=MagicMock(return_value=(0,))),  # top5 check
+        ]
+    )
 
     with (
         patch("src.data.load_postgres.get_connection", return_value=mock_conn),
@@ -518,20 +745,18 @@ def test_main_shows_top5_when_features_loaded(
         (1111111111, "Test Clinic", "Internal Medicine", "IL", 20, 10),
     ]
 
-    execute_results = [
-        MagicMock(fetchone=MagicMock(return_value=(2,))),  # TRUNCATE cases → ignored
-        MagicMock(fetchone=MagicMock(return_value=(2,))),  # COUNT cases
-        MagicMock(fetchone=MagicMock(return_value=(2,))),  # TRUNCATE features → ignored
-        MagicMock(fetchone=MagicMock(return_value=(2,))),  # COUNT features
-        MagicMock(fetchone=MagicMock(return_value=(2,))),  # validation: cases
-        MagicMock(fetchone=MagicMock(return_value=(5,))),  # validation: features (>0 → show top5)
-        MagicMock(fetchone=MagicMock(return_value=(5,))),  # COUNT check
-        MagicMock(fetchall=MagicMock(return_value=top5_rows)),  # top5 query
-    ]
-
     mock_conn = MagicMock()
     _make_copy_ctx(mock_conn)
-    mock_conn.execute.side_effect = execute_results
+    mock_conn.execute.side_effect = (
+        _make_service_cases_execute_seq(staging_count=2, returning_rows=[(True,), (True,)])
+        + _make_features_execute_seq(staging_count=2, returning_rows=[(True,), (True,)])
+        + [
+            MagicMock(fetchone=MagicMock(return_value=(2,))),  # validation: cases
+            MagicMock(fetchone=MagicMock(return_value=(5,))),  # validation: features >0 → top5
+            MagicMock(fetchone=MagicMock(return_value=(5,))),  # COUNT check before top5
+            MagicMock(fetchall=MagicMock(return_value=top5_rows)),  # top5 query
+        ]
+    )
 
     with (
         patch("src.data.load_postgres.get_connection", return_value=mock_conn),
