@@ -83,6 +83,24 @@ ORDER BY max_seed_risk_score DESC NULLS LAST
 LIMIT 10
 """
 
+_PENDING_COUNT_SQL = f"""
+SELECT count(*)::int AS pending_count
+FROM provider_service_cases psc
+LEFT JOIN (
+    SELECT DISTINCT ON (case_id) case_id
+    FROM case_actions
+    ORDER BY case_id, created_at DESC
+) acted ON acted.case_id = psc.case_id
+WHERE acted.case_id IS NULL
+  AND psc.seed_risk_score >= {HIGH_RISK_SCORE_THRESHOLD}
+"""
+
+_PENDING_COUNT_FALLBACK_SQL = f"""
+SELECT count(*)::int AS pending_count
+FROM provider_service_cases
+WHERE seed_risk_score >= {HIGH_RISK_SCORE_THRESHOLD}
+"""
+
 
 async def _fetch_counts(conn: AsyncConnection) -> dict:
     async with conn.cursor(row_factory=dict_row) as cur:
@@ -100,6 +118,21 @@ async def _fetch_top(conn: AsyncConnection) -> list[dict]:
     async with conn.cursor(row_factory=dict_row) as cur:
         await cur.execute(_TOP_SQL)
         return await cur.fetchall()
+
+
+async def _fetch_pending_count(conn: AsyncConnection) -> int:
+    """Count high-risk cases with no analyst action yet."""
+    try:
+        async with conn.cursor(row_factory=dict_row) as cur:
+            await cur.execute(_PENDING_COUNT_SQL)
+            row = await cur.fetchone()
+            return row["pending_count"] if row else 0
+    except Exception:
+        await conn.rollback()
+        async with conn.cursor(row_factory=dict_row) as cur:
+            await cur.execute(_PENDING_COUNT_FALLBACK_SQL)
+            row = await cur.fetchone()
+            return row["pending_count"] if row else 0
 
 
 @router.get("", response_model=DashboardStats)
@@ -121,6 +154,7 @@ async def get_dashboard(
     counts = await _fetch_counts(conn)
     dist = await _fetch_distribution(conn)
     top_rows = await _fetch_top(conn)
+    pending = await _fetch_pending_count(conn)
 
     total_providers = counts.get("total_providers", 0)
     total_cases = counts.get("total_cases", 0)
@@ -142,6 +176,7 @@ async def get_dashboard(
     result = DashboardStats(
         total_providers=total_providers,
         total_cases=total_cases,
+        pending_count=pending,
         risk_distribution=distribution,
         top_providers=top_providers,
     )

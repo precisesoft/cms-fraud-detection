@@ -20,7 +20,7 @@ export function Dashboard() {
     { name: 'Total Providers', value: stats?.total_providers ?? 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', href: '/providers' },
     { name: 'Total Cases', value: stats?.total_cases ?? 0, icon: FileText, color: 'text-amber-600', bg: 'bg-amber-50', href: '/claims' },
     { name: 'High Risk', value: stats?.risk_distribution?.high_risk ?? 0, icon: ShieldAlert, color: 'text-rose-600', bg: 'bg-rose-50', href: '/providers?risk_band=high_risk', info: "Providers whose maximum service-line risk score is 51 or above. These are flagged for priority investigation based on peer-comparison z-scores, billing anomalies, and enrollment signals." },
-    { name: 'Pending Review', value: pending.length, icon: AlertTriangle, color: 'text-indigo-600', bg: 'bg-indigo-50', href: '/investigations', info: "Cases that scored above the review threshold but have not yet been investigated by an analyst. Each case represents a provider–service code combination with elevated risk signals." },
+    { name: 'Pending Review', value: stats?.pending_count ?? 0, icon: AlertTriangle, color: 'text-indigo-600', bg: 'bg-indigo-50', href: '/investigations', info: "Cases that scored above the review threshold but have not yet been investigated by an analyst. Each case represents a provider–service code combination with elevated risk signals." },
   ];
 
   return (
