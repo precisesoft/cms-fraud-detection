@@ -439,6 +439,7 @@ class RiskDistribution(BaseModel):
 class DashboardStats(BaseModel):
     total_providers: int
     total_cases: int
+    pending_count: int
     risk_distribution: RiskDistribution
     top_providers: list[ProviderSummary]
 

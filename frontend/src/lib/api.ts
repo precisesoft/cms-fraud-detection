@@ -203,6 +203,7 @@ export interface RiskDistribution {
 export interface DashboardStats {
   total_providers: number;
   total_cases: number;
+  pending_count: number;
   risk_distribution: RiskDistribution;
   top_providers: ProviderSummary[];
 }
