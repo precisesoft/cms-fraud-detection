@@ -157,9 +157,14 @@ def load_raw_csv(
         null_values=["", "NA", "NULL"],
         columns=cols_to_read,
         schema_overrides=str_overrides,
+        encoding="utf8-lossy",
     )
     rename_map = {src: dst for src, dst in col_map.items() if src in df.columns}
     df = df.rename(rename_map)
+
+    # Drop rows with null in NOT NULL columns (npi)
+    if "npi" in df.columns:
+        df = df.filter(pl.col("npi").is_not_null() & (pl.col("npi") != ""))
 
     # Step 3 — add versioning metadata
     loaded_at_ts = datetime.now(tz=UTC).isoformat()

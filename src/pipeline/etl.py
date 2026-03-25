@@ -154,8 +154,7 @@ service AS (
     avg_medicare_allowed_amt,
     avg_medicare_payment_amt
   FROM raw_part_b_service
-  WHERE source_version = %s
-    AND tot_benes  >= 11
+  WHERE tot_benes  >= 11
     AND tot_srvcs  >= 11
     AND avg_medicare_allowed_amt > 0
 ),
@@ -167,7 +166,6 @@ provider AS (
     total_services     AS provider_total_services,
     total_payment_amt  AS provider_total_payment_amt
   FROM raw_part_b_provider
-  WHERE source_version = %s
 ),
 enrollment AS (
   SELECT
@@ -177,7 +175,6 @@ enrollment AS (
     MIN(provider_type_desc)       AS enrollment_provider_type_desc,
     MIN(state_cd)                 AS enrollment_state_cd
   FROM raw_enrollment
-  WHERE source_version = %s
   GROUP BY 1
 ),
 revoked AS (
@@ -186,7 +183,6 @@ revoked AS (
     1                                              AS present_in_2026_revocation_file,
     STRING_AGG(DISTINCT revocation_reason, ' | ') AS revocation_reason_summary
   FROM raw_revocations
-  WHERE source_version = %s
   GROUP BY 1
 )
 SELECT
@@ -257,10 +253,7 @@ def run_stage_ingest(
     logger.info("%sStage 1 — ingest", prefix)
 
     conn.execute(_SQL_DROP_BASE)
-    conn.execute(
-        _SQL_CREATE_BASE,
-        [versions.service, versions.provider, versions.enrollment, versions.revocations],
-    )
+    conn.execute(_SQL_CREATE_BASE)
     row = conn.execute("SELECT COUNT(*) FROM _etl_base").fetchone()
     count = int(row[0]) if row else 0
     logger.info("%sStage 1 complete — %d base rows", prefix, count)
