@@ -9,8 +9,9 @@ CMS loses an estimated **$60 billion annually** to improper payments across Medi
 | Live App | [argus.precise-lab.com](https://argus.precise-lab.com) |
 | GitHub | [precisesoft/cms-fraud-detection](https://github.com/precisesoft/cms-fraud-detection) |
 | Architecture | [docs/architecture-v3.md](docs/architecture-v3.md) |
-
-**Demo Script**: [docs/demo-script.md](docs/demo-script.md) | **Responsible AI**: [docs/responsible-ai-considerations.md](docs/responsible-ai-considerations.md) | **Path to Pilot**: [docs/path-to-cms-pilot.md](docs/path-to-cms-pilot.md)
+| Demo Script | [docs/demo-script.md](docs/demo-script.md) |
+| Responsible AI | [docs/responsible-ai-considerations.md](docs/responsible-ai-considerations.md) |
+| Path to Pilot | [docs/path-to-cms-pilot.md](docs/path-to-cms-pilot.md) |
 
 **Judge access note**: the live website is protected by HTTP basic auth during evaluation. If you have login issues, contact `arun.sanna@precise-soft.com`.
 
@@ -37,12 +38,12 @@ CMS loses an estimated **$60 billion annually** to improper payments across Medi
 
 | Criterion | Why Argus Scores Well | Evidence |
 | --------- | --------------------- | -------- |
-| **Mission Relevance** | Targets CMS improper payments with a proactive provider-risk workflow instead of post-payment recovery alone. | [Problem framing](docs/problem-statement.md), validation results, investigation workflow |
+| **Mission Relevance** | Targets CMS improper payments with a proactive provider-risk workflow instead of post-payment recovery alone. | [Problem framing](docs/problem-statement.md), [Validated Results](#validated-results), [Investigation Workflow](#investigation-workflow--case-management) |
 | **Technical Soundness** | End-to-end working system: ETL, scoring engine, fairness analysis, investigation UI, and live deployment. | [Architecture](docs/architecture-v3.md), [Live app](https://argus.precise-lab.com), [Demo script](docs/demo-script.md) |
-| **Explainability & Responsible AI** | Deterministic scoring, named signals, evidence provenance, fairness monitoring, and human-in-the-loop review. | [Risk scoring methodology](docs/risk-scoring-methodology.md), [Responsible AI](docs/responsible-ai-considerations.md), [Model card](docs/model-card-isolation-forest.md) |
-| **Feasibility for Adoption** | Uses public CMS data today, avoids PHI, deploys on AWS, and has a documented path from MVP to government pilot. | [Path to CMS pilot](docs/path-to-cms-pilot.md), feasibility section below |
-| **Innovation** | Combines dual scoring, per-provider ML explainability, evidence graph views, and AI-assisted investigation. | Product walkthrough and architecture docs |
-| **Demo Clarity** | Includes a guided narrative, live screens, and judge-ready supporting documents. | [Demo script](docs/demo-script.md), [Judge deliverables](#judge-deliverables) |
+| **Explainability & Responsible AI** | Deterministic scoring, named signals, evidence provenance, fairness monitoring, and human-in-the-loop review. | [Explainability and Responsible AI](#explainability-and-responsible-ai), [Risk scoring methodology](docs/risk-scoring-methodology.md), [Model card](docs/model-card-isolation-forest.md) |
+| **Feasibility for Adoption** | Uses public CMS data today, avoids PHI, deploys on AWS, and has a documented path from MVP to government pilot. | [Feasibility for Government Adoption](#feasibility-for-government-adoption), [Path to CMS Pilot](docs/path-to-cms-pilot.md) |
+| **Innovation** | Combines dual scoring, per-provider ML explainability, evidence graph views, and AI-assisted investigation. | [Why Argus Stands Out](#why-argus-stands-out), [Risk scoring methodology](docs/risk-scoring-methodology.md), [Architecture](docs/architecture-v3.md) |
+| **Demo Clarity** | Includes a guided narrative, live screens, and judge-ready supporting documents. | [Judge Quick Links](#judge-quick-links), [Demo Script](docs/demo-script.md), [Judge Deliverables](#judge-deliverables) |
 
 ---
 
@@ -373,3 +374,5 @@ npm test                               # Run frontend tests
 
 - **Arun Sanna** — Lead, AI/ML Engineering, Architecture
 - **Bibek Poudel** — Backend, Infrastructure
+- **Rahul Vadera**
+- **Reaz Rahman**
