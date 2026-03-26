@@ -150,7 +150,7 @@ Argus is designed to deploy into a government environment with minimal rework.
 
 Total providers scored, risk distribution breakdown, geographic heatmap of state-level flagging patterns, and top-risk cases.
 
-### Live Payment Monitor — Real-Time Scoring
+### Live Payment Monitor — Real-Time Scoring(Disabled Due to High CPU utilization will do live demo)
 
 ![Live Payment Monitor](docs/diagrams/live_payment_monitoring.png)
 
