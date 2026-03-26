@@ -139,8 +139,13 @@ def create_app() -> FastAPI:
 
     app.include_router(live_router, prefix="/api")
 
-    # --- Health endpoint (no router needed) ---
+    # --- Health endpoints ---
     from src.api.schemas import HealthResponse
+
+    @app.get("/healthz", tags=["ops"])
+    async def healthz():
+        """Lightweight probe endpoint — no DB/Neo4j, <1 ms."""
+        return {"status": "ok"}
 
     @app.get("/health", response_model=HealthResponse, tags=["ops"])
     async def health():

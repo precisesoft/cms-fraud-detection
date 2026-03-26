@@ -64,18 +64,36 @@ def test_all_api_routes_have_prefix() -> None:
 
     app = create_app()
     framework_paths = {"/openapi.json", "/docs", "/docs/oauth2-redirect", "/redoc"}
+    ops_paths = {"/health", "/healthz"}
     paths = [
         r.path
         for r in app.routes
-        if hasattr(r, "path") and r.path not in framework_paths and r.path != "/health"
+        if hasattr(r, "path") and r.path not in framework_paths and r.path not in ops_paths
     ]
     for path in paths:
         assert path.startswith("/api"), f"Route {path} does not start with /api"
 
 
 # ---------------------------------------------------------------------------
-# Health endpoint
+# Health endpoints
 # ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_healthz_returns_ok_immediately() -> None:
+    """Lightweight /healthz responds instantly with no dependencies."""
+    with patch.multiple(
+        "src.api.app", **{k.split(".")[-1]: AsyncMock() for k in _LIFESPAN_PATCHES}
+    ):
+        from src.api.app import create_app
+
+        app = create_app()
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.get("/healthz")
+
+    assert resp.status_code == 200
+    assert resp.json() == {"status": "ok"}
 
 
 @pytest.mark.asyncio
