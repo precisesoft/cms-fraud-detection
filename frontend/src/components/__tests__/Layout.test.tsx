@@ -58,6 +58,7 @@ describe("Layout", () => {
 
     expect(labels).toEqual([
       "Dashboard",
+      "Live Monitor",
       "Providers",
       "Claims",
       "Investigations",
@@ -66,7 +67,6 @@ describe("Layout", () => {
       "Simulate",
       "Fairness",
     ]);
-    expect(within(nav).queryByRole("link", { name: "Live Monitor" })).not.toBeInTheDocument();
     expect(within(nav).queryByRole("link", { name: "Data" })).not.toBeInTheDocument();
   });
 
@@ -93,6 +93,7 @@ describe("Layout", () => {
 
     expect(labels).toEqual([
       "Dashboard",
+      "Live Monitor",
       "Providers",
       "Claims",
       "Investigations",
