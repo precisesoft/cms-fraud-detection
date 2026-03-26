@@ -5,6 +5,7 @@ import {
   ClipboardX,
   AlertTriangle,
   ArrowUpRight,
+  Info,
   MessageSquareMore,
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
@@ -107,36 +108,42 @@ export function CaseDetailShell({
       name: "Explainable Risk",
       value:
         ctx.scoreDetails?.explainable_risk_score ?? ctx.data.seed_risk_score,
-      sub: "Primary transparent score",
+      denominator: "/ 100",
+      sub: ctx.scoreDetails?.explainable_risk_band
+        ? `Rule-based · ${ctx.scoreDetails.explainable_risk_band.replace("_", " ")} band`
+        : "Primary transparent score",
       infoTitle: "Explainable Risk Score",
       infoText:
-        "Primary transparent score from deterministic rules applied to this specific case (provider–service code combination). Fully explainable — based on peer-comparison z-scores, enrollment signals, and billing pattern rules.",
+        "Primary decision anchor — fully rule-based and auditable. Scale: 0–100. Bands: 0–30 Stable · 31–50 Review · 51+ High Risk. Built from peer z-scores, enrollment signals, and billing pattern rules. This score alone can justify escalation.",
     },
     {
       name: "Claim Anomaly",
       value: ctx.scoreDetails?.anomaly_score,
-      sub: "Case-level anomaly signal",
+      denominator: "/ 65",
+      sub: "Charge + intensity deviation",
       infoTitle: "Claim Anomaly Score",
       infoText:
-        "Case-level anomaly signal from the Isolation Forest unsupervised model. Measures how unusual this specific service line is compared to all cases in the dataset. Independent from the rule-based score.",
+        "Case-level anomaly signal. Scale: 0–65. Combines charge peer deviation (submitted vs. allowed, max 45 pts) and services-per-beneficiary intensity (max 20 pts). A score above 30 indicates strong billing pattern deviation. Independent from the rule-based score — use as corroboration.",
     },
     {
       name: "ML Suspicion",
       value: ctx.scoreDetails?.ml_predicted_probability,
-      sub: "Weakly supervised probability",
+      denominator: "/ 1.0",
+      sub: "Fraud probability · 0 to 1 scale",
       infoTitle: "ML Suspicion Probability",
       infoText:
-        "Weakly supervised model probability that this case exhibits fraud-like billing patterns. Trained on Isolation Forest labels. Used as an assistive signal — never the sole basis for classification.",
+        "Weakly supervised model fraud probability for this service line. Scale: 0 to 1. Above 0.5 = suspicious · 0.75+ = strong signal · 0.9+ = very high confidence. Trained on Isolation Forest labels, not human-labeled fraud — always treat as an assistive corroboration signal.",
     },
     {
       name: "Hybrid Composite",
       value: ctx.scoreDetails?.hybrid_composite_score,
+      denominator: "/ 100",
       sub: ctx.scoreDetails?.hybrid_risk_label
-        ? `Assistive layer · ${ctx.scoreDetails.hybrid_risk_label}`
-        : "Assistive hybrid layer",
+        ? `Score out of 100 · ${ctx.scoreDetails.hybrid_risk_label} band`
+        : "Combined rule + ML signal",
       infoTitle: "Hybrid Composite Score",
       infoText:
-        "Combined score blending rule-based and ML signals for this case. Shows where both scoring approaches agree, increasing confidence in the risk assessment.",
+        "Combined score for this service line (0–100). Blends rule-based signals (45%), Isolation Forest anomaly (30%), billing context (10%), and ML probability (15%). Bands: < 40 Low · 40–69 Medium · 70–89 High · 90+ Critical. When this converges with a high Explainable Risk score, the case is significantly stronger.",
     },
   ];
 
@@ -189,23 +196,48 @@ export function CaseDetailShell({
                   </p>
                   <InfoButton title={card.infoTitle}>{card.infoText}</InfoButton>
                 </div>
-                <p
-                  className={cn(
-                    "text-3xl font-black leading-none",
-                    scoreColor(
-                      typeof card.value === "number" ? card.value : null,
-                    ),
+                <div className="flex items-baseline gap-1.5">
+                  <p
+                    className={cn(
+                      "text-3xl font-black leading-none",
+                      scoreColor(
+                        typeof card.value === "number" ? card.value : null,
+                      ),
+                    )}
+                  >
+                    {typeof card.value === "number"
+                      ? card.value.toFixed(2).replace(/\.?0+$/, "") || card.value.toFixed(1)
+                      : "—"}
+                  </p>
+                  {card.denominator && typeof card.value === "number" && (
+                    <span className="text-sm font-bold text-slate-300">
+                      {card.denominator}
+                    </span>
                   )}
-                >
-                  {typeof card.value === "number"
-                    ? card.value.toFixed(1).replace(/\.0$/, "")
-                    : "—"}
-                </p>
+                </div>
                 <p className="text-xs text-slate-500 mt-2 font-medium">
                   {card.sub}
                 </p>
               </div>
             ))}
+          </div>
+
+          {/* Score hierarchy guide */}
+          <div className="flex gap-3 items-start bg-indigo-50 border border-indigo-100 rounded-xl px-5 py-3">
+            <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-indigo-800 leading-relaxed">
+              <span className="font-semibold">How to read these scores: </span>
+              <strong>Explainable Risk (0–100)</strong> is the primary decision
+              anchor — rule-based, auditable, and sufficient for escalation.{" "}
+              <strong>Claim Anomaly (0–65)</strong> measures charge and
+              intensity deviation from peers.{" "}
+              <strong>ML Suspicion (0–1)</strong> is per-service-line fraud
+              probability — above 0.5 is suspicious, 0.9+ is very high
+              confidence.{" "}
+              <strong>Hybrid Composite (0–100)</strong> blends all signals —
+              convergence across multiple high scores significantly strengthens
+              a case.
+            </p>
           </div>
 
           {/* Entity-specific details */}
