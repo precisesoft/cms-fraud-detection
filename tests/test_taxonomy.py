@@ -105,15 +105,15 @@ class TestLabelCase:
         assert label_case(risk_score=5, legitimacy_score=80) == CaseLabel.stable
 
     def test_stable_requires_low_risk(self):
-        # legitimacy >= 70 but risk >= 10 (STABLE_RISK_CEILING) → review
-        assert label_case(risk_score=15, legitimacy_score=75) == CaseLabel.review
+        # legitimacy >= 70 but risk >= STABLE_RISK_CEILING (25) → review
+        assert label_case(risk_score=30, legitimacy_score=75) == CaseLabel.review
 
     def test_review_is_default(self):
         assert label_case(risk_score=20, legitimacy_score=20) == CaseLabel.review
 
     def test_edge_high_risk_boundary(self):
-        # risk=30, gap=6 → high_risk (threshold is >= 30)
-        assert label_case(risk_score=30, legitimacy_score=24) == CaseLabel.high_risk
+        # risk=55, gap=31 → high_risk (threshold is >= 51)
+        assert label_case(risk_score=55, legitimacy_score=24) == CaseLabel.high_risk
 
     def test_edge_below_high_risk_boundary(self):
         # risk=29 is below threshold → review

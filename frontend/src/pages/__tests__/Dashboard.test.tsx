@@ -103,8 +103,8 @@ describe("Dashboard", () => {
     expect(screen.getByText("5,678")).toBeInTheDocument();
     // "50" appears in both KPI card and Risk Distribution
     expect(screen.getAllByText("50").length).toBeGreaterThanOrEqual(1);
-    // Pending Review count equals pending.length = 1
-    expect(screen.getByText("1")).toBeInTheDocument();
+    // Pending Review count comes from stats.pending_count = 42
+    expect(screen.getByText("42")).toBeInTheDocument();
   });
 
   it("renders all four KPI card labels", async () => {

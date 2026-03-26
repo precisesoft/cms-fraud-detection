@@ -45,7 +45,7 @@ class TestRiskBandFromScore:
 
     @pytest.mark.parametrize(
         "score",
-        [STABLE_RISK_CEILING + 1, 20, HIGH_RISK_SCORE_THRESHOLD - 1],
+        [STABLE_RISK_CEILING + 1, 38, HIGH_RISK_SCORE_THRESHOLD - 1],
     )
     def test_review_range(self, score: int):
         assert risk_band_from_score(score) == RiskBand.review
