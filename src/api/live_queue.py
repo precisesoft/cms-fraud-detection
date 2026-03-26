@@ -498,7 +498,25 @@ class QueueManager:
                 logger.warning("live queue: already running")
                 return
             self.running = True
-            await self.build_queue()
+            self.ready = False
+            try:
+                await self.build_queue()
+            except asyncio.CancelledError:
+                self.running = False
+                self.ready = False
+                self.queue = []
+                self.position = 0
+                self.queue_actual_counts = {}
+                logger.info("live queue: startup cancelled")
+                raise
+            except Exception:
+                self.running = False
+                self.ready = False
+                self.queue = []
+                self.position = 0
+                self.queue_actual_counts = {}
+                logger.exception("live queue: startup failed")
+                raise
             self._task = asyncio.create_task(self._emit_loop())
             logger.info("live queue: started")
 
@@ -506,6 +524,7 @@ class QueueManager:
         """Stop the emit loop."""
         async with self._lock:
             self.running = False
+            self.ready = False
             if self._task:
                 self._task.cancel()
                 try:
