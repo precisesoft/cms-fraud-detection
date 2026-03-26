@@ -7,7 +7,7 @@ CMS loses an estimated **$60 billion annually** to improper payments across Medi
 **Live App**: [argus.precise-lab.com](https://argus.precise-lab.com) | **GitHub**: [precisesoft/cms-fraud-detection](https://github.com/precisesoft/cms-fraud-detection) | **CI/CD Pipeline**: [Actions](https://github.com/precisesoft/cms-fraud-detection/actions) | **Issues & PRs**: [181 issues](https://github.com/precisesoft/cms-fraud-detection/issues?q=is%3Aissue) / [162 PRs](https://github.com/precisesoft/cms-fraud-detection/pulls?q=is%3Apr)
 **Demo Script**: [docs/demo-script.md](docs/demo-script.md) | **Hackathon**: Government AI Hackathon (Mar 14–25, 2026)
 
-![Dashboard](screenshots/01-dashboard.png)
+![Dashboard](docs/diagrams/Dashboard.png)
 
 ---
 
@@ -70,39 +70,51 @@ AWS Bedrock Claude powers three capabilities: **text-to-SQL** (analysts ask ques
 
 ### Dashboard — Aggregate Risk Overview
 
-![Dashboard](screenshots/dashboard-live.png)
+![Dashboard](docs/diagrams/Dashboard.png)
 
 Total providers scored, risk distribution breakdown, geographic heatmap of state-level flagging patterns, and top-risk cases.
 
 ### Live Payment Monitor — Real-Time Scoring
 
-![Live Monitor](screenshots/02-live-monitor-running.png)
+![Live Payment Monitor](<docs/diagrams/Live Payment Monitor.png>)
 
 Claims stream across a US map with pulsing risk dots. Each claim scored in <50ms. Click a flagged claim to investigate.
 
 ### Provider Detail — Signal Breakdown
 
-![Provider Detail](screenshots/05-provider-detail-loaded.png)
+![Provider Detail](docs/diagrams/Provide-Details.png)
 
 Full signal decomposition: which signals fired, how many points each contributed, peer baseline comparisons, evidence graph, ML anomaly score with per-provider feature importance.
 
 ### Claims Simulator — Pre-Payment Screening
 
-![Simulate](screenshots/03-simulate.png)
+![Claim Simulator](docs/diagrams/claim-simulator.png)
 
 Submit a hypothetical claim and watch the scoring engine extract signals, compute risk + legitimacy, and generate an AI narrative — simulating what pre-payment screening would look like.
 
 ### Fairness Dashboard — Bias Monitoring
 
-![Fairness](screenshots/08-fairness.png)
+![Fairness Analysis](docs/diagrams/fairness.png)
 
 Statistical parity and disparate impact metrics across states and specialties. Outlier detection flags systemic bias.
 
 ### Investigation Workflow — Case Management
 
-![Investigations](screenshots/11-investigations.png)
+![Investigation Workflow](docs/diagrams/investigation-workflow.png)
 
 Triaged case queue with approve/flag/deny/escalate actions, audit trail, and AI chat sidebar for natural-language data queries.
+
+### Claims Detail — Service-Line Evidence
+
+![Claim Detail](docs/diagrams/case.png)
+
+Each flagged claim has a dedicated case view with service-line details, z-score metrics, hybrid scoring context, and case-specific AI assistance.
+
+### Data Operations — Ingestion and Recalibration
+
+![Data Operations](docs/diagrams/Seed-Data.png)
+
+Admin users can ingest raw CMS data, seed demo datasets, recalibrate deterministic scores, and retrain models from a tracked pipeline run.
 
 ---
 
