@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -9,7 +8,6 @@ import pytest
 from src.api import deps as api_deps
 from src.api.live_queue import QueueEvent, QueueManager, start_queue, stop_queue
 from src.api.routes import live as live_routes
-
 
 SAMPLE_EVENT = QueueEvent(
     npi="1234567890",
@@ -137,7 +135,7 @@ class TestQueueManager:
     async def test_broadcast_replaces_oldest_for_slow_subscriber(
         self, queue_mgr: QueueManager
     ):
-        subscriber = asyncio.Queue(maxsize=1)
+        subscriber: asyncio.Queue[str] = asyncio.Queue(maxsize=1)
         subscriber.put_nowait("old")
         queue_mgr._subscribers = [subscriber]
 
