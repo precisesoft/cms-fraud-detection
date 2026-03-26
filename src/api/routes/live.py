@@ -1,15 +1,15 @@
-"""Live Payment Monitor — persistent shared SSE stream.
+"""Live Payment Monitor — shared SSE stream.
 
 Clients connect to /live/stream and receive events from a shared
-server-side queue that runs independently of any single connection.
-The queue is built once at startup with a curated 10K-event set
-and loops forever, broadcasting to all connected SSE clients.
+server-side producer that runs independently of any single connection.
+The stream lazily starts on first use, loads small batches of seed-scored
+claims, and broadcasts them to all connected SSE clients.
 
 Endpoints:
   GET /live/stream    — SSE stream (shared broadcast)
   GET /live/status    — Queue status / health
   POST /live/tps      — Adjust emission rate
-  POST /live/rebuild  — Force queue rebuild
+  POST /live/rebuild  — Restart the shared producer
 
 NOTE: No auth on SSE stream — demo-scoped. Production: gate via Istio JWT policy.
 """
@@ -46,9 +46,9 @@ async def stream_claims(
 ):
     """Stream scored claims as Server-Sent Events.
 
-    All clients receive the same event stream from the persistent
-    server-side queue. The stream survives browser refresh and works
-    across different user logins.
+    All clients receive the same event stream from the shared server-side
+    producer. The stream survives browser refresh and works across
+    different user logins.
 
     If tps > 0, updates the server-wide emission rate.
     """
@@ -91,22 +91,20 @@ async def stream_claims(
 
 @router.get("/status")
 async def queue_status():
-    """Return current queue status — size, position, TPS, subscribers."""
+    """Return current live-stream status — batch size, position, TPS, subscribers."""
     return queue_manager.status()
 
 
 @router.post("/tps")
 async def set_tps(tps: float = Query(ge=0.1, le=20.0)):
     """Adjust the server-wide emission rate."""
-    if not queue_manager.running:
-        return {"tps": queue_manager.tps}
     queue_manager.set_tps(tps)
     return {"tps": queue_manager.tps}
 
 
 @router.post("/rebuild")
 async def rebuild_queue():
-    """Force a queue rebuild (re-queries DB, re-scores, reshuffles)."""
+    """Restart the shared producer and refresh its rolling cursor state."""
     was_running = queue_manager.running
     if was_running:
         await queue_manager.stop()

@@ -1,13 +1,13 @@
-"""Persistent server-side queue for the Live Payment Monitor.
+"""Continuous server-side stream for the Live Payment Monitor.
 
-Builds a curated 10,000-event queue from pre-scored seed data in Postgres
-and emits events at a configurable TPS rate via an async broadcast channel.
+Streams small batches of pre-scored seed data from Postgres and broadcasts
+them to all connected SSE clients at a configurable TPS rate.
 
 Key properties:
   - Survives browser refresh / different user logins (server-side state)
   - Multiple SSE clients share the same event stream (broadcast)
-  - Curated geographic + specialty diversity, not ORDER BY RANDOM()
-  - Queue loops forever: when exhausted, reshuffles and replays
+  - No large prebuilt in-memory queue at startup
+  - Small rolling batches keep API load predictable
 
 Lifecycle: start_queue() is triggered lazily by the live monitor routes;
 stop_queue() is called during API shutdown.
@@ -18,9 +18,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import random
 import time
-from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
@@ -34,18 +32,16 @@ logger = logging.getLogger(__name__)
 # Configuration
 # ---------------------------------------------------------------------------
 
-QUEUE_SIZE = 10_000
-
-# Target distribution
-HIGH_RISK_COUNT = 1_500  # 15%
-REVIEW_COUNT = 3_500  # 35%
-STABLE_COUNT = 5_000  # 50%
+# Small rolling batch size. Keeps the live stream responsive without
+# prebuilding a large queue or re-scoring rows on demand.
+BATCH_TARGETS = {
+    "high_risk": 4,
+    "review": 8,
+    "stable": 12,
+}
 
 # Default events per second
 DEFAULT_TPS = 2.0
-
-# How many top states to pull from for geographic diversity
-TOP_STATES_COUNT = 20
 
 # ---------------------------------------------------------------------------
 # Pre-scored event (cached — no re-scoring needed at emit time)
@@ -73,68 +69,27 @@ class QueueEvent:
 
 
 # ---------------------------------------------------------------------------
-# SQL — curated selection queries (NOT random)
+# SQL — rolling seed-backed selection queries
 # ---------------------------------------------------------------------------
 
-_CASES_BY_BAND_SQL = """
-WITH ranked AS (
-    SELECT case_id, npi,
-           COALESCE(provider_last_org_name, '') ||
-               CASE WHEN provider_first_name IS NOT NULL
-                    THEN ', ' || provider_first_name
-                    ELSE '' END AS provider_name,
-           provider_state AS state,
-           provider_city AS city,
-           hcpcs_cd, hcpcs_desc, place_of_service, provider_type,
-           avg_submitted_charge, tot_srvcs, tot_benes,
-           present_in_2025_enrollment_file, present_in_2026_revocation_file,
-           medicare_participating_ind, provider_total_benes,
-           peer_scope, peer_case_count, peer_avg_tot_srvcs,
-           service_volume_peer_z, services_per_bene_peer_z,
-           submitted_to_allowed_peer_z, payment_peer_z,
-           seed_risk_score, seed_legitimacy_score, seed_case_label,
-           seed_risk_reasons,
-           ROW_NUMBER() OVER (
-               PARTITION BY provider_state
-               ORDER BY npi, case_id
-           ) AS rn
-    FROM provider_service_cases
-    WHERE {band_filter}
-      AND provider_state IS NOT NULL
-      AND provider_state IN ({state_placeholders})
-)
-SELECT * FROM ranked
-WHERE rn <= %(per_state_limit)s
-ORDER BY state, rn
-"""
-
-_TOP_STATES_SQL = """
-SELECT provider_state, COUNT(*) AS cnt
+_CASES_AFTER_SQL = """
+SELECT case_id, npi,
+       COALESCE(provider_last_org_name, '') ||
+           CASE WHEN provider_first_name IS NOT NULL
+                THEN ', ' || provider_first_name
+                ELSE '' END AS provider_name,
+       provider_state AS state,
+       provider_city AS city,
+       hcpcs_cd, hcpcs_desc, place_of_service, provider_type,
+       avg_submitted_charge,
+       seed_risk_score, seed_legitimacy_score, seed_case_label,
+       seed_risk_reasons
 FROM provider_service_cases
-WHERE provider_state IS NOT NULL
-GROUP BY provider_state
-ORDER BY cnt DESC
+WHERE seed_case_label = %(label)s
+  AND case_id > %(after_case_id)s
+ORDER BY case_id
 LIMIT %(limit)s
 """
-
-# ---------------------------------------------------------------------------
-# Band filter helpers
-# ---------------------------------------------------------------------------
-
-
-def _high_risk_filter() -> str:
-    """SQL WHERE clause fragment for high_risk seed cases."""
-    return "seed_case_label = 'high_risk'"
-
-
-def _stable_filter() -> str:
-    """SQL WHERE clause fragment for stable seed cases."""
-    return "seed_case_label = 'stable'"
-
-
-def _review_filter() -> str:
-    """SQL WHERE clause fragment for review seed cases."""
-    return "seed_case_label = 'review'"
 
 
 # ---------------------------------------------------------------------------
@@ -144,7 +99,7 @@ def _review_filter() -> str:
 
 @dataclass
 class QueueManager:
-    """Server-side persistent queue that broadcasts pre-scored events."""
+    """Server-side continuous stream that broadcasts pre-scored events."""
 
     queue: list[QueueEvent] = field(default_factory=list)
     position: int = 0
@@ -157,6 +112,9 @@ class QueueManager:
     _subscribers: list[asyncio.Queue[str]] = field(default_factory=list)
     _task: asyncio.Task | None = field(default=None, repr=False)  # type: ignore[type-arg]
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    _band_after_case_id: dict[str, int] = field(
+        default_factory=lambda: {label: 0 for label in BATCH_TARGETS}
+    )
 
     # Stats
     build_time_s: float = 0.0
@@ -175,6 +133,8 @@ class QueueManager:
             self._subscribers.remove(q)
         except ValueError:
             pass
+        if not self._subscribers:
+            self.ready = False
         logger.info("live queue: subscriber removed (total=%d)", len(self._subscribers))
 
     async def _broadcast(self, data: str) -> None:
@@ -193,95 +153,46 @@ class QueueManager:
         for q in dead:
             self.unsubscribe(q)
 
-    async def build_queue(self) -> None:
-        """Query the DB and build the curated 10K queue."""
-        if _deps.pool is None:
-            logger.error("live queue: DB pool not initialized")
-            return
+    @staticmethod
+    def _get_db_pool():
+        """Prefer the readonly pool for streaming when available."""
+        return _deps.readonly_pool or _deps.pool
 
-        start = time.monotonic()
-        logger.info("live queue: building curated %d-event queue...", QUEUE_SIZE)
-
-        async with _deps.pool.connection() as conn:
-            # 1. Get top states for geographic diversity
-            async with conn.cursor(row_factory=dict_row) as cur:
-                await cur.execute(_TOP_STATES_SQL, {"limit": TOP_STATES_COUNT})
-                state_rows = await cur.fetchall()
-            top_states = [r["provider_state"] for r in state_rows]
-            logger.info("live queue: top %d states: %s", len(top_states), top_states)
-
-            # 2. Fetch candidates for each band with state distribution
-            high_risk_rows = await self._fetch_band(
-                conn, top_states, _high_risk_filter(), HIGH_RISK_COUNT * 2
-            )
-            review_rows = await self._fetch_band(
-                conn, top_states, _review_filter(), REVIEW_COUNT * 2
-            )
-            stable_rows = await self._fetch_band(
-                conn, top_states, _stable_filter(), STABLE_COUNT * 2
-            )
-
-            logger.info(
-                "live queue: fetched candidates — high_risk=%d, review=%d, stable=%d",
-                len(high_risk_rows),
-                len(review_rows),
-                len(stable_rows),
-            )
-
-            # 3. Convert pre-scored seed rows into queue events.
-            high_risk_evts = self._diverse_sample(
-                [self._event_from_seed_row(row) for row in high_risk_rows],
-                HIGH_RISK_COUNT,
-            )
-            review_evts = self._diverse_sample(
-                [self._event_from_seed_row(row) for row in review_rows],
-                REVIEW_COUNT,
-            )
-            stable_evts = self._diverse_sample(
-                [self._event_from_seed_row(row) for row in stable_rows],
-                STABLE_COUNT,
-            )
-
-            # 4. Interleave for natural-looking stream
-            self.queue = self._interleave(high_risk_evts, review_evts, stable_evts)
-            self.position = 0
-            self.queue_actual_counts = {
-                "high_risk": len(high_risk_evts),
-                "review": len(review_evts),
-                "stable": len(stable_evts),
-                "total": len(self.queue),
-            }
-
-        self.build_time_s = time.monotonic() - start
-        self.ready = True
-        logger.info(
-            "live queue: built %d events in %.1fs — %s",
-            len(self.queue),
-            self.build_time_s,
-            self.queue_actual_counts,
-        )
-
-    async def _fetch_band(
+    async def _fetch_band_rows(
         self,
         conn,  # type: ignore[type-arg]
-        top_states: list[str],
-        band_filter: str,
-        total_limit: int,
+        label: str,
+        limit: int,
     ) -> list[dict]:
-        """Fetch candidate rows for a risk band, spread across states."""
-        per_state = max(total_limit // len(top_states), 10)
-        state_placeholders = ", ".join(f"%(s{i})s" for i in range(len(top_states)))
-        params: dict = {f"s{i}": s for i, s in enumerate(top_states)}
-        params["per_state_limit"] = per_state
-
-        sql = _CASES_BY_BAND_SQL.format(
-            band_filter=band_filter,
-            state_placeholders=state_placeholders,
-        )
+        """Fetch a rolling batch for a single seed label using keyset pagination."""
+        after_case_id = self._band_after_case_id.get(label, 0)
         async with conn.cursor(row_factory=dict_row) as cur:
-            await cur.execute(sql, params)
+            await cur.execute(
+                _CASES_AFTER_SQL,
+                {
+                    "label": label,
+                    "after_case_id": after_case_id,
+                    "limit": limit,
+                },
+            )
             rows = await cur.fetchall()
-        return [dict(r) for r in rows]
+            if not rows and after_case_id > 0:
+                await cur.execute(
+                    _CASES_AFTER_SQL,
+                    {
+                        "label": label,
+                        "after_case_id": 0,
+                        "limit": limit,
+                    },
+                )
+                rows = await cur.fetchall()
+
+        fetched = [dict(r) for r in rows]
+        if fetched:
+            self._band_after_case_id[label] = int(fetched[-1]["case_id"])
+        else:
+            self._band_after_case_id[label] = 0
+        return fetched
 
     @staticmethod
     def _event_from_seed_row(row: dict) -> QueueEvent:
@@ -312,70 +223,16 @@ class QueueManager:
         return [part.strip() for part in raw.split("|") if part.strip()]
 
     @staticmethod
-    def _diverse_sample(events: list[QueueEvent], target: int) -> list[QueueEvent]:
-        """Sample up to `target` events with state + provider_type diversity."""
-        if len(events) <= target:
-            return list(events)
-
-        # Round-robin by state to ensure geographic spread
-        by_state: dict[str, list[QueueEvent]] = defaultdict(list)
-        for e in events:
-            by_state[e.state].append(e)
-
-        # Shuffle within each state bucket
-        for evts in by_state.values():
-            random.shuffle(evts)
-
-        result: list[QueueEvent] = []
-        seen_npis: set[str] = set()
-        states = list(by_state.keys())
-        random.shuffle(states)
-
-        # Round-robin across states
-        idx = 0
-        while len(result) < target:
-            added_this_round = False
-            for state in states:
-                bucket = by_state[state]
-                while idx < len(bucket) and bucket[idx].npi in seen_npis:
-                    idx += 1
-                # Find next unseen NPI in this state
-                for i in range(len(bucket)):
-                    if bucket[i].npi not in seen_npis:
-                        result.append(bucket[i])
-                        seen_npis.add(bucket[i].npi)
-                        bucket.pop(i)
-                        added_this_round = True
-                        break
-                if len(result) >= target:
-                    break
-            if not added_this_round:
-                break
-            idx = 0
-
-        return result[:target]
-
-    @staticmethod
     def _interleave(
         high_risk: list[QueueEvent],
         review: list[QueueEvent],
         stable: list[QueueEvent],
     ) -> list[QueueEvent]:
-        """Interleave events so ~every 7th is high_risk, stream looks natural.
-
-        Strategy: build a sequence where stable events form the background,
-        review events are mixed in at 35% rate, and high_risk events appear
-        roughly every 7th position.
-        """
+        """Interleave events so the stream feels mixed rather than banded."""
         result: list[QueueEvent] = []
-
-        # Create indexed iterators
         hr = list(high_risk)
         rv = list(review)
         st = list(stable)
-        random.shuffle(hr)
-        random.shuffle(rv)
-        random.shuffle(st)
 
         hr_idx = rv_idx = st_idx = 0
         total = len(hr) + len(rv) + len(st)
@@ -403,16 +260,65 @@ class QueueManager:
 
         return result
 
+    async def _load_next_batch(self) -> bool:
+        """Load the next rolling batch from Postgres."""
+        db_pool = self._get_db_pool()
+        if db_pool is None:
+            logger.error("live queue: DB pool not initialized")
+            return False
+
+        start = time.monotonic()
+        async with db_pool.connection() as conn:
+            high_risk_rows = await self._fetch_band_rows(
+                conn, "high_risk", BATCH_TARGETS["high_risk"]
+            )
+            review_rows = await self._fetch_band_rows(conn, "review", BATCH_TARGETS["review"])
+            stable_rows = await self._fetch_band_rows(conn, "stable", BATCH_TARGETS["stable"])
+
+        high_risk_evts = [self._event_from_seed_row(row) for row in high_risk_rows]
+        review_evts = [self._event_from_seed_row(row) for row in review_rows]
+        stable_evts = [self._event_from_seed_row(row) for row in stable_rows]
+
+        self.queue = self._interleave(high_risk_evts, review_evts, stable_evts)
+        self.position = 0
+        self.queue_actual_counts = {
+            "high_risk": len(high_risk_evts),
+            "review": len(review_evts),
+            "stable": len(stable_evts),
+            "total": len(self.queue),
+        }
+        self.build_time_s = time.monotonic() - start
+        self.ready = bool(self.queue)
+        if self.queue:
+            logger.info(
+                "live queue: loaded %d-event batch in %.2fs — %s",
+                len(self.queue),
+                self.build_time_s,
+                self.queue_actual_counts,
+            )
+        return bool(self.queue)
+
     async def _emit_loop(self) -> None:
-        """Main loop: emits events at configured TPS, loops queue forever."""
+        """Main loop: emits events at configured TPS using rolling DB batches."""
         logger.info("live queue: emit loop started (tps=%.1f)", self.tps)
         while self.running:
-            if not self.queue:
+            if not self._subscribers:
+                self.queue = []
+                self.position = 0
+                self.ready = False
+                self.queue_actual_counts = {}
+                await asyncio.sleep(0.5)
+                continue
+
+            if self.position >= len(self.queue) and not await self._load_next_batch():
                 await asyncio.sleep(1.0)
                 continue
 
+            if not self._subscribers or self.position >= len(self.queue):
+                continue
+
             evt = self.queue[self.position]
-            self.position = (self.position + 1) % len(self.queue)
+            self.position += 1
             self.total_emitted += 1
 
             payload = {
@@ -440,31 +346,19 @@ class QueueManager:
             await asyncio.sleep(1.0 / self.tps)
 
     async def start(self) -> None:
-        """Build queue and start the emit loop as a background task."""
+        """Start the rolling emit loop as a background task."""
         async with self._lock:
             if self.running:
                 logger.warning("live queue: already running")
                 return
             self.running = True
             self.ready = False
-            try:
-                await self.build_queue()
-            except asyncio.CancelledError:
-                self.running = False
-                self.ready = False
-                self.queue = []
-                self.position = 0
-                self.queue_actual_counts = {}
-                logger.info("live queue: startup cancelled")
-                raise
-            except Exception:
-                self.running = False
-                self.ready = False
-                self.queue = []
-                self.position = 0
-                self.queue_actual_counts = {}
-                logger.exception("live queue: startup failed")
-                raise
+            self.queue = []
+            self.position = 0
+            self.total_emitted = 0
+            self.build_time_s = 0.0
+            self.queue_actual_counts = {}
+            self._band_after_case_id = {label: 0 for label in BATCH_TARGETS}
             self._task = asyncio.create_task(self._emit_loop())
             logger.info("live queue: started")
 
@@ -480,6 +374,9 @@ class QueueManager:
                 except asyncio.CancelledError:
                     pass
                 self._task = None
+            self.queue = []
+            self.position = 0
+            self.queue_actual_counts = {}
             logger.info("live queue: stopped")
 
     def set_tps(self, tps: float) -> None:
