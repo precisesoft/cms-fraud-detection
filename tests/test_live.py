@@ -132,6 +132,69 @@ class TestQueueManager:
         assert await q1.get() == "data: test\n\n"
         assert await q2.get() == "data: test\n\n"
 
+    def test_score_row_returns_queue_event(self):
+        """_score_row produces a QueueEvent from a case dict."""
+        row = {
+            "npi": "1234567890",
+            "provider_name": "SMITH, JOHN",
+            "state": "TX",
+            "city": "HOUSTON",
+            "hcpcs_cd": "99213",
+            "hcpcs_desc": "OFFICE VISIT",
+            "avg_submitted_charge": 150.0,
+            "provider_type": "Internal Medicine",
+            "service_volume_peer_z": 3.0,
+            "services_per_bene_peer_z": 1.0,
+            "submitted_to_allowed_peer_z": 1.0,
+            "payment_peer_z": 0.5,
+            "present_in_2025_enrollment_file": 1,
+            "present_in_2026_revocation_file": 0,
+            "medicare_participating_ind": "Y",
+            "tot_srvcs": 500,
+            "tot_benes": 50,
+            "provider_total_benes": 200,
+        }
+        features_cache: dict[str, dict | None] = {"1234567890": None}
+        evt = QueueManager._score_row(row, features_cache)
+        assert isinstance(evt, QueueEvent)
+        assert evt.npi == "1234567890"
+        assert evt.state == "TX"
+        assert isinstance(evt.risk_score, int)
+        assert evt.case_label in ("high_risk", "review", "stable")
+
+    def test_score_all_partitions_by_label(self):
+        """_score_all partitions candidates into label buckets."""
+        candidates = [
+            {
+                "npi": f"NPI{i}",
+                "provider_name": f"Dr {i}",
+                "state": "TX",
+                "city": "HOUSTON",
+                "hcpcs_cd": "99213",
+                "hcpcs_desc": "VISIT",
+                "avg_submitted_charge": 100.0,
+                "provider_type": "Internal Medicine",
+                "service_volume_peer_z": 0.5,
+                "services_per_bene_peer_z": 0.5,
+                "submitted_to_allowed_peer_z": 0.5,
+                "payment_peer_z": 0.5,
+                "present_in_2025_enrollment_file": 1,
+                "present_in_2026_revocation_file": 0,
+                "medicare_participating_ind": "Y",
+                "tot_srvcs": 100,
+                "tot_benes": 20,
+                "provider_total_benes": 50,
+            }
+            for i in range(5)
+        ]
+        features_cache: dict[str, dict | None] = {f"NPI{i}": None for i in range(5)}
+        result = QueueManager._score_all(candidates, features_cache)
+        # All events should be categorized into one of the label buckets
+        total = sum(len(v) for v in result.values())
+        assert total == 5
+        for label in result:
+            assert label in ("high_risk", "review", "stable")
+
 
 # ---------------------------------------------------------------------------
 # SSE endpoint tests

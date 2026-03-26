@@ -265,9 +265,13 @@ class QueueManager:
                     feat = await cur.fetchone()
                     npi_features_cache[npi] = dict(feat) if feat else None
 
-            for row in all_candidates:
-                evt = self._score_row(dict(row), npi_features_cache)
-                scored_by_label[evt.case_label].append(evt)
+            # Offload CPU-bound scoring to a thread so the event loop
+            # stays responsive for health probes and other requests.
+            scored_by_label = await asyncio.to_thread(
+                self._score_all,
+                all_candidates,
+                npi_features_cache,
+            )
 
             logger.info(
                 "live queue: scored — high_risk=%d, review=%d, stable=%d",
@@ -323,6 +327,18 @@ class QueueManager:
             await cur.execute(sql, params)
             rows = await cur.fetchall()
         return [dict(r) for r in rows]
+
+    @staticmethod
+    def _score_all(
+        candidates: list[dict],
+        features_cache: dict[str, dict | None],
+    ) -> dict[str, list[QueueEvent]]:
+        """Score all candidates (CPU-bound). Designed to run in a thread."""
+        scored: dict[str, list[QueueEvent]] = defaultdict(list)
+        for row in candidates:
+            evt = QueueManager._score_row(dict(row), features_cache)
+            scored[evt.case_label].append(evt)
+        return scored
 
     @staticmethod
     def _score_row(

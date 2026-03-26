@@ -39,23 +39,26 @@ spec:
                   key: NEO4J_PASSWORD
           readinessProbe:
             httpGet:
-              path: /health
+              path: /healthz
               port: 8000
             initialDelaySeconds: 5
+            timeoutSeconds: 3
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /health
+              path: /healthz
               port: 8000
-            initialDelaySeconds: 15
+            initialDelaySeconds: 30
+            timeoutSeconds: 3
             periodSeconds: 30
+            failureThreshold: 5
           resources:
             requests:
-              cpu: 250m
-              memory: 256Mi
-            limits:
-              cpu: "1"
+              cpu: 500m
               memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi
 ---
 apiVersion: v1
 kind: Service
