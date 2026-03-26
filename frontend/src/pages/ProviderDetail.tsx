@@ -1,6 +1,7 @@
 import React from "react";
 import {
   ArrowLeft,
+  Info,
   MapPin,
   Stethoscope,
   AlertCircle,
@@ -228,41 +229,45 @@ export function ProviderDetail() {
             value:
               scoreDetails?.explainable_risk_score ??
               detail.max_seed_risk_score,
-            sub: "Primary transparent score",
+            denominator: "/ 100",
+            sub: "Primary transparent score (0–100)",
             info: {
               title: "Explainable Risk Score",
-              desc: "Primary transparent score computed from deterministic rules. This is the official risk classification score — fully explainable with no black-box components. Based on peer-comparison z-scores, enrollment signals, and billing pattern rules.",
+              desc: "Primary decision anchor — fully rule-based and transparent with no black-box components. Scale: 0–100. Bands: 0–25 Stable · 26–50 Review · 51+ High Risk. Based on peer-comparison z-scores, enrollment signals, and billing pattern rules.",
             },
           },
           {
             name: "Provider Anomaly",
             value: scoreDetails?.anomaly_score,
-            sub: "Isolation-forest provider anomaly",
+            denominator: "/ 100",
+            sub: "Isolation Forest anomaly (0–100)",
             info: {
               title: "Provider Anomaly Score",
-              desc: "Isolation Forest anomaly score computed at the provider level across all service lines. Measures how unusual the provider's overall billing patterns are compared to the full provider population. Independent from the rule-based score.",
+              desc: "Isolation Forest anomaly score at the provider level. Measures how unusual this provider's overall billing profile is vs. the full population. Scale: 0–100. Higher = more anomalous. Independent from the rule-based score — use as corroboration, not as a standalone decision.",
             },
           },
           {
             name: "ML Suspicion Max",
             value: scoreDetails?.ml_suspicion_max,
+            denominator: "/ 1.0",
             sub: scoreDetails?.service_line_scored_count
-              ? `${scoreDetails.service_line_scored_count} scored service lines`
-              : "Latest model not available",
+              ? `Fraud probability · ${scoreDetails.service_line_scored_count} service lines`
+              : "Model scores not yet available",
             info: {
               title: "ML Suspicion Maximum",
-              desc: "Peak weakly supervised fraud probability across all scored service lines for this provider. Trained on Isolation Forest labels, not human labels. Used as an assistive signal to complement rule-based scoring — never used alone.",
+              desc: "Peak fraud probability (0–1) from the weakly supervised model across all scored service lines. Scale: 0 to 1. Above 0.5 = suspicious · 0.75+ = strong signal · 0.9+ = very high confidence. Trained on Isolation Forest labels, not human-labeled fraud — always treat as an assistive corroboration signal.",
             },
           },
           {
             name: "Hybrid Composite Max",
             value: scoreDetails?.hybrid_composite_max,
+            denominator: "/ 100",
             sub: scoreDetails?.hybrid_risk_label
-              ? `Latest model · ${scoreDetails.hybrid_risk_label}`
-              : "Assistive hybrid layer",
+              ? `Score out of 100 · ${scoreDetails.hybrid_risk_label} band`
+              : "Combined rule + ML signal",
             info: {
               title: "Hybrid Composite Maximum",
-              desc: "Maximum score combining rule-based and ML signals across all service lines. Represents the strongest composite signal for this provider. Used as an assistive layer to surface cases where rule-based and ML signals converge.",
+              desc: "Highest combined score across all service lines (0–100). Blends rule-based signals (45%), Isolation Forest anomaly (30%), billing context (10%), and ML probability (15%). Bands: < 40 Low · 40–69 Medium · 70–89 High · 90+ Critical. When this score converges with a high Explainable Risk score, the case is significantly stronger.",
             },
           },
         ].map((card) => (
@@ -276,21 +281,45 @@ export function ProviderDetail() {
               </p>
               <InfoButton title={card.info.title}>{card.info.desc}</InfoButton>
             </div>
-            <p
-              className={cn(
-                "text-3xl font-black leading-none",
-                scoreColor(typeof card.value === "number" ? card.value : null),
+            <div className="flex items-baseline gap-1.5">
+              <p
+                className={cn(
+                  "text-3xl font-black leading-none",
+                  scoreColor(typeof card.value === "number" ? card.value : null),
+                )}
+              >
+                {typeof card.value === "number"
+                  ? card.value.toFixed(1).replace(/\.0$/, "")
+                  : "—"}
+              </p>
+              {card.denominator && typeof card.value === "number" && (
+                <span className="text-sm font-bold text-slate-300">
+                  {card.denominator}
+                </span>
               )}
-            >
-              {typeof card.value === "number"
-                ? card.value.toFixed(1).replace(/\.0$/, "")
-                : "—"}
-            </p>
+            </div>
             <p className="text-xs text-slate-500 mt-2 font-medium">
               {card.sub}
             </p>
           </div>
         ))}
+      </div>
+
+      <div className="flex gap-3 items-start bg-indigo-50 border border-indigo-100 rounded-xl px-5 py-3">
+        <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+        <p className="text-xs text-indigo-800 leading-relaxed">
+          <span className="font-semibold">How to read these scores: </span>
+          <strong>Explainable Risk (0–100)</strong> is the primary decision
+          anchor — fully rule-based and auditable.{" "}
+          <strong>Provider Anomaly (0–100)</strong> is an independent
+          unsupervised signal.{" "}
+          <strong>ML Suspicion (0–1)</strong> is per-service-line fraud
+          probability — above 0.5 is suspicious, 0.9+ is very high
+          confidence.{" "}
+          <strong>Hybrid Composite (0–100)</strong> blends all signals —
+          convergence across multiple high scores significantly strengthens a
+          case.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
