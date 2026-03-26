@@ -146,7 +146,7 @@ Total providers scored, risk distribution breakdown, geographic heatmap of state
 
 ### Live Payment Monitor — Real-Time Scoring
 
-![Live Payment Monitor](<docs/diagrams/Live Payment Monitor.png>)
+![Live Payment Monitor](docs/diagrams/live_payment_monitoring.png)
 
 Claims stream across a US map with pulsing risk dots. Each claim scored in <50ms. Click a flagged claim to investigate.
 
