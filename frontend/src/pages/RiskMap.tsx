@@ -5,7 +5,6 @@ import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import { getHeatmap } from '../lib/api';
 import type { HeatmapEntry } from '../lib/api';
 import { cn } from '../lib/utils';
-import { scoreColor } from '../lib/helpers';
 import { InfoButton } from '../components/InfoButton';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json';
@@ -28,12 +27,20 @@ const FIPS_TO_ABBR: Record<string, string> = {
   '56': 'WY', '72': 'PR',
 };
 
-function fillForRisk(avg: number | undefined): string {
-  if (avg == null) return '#e2e8f0'; // slate-200 — no data
-  if (avg >= 50) return '#f43f5e';   // rose-500
-  if (avg >= 35) return '#fb923c';   // orange-400
-  if (avg >= 20) return '#facc15';   // yellow-400
-  return '#86efac';                   // emerald-300
+/** Color a state by its flagged-provider percentage. */
+function fillForFlaggedPct(pct: number | undefined): string {
+  if (pct == null) return '#e2e8f0'; // slate-200 — no data
+  if (pct >= 10) return '#f43f5e';   // rose-500   — 10%+ flagged
+  if (pct >= 5) return '#fb923c';    // orange-400 — 5-10%
+  if (pct >= 2) return '#facc15';    // yellow-400 — 2-5%
+  return '#86efac';                   // emerald-300 — <2%
+}
+
+/** Compute flagged percentage for a heatmap entry. */
+function flaggedPct(entry: HeatmapEntry): number {
+  return entry.provider_count > 0
+    ? (entry.flagged_count / entry.provider_count) * 100
+    : 0;
 }
 
 export function RiskMap() {
@@ -57,7 +64,7 @@ export function RiskMap() {
   }, [data]);
 
   const sortedByRisk = React.useMemo(
-    () => [...data].sort((a, b) => b.avg_risk_score - a.avg_risk_score),
+    () => [...data].sort((a, b) => flaggedPct(b) - flaggedPct(a)),
     [data],
   );
 
@@ -78,12 +85,12 @@ export function RiskMap() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Choropleth Map */}
           <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative">
-            <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-2">
+              <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-2">
               <Map className="w-4 h-4 text-indigo-500" /> State Risk Choropleth
-              <InfoButton title="State Risk Choropleth">US map where each state is colored by its average provider risk score. Green indicates low average risk (below 20), yellow moderate (20–35), orange elevated (35–50), and red high (50+). Gray states have no data. Hover over any state to see provider count, average score, and flagged count.</InfoButton>
+              <InfoButton title="State Risk Choropleth">US map where each state is colored by the percentage of its providers that are flagged (score 51+). Red indicates 10%+ flagged, orange 5-10%, yellow 2-5%, and green below 2%. Gray states have no data. Hover over any state to see provider count, flagged percentage, and average score.</InfoButton>
             </h2>
 
-            <div role="img" aria-label="United States choropleth map showing average provider risk scores by state">
+            <div role="img" aria-label="United States choropleth map showing percentage of flagged providers by state">
               <ComposableMap
                 projection="geoAlbersUsa"
                 projectionConfig={{ scale: 1000 }}
@@ -101,7 +108,7 @@ export function RiskMap() {
                         <Geography
                           key={geo.rsmKey}
                           geography={geo}
-                          fill={fillForRisk(entry?.avg_risk_score)}
+                          fill={fillForFlaggedPct(entry ? flaggedPct(entry) : undefined)}
                           stroke="#fff"
                           strokeWidth={0.5}
                           style={{
@@ -137,25 +144,25 @@ export function RiskMap() {
                 <p className="font-bold text-sm">{tooltip.entry.state}</p>
                 <div className="flex gap-4 mt-1.5 text-slate-300">
                   <span>Providers: <b className="text-white">{tooltip.entry.provider_count}</b></span>
+                  <span>Flagged: <b className="text-rose-400">{tooltip.entry.flagged_count} ({flaggedPct(tooltip.entry).toFixed(1)}%)</b></span>
                   <span>Avg Risk: <b className="text-white">{tooltip.entry.avg_risk_score.toFixed(1)}</b></span>
-                  <span>Flagged: <b className="text-rose-400">{tooltip.entry.flagged_count}</b></span>
                 </div>
               </div>
             )}
 
             {/* Legend */}
             <div className="flex items-center gap-4 mt-3 text-xs font-bold text-slate-500">
-              <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: '#86efac' }} /> Low (&lt;20)</div>
-              <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: '#facc15' }} /> Moderate (20-35)</div>
-              <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: '#fb923c' }} /> Elevated (35-50)</div>
-              <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: '#f43f5e' }} /> High (50+)</div>
+              <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: '#86efac' }} /> &lt;2% flagged</div>
+              <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: '#facc15' }} /> 2-5%</div>
+              <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: '#fb923c' }} /> 5-10%</div>
+              <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: '#f43f5e' }} /> 10%+</div>
               <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: '#e2e8f0' }} /> No data</div>
             </div>
           </div>
 
           {/* Rankings */}
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-4"><TrendingUp className="w-4 h-4 text-rose-500" /> Highest Risk States <InfoButton title="Highest Risk States">States ranked by average provider risk score, highest first. Shows the number of providers and how many are flagged in each state. Click any state to navigate to the Providers page filtered to that state.</InfoButton></h2>
+            <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-4"><TrendingUp className="w-4 h-4 text-rose-500" /> Highest Risk States <InfoButton title="Highest Risk States">States ranked by percentage of providers flagged (score 51+). Shows provider count, flagged count, and flagged rate. Click any state to navigate to the Providers page filtered to that state.</InfoButton></h2>
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
               {sortedByRisk.slice(0, 20).map((entry, i) => (
                 <Link
@@ -170,7 +177,7 @@ export function RiskMap() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-slate-500">{entry.flagged_count} flagged</span>
-                    <span className={cn('text-sm font-bold', scoreColor(entry.avg_risk_score))}>{entry.avg_risk_score.toFixed(1)}</span>
+                    <span className={cn('text-sm font-bold', flaggedPct(entry) >= 10 ? 'text-rose-700' : flaggedPct(entry) >= 5 ? 'text-amber-700' : 'text-emerald-700')}>{flaggedPct(entry).toFixed(1)}%</span>
                   </div>
                 </Link>
               ))}

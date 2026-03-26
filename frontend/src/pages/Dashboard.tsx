@@ -4,7 +4,6 @@ import { cn } from '../lib/utils';
 import { useDashboard, usePendingCases } from '../lib/hooks';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatCompactUSD, scoreColor, providerDisplayName } from '../lib/helpers';
-import { FreshnessBanner } from '../components/FreshnessBanner';
 import { InfoButton } from '../components/InfoButton';
 
 export function Dashboard() {
@@ -31,9 +30,6 @@ export function Dashboard() {
           <p className="text-slate-500 text-sm mt-1">Overview of provider risk landscape and pending actions.</p>
         </div>
       </div>
-
-      {/* Freshness Banner */}
-      <FreshnessBanner />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

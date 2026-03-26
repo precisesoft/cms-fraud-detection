@@ -43,7 +43,7 @@ import {
 vi.mock("../api", () => ({
   getDashboard: vi.fn().mockResolvedValue({ total_providers: 10 }),
   getHeatmap: vi.fn().mockResolvedValue([]),
-  getPendingCases: vi.fn().mockResolvedValue({ items: [] }),
+  getPendingCases: vi.fn().mockResolvedValue({ total_count: 0, cases: [] }),
   getProviders: vi.fn().mockResolvedValue({ items: [], total: 0 }),
   getProviderDetail: vi.fn().mockResolvedValue({ npi: "123" }),
   getProviderScoreDetails: vi.fn().mockResolvedValue({}),

@@ -55,7 +55,7 @@ describe("Analytics", () => {
   it("renders the empty state with the anchored composer controls", () => {
     const { container } = render(<Analytics />);
 
-    expect(screen.getByText("Analytics")).toBeInTheDocument();
+    expect(screen.getByText("AI Assistant")).toBeInTheDocument();
     expect(screen.getByText("Ask anything about the data")).toBeInTheDocument();
     expect(
       screen.getByLabelText("Ask a question about the data"),

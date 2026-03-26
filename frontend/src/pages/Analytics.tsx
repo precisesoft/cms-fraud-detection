@@ -188,8 +188,8 @@ export function Analytics() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-slate-900">Analytics</h1>
-            <InfoButton title="AI-Powered Analytics">Natural language analytics powered by text-to-SQL. Type questions about the data in plain English — the system converts your question to a SQL query, executes it against the database, and returns results with auto-generated charts and tables. Powered by Claude on AWS Bedrock.</InfoButton>
+            <h1 className="text-2xl font-bold text-slate-900">AI Assistant</h1>
+            <InfoButton title="AI Assistant">Natural language analytics powered by text-to-SQL. Type questions about the data in plain English — the system converts your question to a SQL query, executes it against the database, and returns results with auto-generated charts and tables. Powered by Claude on AWS Bedrock.</InfoButton>
           </div>
           <p className="text-sm text-slate-500">
             Ask questions about the data in natural language. Powered by

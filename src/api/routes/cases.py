@@ -24,7 +24,6 @@ from src.api.schemas import (
     CaseActionsListResponse,
     UserResponse,
 )
-from src.scoring.taxonomy import HIGH_RISK_SCORE_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
@@ -121,30 +120,53 @@ async def list_actions(
     )
 
 
-@router.get("/pending", response_model=list[dict])
+@router.get("/pending", response_model=dict)
 async def list_pending(
     limit: int = 50,
+    risk_band: str = "",
     conn: AsyncConnection = Depends(get_db),
-) -> list[dict]:
-    """Get high-risk cases that have no action yet (analyst inbox).
+) -> dict:
+    """Get cases awaiting analyst action (investigation inbox).
 
-    Falls back to returning all high-risk cases if the ``case_actions``
-    table has not been created yet (migration 001 not applied).
+    Returns cases across all risk bands by default, or filtered to a
+    specific band.  Includes ``total_count`` (untruncated by LIMIT) so
+    the UI can show the real scope.
+
+    Falls back to returning cases without join on ``case_actions``
+    if that table has not been created yet.
     """
     try:
-        return await _pending_with_actions(conn, limit)
+        return await _pending_with_actions(conn, limit, risk_band)
     except Exception:
         # Rollback the failed transaction before retrying with the fallback
         await conn.rollback()
-        logger.warning("case_actions table missing — returning unfiltered high-risk cases")
-        return await _pending_fallback(conn, limit)
+        logger.warning("case_actions table missing — returning unfiltered cases")
+        return await _pending_fallback(conn, limit, risk_band)
 
 
-async def _pending_with_actions(conn: AsyncConnection, limit: int) -> list[dict]:
-    """Return high-risk cases excluding those already acted on."""
+async def _pending_with_actions(conn: AsyncConnection, limit: int, risk_band: str) -> dict:
+    """Return pending cases excluding those already acted on."""
+    band_clause, band_params = _band_clause(risk_band)
     async with conn.cursor() as cur:
+        # Total count (without LIMIT)
         await cur.execute(
-            """
+            f"""
+            SELECT COUNT(*) FROM provider_service_cases psc
+            LEFT JOIN (
+                SELECT DISTINCT ON (case_id) case_id, action
+                FROM case_actions
+                ORDER BY case_id, created_at DESC
+            ) latest ON latest.case_id = psc.case_id
+            WHERE latest.case_id IS NULL{band_clause}
+            """,
+            band_params,
+        )
+        row = await cur.fetchone()
+        total_count = row[0] if row else 0
+
+        # Paginated results
+        await cur.execute(
+            f"""
             SELECT psc.case_id, psc.npi,
                    psc.provider_last_org_name,
                    psc.hcpcs_cd, psc.hcpcs_desc,
@@ -156,37 +178,67 @@ async def _pending_with_actions(conn: AsyncConnection, limit: int) -> list[dict]
                 FROM case_actions
                 ORDER BY case_id, created_at DESC
             ) latest ON latest.case_id = psc.case_id
-            WHERE latest.case_id IS NULL
-              AND psc.seed_risk_score >= %s
+            WHERE latest.case_id IS NULL{band_clause}
             ORDER BY psc.seed_risk_score DESC
             LIMIT %s
             """,
-            (HIGH_RISK_SCORE_THRESHOLD, limit),
+            (*band_params, limit),
         )
         cols = [desc.name for desc in cur.description] if cur.description else []
         rows = await cur.fetchall()
 
-    return [dict(zip(cols, row)) for row in rows]
+    return {
+        "total_count": total_count,
+        "cases": [dict(zip(cols, row)) for row in rows],
+    }
 
 
-async def _pending_fallback(conn: AsyncConnection, limit: int) -> list[dict]:
-    """Return high-risk cases without filtering by actions (table missing)."""
+async def _pending_fallback(conn: AsyncConnection, limit: int, risk_band: str) -> dict:
+    """Return cases without filtering by actions (table missing)."""
+    band_clause, band_params = _band_clause_bare(risk_band)
     async with conn.cursor() as cur:
         await cur.execute(
-            """
+            f"""
+            SELECT COUNT(*) FROM provider_service_cases
+            WHERE 1=1{band_clause}
+            """,
+            band_params,
+        )
+        row = await cur.fetchone()
+        total_count = row[0] if row else 0
+
+        await cur.execute(
+            f"""
             SELECT case_id, npi,
                    provider_last_org_name,
                    hcpcs_cd, hcpcs_desc,
                    seed_risk_score, seed_case_label,
                    avg_submitted_charge, tot_srvcs
             FROM provider_service_cases
-            WHERE seed_risk_score >= %s
+            WHERE 1=1{band_clause}
             ORDER BY seed_risk_score DESC
             LIMIT %s
             """,
-            (HIGH_RISK_SCORE_THRESHOLD, limit),
+            (*band_params, limit),
         )
         cols = [desc.name for desc in cur.description] if cur.description else []
         rows = await cur.fetchall()
 
-    return [dict(zip(cols, row)) for row in rows]
+    return {
+        "total_count": total_count,
+        "cases": [dict(zip(cols, row)) for row in rows],
+    }
+
+
+def _band_clause(risk_band: str) -> tuple[str, tuple]:
+    """Build optional SQL WHERE fragment with ``psc.`` table alias (for JOINs)."""
+    if risk_band in ("high_risk", "review", "stable"):
+        return " AND psc.seed_case_label = %s", (risk_band,)
+    return "", ()
+
+
+def _band_clause_bare(risk_band: str) -> tuple[str, tuple]:
+    """Build optional SQL WHERE fragment without table alias (single-table queries)."""
+    if risk_band in ("high_risk", "review", "stable"):
+        return " AND seed_case_label = %s", (risk_band,)
+    return "", ()

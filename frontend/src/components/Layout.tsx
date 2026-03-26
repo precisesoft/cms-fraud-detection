@@ -9,10 +9,9 @@ import {
   BriefcaseBusiness,
   Map as MapIcon,
   ShieldCheck,
-  Database,
+  Bot,
   Menu,
   X,
-  CheckCircle2,
   LogOut,
   Upload,
 } from "lucide-react";
@@ -35,8 +34,7 @@ const navigation: NavItem[] = [
   { name: "Investigations", href: "/investigations", icon: BriefcaseBusiness },
   { name: "Risk Map", href: "/risk-map", icon: MapIcon },
   { name: "Fairness", href: "/fairness", icon: ShieldCheck },
-  { name: "Analytics", href: "/analytics", icon: Database },
-  { name: "Validation", href: "/validation", icon: CheckCircle2 },
+  { name: "AI Assistant", href: "/analytics", icon: Bot },
   { name: "Data", href: "/data", icon: Upload, adminOnly: true },
 ];
 

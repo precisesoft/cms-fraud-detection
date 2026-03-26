@@ -612,17 +612,24 @@ describe("getCaseActions", () => {
 
 describe("getPendingCases", () => {
   it("calls /api/cases/pending with default limit", async () => {
-    fetchMock.mockReturnValue(okResponse([]));
+    fetchMock.mockReturnValue(okResponse({ total_count: 0, cases: [] }));
     await getPendingCases();
     const [url] = fetchMock.mock.calls[0] as [string];
     expect(url).toContain("/api/cases/pending?limit=50");
   });
 
   it("respects custom limit", async () => {
-    fetchMock.mockReturnValue(okResponse([]));
+    fetchMock.mockReturnValue(okResponse({ total_count: 0, cases: [] }));
     await getPendingCases(10);
     const [url] = fetchMock.mock.calls[0] as [string];
     expect(url).toContain("limit=10");
+  });
+
+  it("passes risk_band query parameter when provided", async () => {
+    fetchMock.mockReturnValue(okResponse({ total_count: 0, cases: [] }));
+    await getPendingCases(50, "high_risk");
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toContain("risk_band=high_risk");
   });
 });
 

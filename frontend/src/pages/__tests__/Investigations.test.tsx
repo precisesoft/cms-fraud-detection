@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { Investigations } from "../Investigations";
 import { getPendingCases } from "../../lib/api";
+import type { PendingCasesResponse } from "../../lib/api";
 
 vi.mock("../../contexts/AuthContext", () => ({
   useAuth: () => ({
@@ -60,6 +61,11 @@ const mockCases = [
   },
 ];
 
+const allCasesResp: PendingCasesResponse = {
+  total_count: 3,
+  cases: mockCases,
+};
+
 function renderInvestigations() {
   return render(
     <MemoryRouter>
@@ -71,14 +77,14 @@ function renderInvestigations() {
 describe("Investigations", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getPendingCases).mockResolvedValue(mockCases);
+    vi.mocked(getPendingCases).mockResolvedValue(allCasesResp);
   });
 
   it("renders Investigations heading", async () => {
     renderInvestigations();
     expect(screen.getByText("Investigations")).toBeInTheDocument();
     await waitFor(() => {
-      expect(getPendingCases).toHaveBeenCalledWith(100);
+      expect(getPendingCases).toHaveBeenCalledWith(200, "");
     });
   });
 
@@ -120,28 +126,50 @@ describe("Investigations", () => {
     expect(select).toHaveValue("");
   });
 
-  it("filtering by high_risk band shows only high_risk cases", async () => {
+  it("filtering by high_risk band re-fetches with risk_band param", async () => {
     const user = userEvent.setup();
+    // First call returns all cases
+    vi.mocked(getPendingCases).mockResolvedValueOnce(allCasesResp);
+    // Second call (after selecting high_risk) returns only high_risk
+    vi.mocked(getPendingCases).mockResolvedValueOnce({
+      total_count: 1,
+      cases: [mockCases[0]],
+    });
     renderInvestigations();
     await waitFor(() =>
       expect(screen.getByText("Alpha Clinic")).toBeInTheDocument(),
     );
     const select = screen.getByRole("combobox");
     await user.selectOptions(select, "high_risk");
-    expect(screen.getByText("Alpha Clinic")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(getPendingCases).toHaveBeenCalledWith(200, "high_risk");
+    });
+    await waitFor(() => {
+      expect(screen.getByText("Alpha Clinic")).toBeInTheDocument();
+    });
     expect(screen.queryByText("Beta Health")).not.toBeInTheDocument();
     expect(screen.queryByText("Gamma Medical")).not.toBeInTheDocument();
   });
 
-  it("filtering by review band shows only review cases", async () => {
+  it("filtering by review band re-fetches with risk_band param", async () => {
     const user = userEvent.setup();
+    vi.mocked(getPendingCases).mockResolvedValueOnce(allCasesResp);
+    vi.mocked(getPendingCases).mockResolvedValueOnce({
+      total_count: 1,
+      cases: [mockCases[1]],
+    });
     renderInvestigations();
     await waitFor(() =>
       expect(screen.getByText("Beta Health")).toBeInTheDocument(),
     );
     await user.selectOptions(screen.getByRole("combobox"), "review");
+    await waitFor(() => {
+      expect(getPendingCases).toHaveBeenCalledWith(200, "review");
+    });
+    await waitFor(() => {
+      expect(screen.queryByText("Alpha Clinic")).not.toBeInTheDocument();
+    });
     expect(screen.getByText("Beta Health")).toBeInTheDocument();
-    expect(screen.queryByText("Alpha Clinic")).not.toBeInTheDocument();
     expect(screen.queryByText("Gamma Medical")).not.toBeInTheDocument();
   });
 
@@ -197,20 +225,26 @@ describe("Investigations", () => {
   });
 
   it("shows All Clear when no cases are returned", async () => {
-    vi.mocked(getPendingCases).mockResolvedValue([]);
+    vi.mocked(getPendingCases).mockResolvedValue({
+      total_count: 0,
+      cases: [],
+    });
     renderInvestigations();
     await waitFor(() => {
       expect(screen.getByText("All Clear")).toBeInTheDocument();
     });
   });
 
-  it("shows count badge with filtered / total when filter is active", async () => {
+  it("shows count badge with filtered / total when min score filter is active", async () => {
     const user = userEvent.setup();
     renderInvestigations();
     await waitFor(() =>
       expect(screen.getByText("Alpha Clinic")).toBeInTheDocument(),
     );
-    await user.selectOptions(screen.getByRole("combobox"), "high_risk");
+    const input = screen.getByPlaceholderText("Min score");
+    await user.clear(input);
+    await user.type(input, "50");
+    // displayed=1 (only Alpha 88>=50), totalCount=3
     expect(screen.getByText(/1 of 3 cases/)).toBeInTheDocument();
   });
 
@@ -286,7 +320,7 @@ describe("Investigations", () => {
   });
 
   it("does not update state after unmount", async () => {
-    let resolve: ((v: typeof mockCases) => void) | undefined;
+    let resolve: ((v: PendingCasesResponse) => void) | undefined;
     vi.mocked(getPendingCases).mockReturnValue(
       new Promise((r) => {
         resolve = r;
@@ -294,7 +328,7 @@ describe("Investigations", () => {
     );
     const { unmount } = renderInvestigations();
     unmount();
-    resolve?.(mockCases);
+    resolve?.({ total_count: 3, cases: mockCases });
     await new Promise((r) => setTimeout(r, 0));
   });
 });

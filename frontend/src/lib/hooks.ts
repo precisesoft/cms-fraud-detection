@@ -86,7 +86,10 @@ export function useHeatmap() {
 export function usePendingCases(limit = 10) {
   return useQuery({
     queryKey: queryKeys.pendingCases(limit),
-    queryFn: () => getPendingCases(limit),
+    queryFn: async () => {
+      const resp = await getPendingCases(limit);
+      return resp.cases;
+    },
   });
 }
 

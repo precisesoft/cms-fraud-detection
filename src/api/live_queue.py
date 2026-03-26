@@ -132,16 +132,16 @@ def _high_risk_filter() -> str:
     return (
         "service_volume_peer_z >= 2.0 OR services_per_bene_peer_z >= 2.0 "
         "OR submitted_to_allowed_peer_z >= 2.0 OR payment_peer_z >= 2.0 "
-        "OR present_in_2026_revocation_file = true"
+        "OR present_in_2026_revocation_file = 1"
     )
 
 
 def _stable_filter() -> str:
     """SQL WHERE clause fragment for likely-stable cases."""
     return (
-        "present_in_2025_enrollment_file = true "
+        "present_in_2025_enrollment_file = 1 "
         "AND (present_in_2026_revocation_file IS NULL "
-        "     OR present_in_2026_revocation_file = false) "
+        "     OR present_in_2026_revocation_file = 0) "
         "AND medicare_participating_ind = 'Y' "
         "AND COALESCE(service_volume_peer_z, 0) < 2.0 "
         "AND COALESCE(services_per_bene_peer_z, 0) < 2.0"
@@ -151,7 +151,7 @@ def _stable_filter() -> str:
 def _review_filter() -> str:
     """SQL WHERE clause fragment for review-band cases (middle ground)."""
     return (
-        "present_in_2025_enrollment_file = true "
+        "present_in_2025_enrollment_file = 1 "
         "AND (COALESCE(service_volume_peer_z, 0) BETWEEN 1.0 AND 3.0 "
         "     OR COALESCE(services_per_bene_peer_z, 0) BETWEEN 1.0 AND 3.0 "
         "     OR COALESCE(submitted_to_allowed_peer_z, 0) BETWEEN 1.0 AND 3.0)"

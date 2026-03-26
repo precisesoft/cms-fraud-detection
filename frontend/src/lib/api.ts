@@ -656,8 +656,15 @@ export function getCaseActions(caseId: string) {
   return request<CaseActionsListResponse>(`/api/cases/${caseId}/actions`);
 }
 
-export function getPendingCases(limit = 50) {
-  return request<PendingCase[]>(`/api/cases/pending?limit=${limit}`);
+export interface PendingCasesResponse {
+  total_count: number;
+  cases: PendingCase[];
+}
+
+export function getPendingCases(limit = 50, risk_band = "") {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (risk_band) params.set("risk_band", risk_band);
+  return request<PendingCasesResponse>(`/api/cases/pending?${params}`);
 }
 
 export function getValidation() {

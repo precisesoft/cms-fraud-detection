@@ -41,9 +41,6 @@ const Fairness = lazy(() =>
 const Analytics = lazy(() =>
   import("./pages/Analytics").then((m) => ({ default: m.Analytics })),
 );
-const Validation = lazy(() =>
-  import("./pages/Validation").then((m) => ({ default: m.Validation })),
-);
 const LiveMonitor = lazy(() =>
   import("./pages/LiveMonitor").then((m) => ({ default: m.LiveMonitor })),
 );
@@ -83,7 +80,6 @@ export default function App() {
               <Route path="risk-map" element={<RiskMap />} />
               <Route path="fairness" element={<Fairness />} />
               <Route path="analytics" element={<Analytics />} />
-              <Route path="validation" element={<Validation />} />
               <Route path="live" element={<LiveMonitorWithProvider />} />
               <Route path="data" element={<DataManagement />} />
             </Route>

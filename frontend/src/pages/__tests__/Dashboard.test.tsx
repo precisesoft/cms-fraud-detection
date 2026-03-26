@@ -55,19 +55,22 @@ const mockStats = {
   ],
 };
 
-const mockPending = [
-  {
-    case_id: "CASE001",
-    npi: "2222222222",
-    provider_last_org_name: "Beta Labs",
-    hcpcs_cd: "99213",
-    hcpcs_desc: "Office Visit",
-    seed_risk_score: 72,
-    seed_case_label: null,
-    avg_submitted_charge: 150,
-    tot_srvcs: null,
-  },
-];
+const mockPending = {
+  total_count: 1,
+  cases: [
+    {
+      case_id: "CASE001",
+      npi: "2222222222",
+      provider_last_org_name: "Beta Labs",
+      hcpcs_cd: "99213",
+      hcpcs_desc: "Office Visit",
+      seed_risk_score: 72,
+      seed_case_label: null,
+      avg_submitted_charge: 150,
+      tot_srvcs: null,
+    },
+  ],
+};
 
 function renderDashboard() {
   const queryClient = new QueryClient({
@@ -103,7 +106,7 @@ describe("Dashboard", () => {
     expect(screen.getByText("5,678")).toBeInTheDocument();
     // "50" appears in both KPI card and Risk Distribution
     expect(screen.getAllByText("50").length).toBeGreaterThanOrEqual(1);
-    // Pending Review count comes from stats.pending_count = 42
+    // Pending Review count from stats.pending_count = 42
     expect(screen.getByText("42")).toBeInTheDocument();
   });
 
@@ -182,7 +185,7 @@ describe("Dashboard", () => {
   });
 
   it("shows empty state when no pending cases", async () => {
-    vi.mocked(getPendingCases).mockResolvedValue([]);
+    vi.mocked(getPendingCases).mockResolvedValue({ total_count: 0, cases: [] });
     renderDashboard();
     await waitFor(() => {
       expect(
@@ -240,19 +243,22 @@ describe("Dashboard", () => {
   });
 
   it("shows fallback text when pending case fields are null", async () => {
-    vi.mocked(getPendingCases).mockResolvedValue([
-      {
-        case_id: "NULL001",
-        npi: "8888888888",
-        provider_last_org_name: null,
-        hcpcs_cd: "99213",
-        hcpcs_desc: null,
-        seed_risk_score: null,
-        seed_case_label: null,
-        avg_submitted_charge: 200,
-        tot_srvcs: null,
-      },
-    ]);
+    vi.mocked(getPendingCases).mockResolvedValue({
+      total_count: 1,
+      cases: [
+        {
+          case_id: "NULL001",
+          npi: "8888888888",
+          provider_last_org_name: null,
+          hcpcs_cd: "99213",
+          hcpcs_desc: null,
+          seed_risk_score: null,
+          seed_case_label: null,
+          avg_submitted_charge: 200,
+          tot_srvcs: null,
+        },
+      ],
+    });
     renderDashboard();
     await waitFor(() => {
       // Falls back to npi when provider_last_org_name is null

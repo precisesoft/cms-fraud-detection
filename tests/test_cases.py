@@ -224,12 +224,15 @@ async def test_list_pending():
         ),
     ]
     conn, cur = _mock_conn(rows, description=desc)
+    # list_pending does two queries: fetchone (COUNT) then fetchall (rows)
+    cur.fetchone = AsyncMock(return_value=(1,))
 
     result = await list_pending(limit=10, conn=conn)
 
-    assert len(result) == 1
-    assert result[0]["case_id"] == "case-100"
-    assert result[0]["seed_risk_score"] == 85
+    assert result["total_count"] == 1
+    assert len(result["cases"]) == 1
+    assert result["cases"][0]["case_id"] == "case-100"
+    assert result["cases"][0]["seed_risk_score"] == 85
 
 
 # ---------------------------------------------------------------------------

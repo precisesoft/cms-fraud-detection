@@ -50,16 +50,22 @@ function scoreTextSize(label: string | null | undefined): string {
 
 export function Investigations() {
   const [cases, setCases] = React.useState<PendingCase[]>([]);
+  const [totalCount, setTotalCount] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
   const [filterBand, setFilterBand] = React.useState("");
   const [minScore, setMinScore] = React.useState("");
   const [sortDir, setSortDir] = React.useState<SortDir>("desc");
 
+  // Fetch cases from the API — server-side risk_band filter
   React.useEffect(() => {
     let active = true;
-    getPendingCases(100)
-      .then((d) => {
-        if (active) setCases(d);
+    setLoading(true);
+    getPendingCases(200, filterBand)
+      .then((resp) => {
+        if (active) {
+          setCases(resp.cases);
+          setTotalCount(resp.total_count);
+        }
       })
       .catch(() => {})
       .finally(() => {
@@ -68,12 +74,11 @@ export function Investigations() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [filterBand]);
 
+  // Client-side min-score + sort (risk_band already handled server-side)
   const displayed = React.useMemo(() => {
     let result = [...cases];
-    if (filterBand)
-      result = result.filter((c) => c.seed_case_label === filterBand);
     const min = minScore !== "" ? Number(minScore) : null;
     if (min !== null && !isNaN(min))
       result = result.filter((c) => (c.seed_risk_score ?? 0) >= min);
@@ -83,7 +88,7 @@ export function Investigations() {
       return sortDir === "desc" ? bScore - aScore : aScore - bScore;
     });
     return result;
-  }, [cases, filterBand, minScore, sortDir]);
+  }, [cases, minScore, sortDir]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -91,17 +96,17 @@ export function Investigations() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-slate-900">Investigations</h1>
-            <InfoButton title="Pending Investigations">High-risk cases requiring analyst review, sorted by risk score. Each card shows the provider, HCPCS code, service volume, submitted charge, and risk band. Click any case to open the full investigation with AI-generated narrative, risk signals, peer comparisons, and action buttons.</InfoButton>
+            <InfoButton title="Pending Investigations">Cases requiring analyst review, sorted by risk score. Each card shows the provider, HCPCS code, service volume, submitted charge, and risk band. Click any case to open the full investigation with AI-generated narrative, risk signals, peer comparisons, and action buttons.</InfoButton>
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            Pending high-risk cases requiring analyst review and action.
+            Cases pending analyst review and action.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-slate-500 font-medium bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
           <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-          {displayed.length === cases.length
-            ? `${cases.length} cases pending review`
-            : `${displayed.length} of ${cases.length} cases`}
+          {displayed.length < totalCount
+            ? `${displayed.length} of ${totalCount.toLocaleString()} cases`
+            : `${totalCount.toLocaleString()} cases pending review`}
         </div>
       </div>
 
