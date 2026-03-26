@@ -2,6 +2,7 @@ import React, { Suspense } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   LayoutDashboard,
+  Activity,
   Users,
   FileText,
   BriefcaseBusiness,
@@ -26,6 +27,7 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Live Monitor", href: "/live", icon: Activity },
   { name: "Providers", href: "/providers", icon: Users },
   { name: "Claims", href: "/claims", icon: FileText },
   { name: "Investigations", href: "/investigations", icon: BriefcaseBusiness },
