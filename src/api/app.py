@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import asyncio
-import logging
 import os
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,60 +11,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.api.auth import get_current_user
 from src.api.deps import close_pool, open_pool
 from src.api.graph_client import close_neo4j, open_neo4j
-from src.api.live_queue import start_queue, stop_queue
-
-logger = logging.getLogger(__name__)
-
-
-async def _start_live_queue_background() -> None:
-    """Start the live queue after app startup without blocking readiness."""
-    try:
-        await start_queue()
-    except asyncio.CancelledError:
-        raise
-    except Exception:
-        logger.exception("Live queue startup failed")
-
-
-def _schedule_live_queue_startup(app: FastAPI) -> asyncio.Task[None]:
-    """Create and store the background task responsible for live queue startup."""
-    task = asyncio.create_task(_start_live_queue_background())
-    app.state.live_queue_task = task
-    return task
-
-
-async def _shutdown_live_queue_startup(task: asyncio.Task[None] | None) -> None:
-    """Cancel or drain the background startup task during shutdown."""
-    if task is None:
-        return
-
-    if not task.done():
-        task.cancel()
-        with suppress(asyncio.CancelledError):
-            await task
-        return
-
-    with suppress(asyncio.CancelledError):
-        task.result()
+from src.api.live_queue import stop_queue
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manage startup/shutdown of the async DB pool, Neo4j driver, and live queue."""
+    """Manage startup/shutdown of the async DB pool and optional graph client."""
     await open_pool()
     try:
         await open_neo4j()
     except Exception:
         pass  # Neo4j is optional — API works without it
-
-    live_queue_task = _schedule_live_queue_startup(app)
-    try:
-        yield
-    finally:
-        await _shutdown_live_queue_startup(live_queue_task)
-        await stop_queue()
-        await close_neo4j()
-        await close_pool()
+    yield
+    await stop_queue()
+    await close_neo4j()
+    await close_pool()
 
 
 def create_app() -> FastAPI:

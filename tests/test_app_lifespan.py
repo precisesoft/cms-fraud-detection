@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import asyncio
-from asyncio import Future
 from contextlib import asynccontextmanager
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
@@ -32,7 +30,6 @@ _LIFESPAN_PATCHES = {
     "src.api.app.open_neo4j": AsyncMock(),
     "src.api.app.close_neo4j": AsyncMock(),
     "src.api.app.stop_queue": AsyncMock(),
-    "src.api.app._shutdown_live_queue_startup": AsyncMock(),
 }
 
 
@@ -201,8 +198,6 @@ async def test_lifespan_neo4j_failure_does_not_block_startup() -> None:
 
     mock_open_pool = AsyncMock()
     mock_open_neo4j = AsyncMock(side_effect=ConnectionRefusedError("Neo4j down"))
-    mock_schedule_live_queue = Mock(return_value=Future())
-    mock_schedule_live_queue.return_value.set_result(None)
     mock_app = AsyncMock()
 
     with (
@@ -211,20 +206,17 @@ async def test_lifespan_neo4j_failure_does_not_block_startup() -> None:
         patch("src.api.app.open_neo4j", mock_open_neo4j),
         patch("src.api.app.close_neo4j", AsyncMock()),
         patch("src.api.app.stop_queue", AsyncMock()),
-        patch("src.api.app._schedule_live_queue_startup", mock_schedule_live_queue),
-        patch("src.api.app._shutdown_live_queue_startup", AsyncMock()),
     ):
         async with lifespan(mock_app):
             pass  # startup succeeded despite Neo4j failure
 
     mock_open_pool.assert_awaited_once()
     mock_open_neo4j.assert_awaited_once()
-    mock_schedule_live_queue.assert_called_once_with(mock_app)
 
 
 @pytest.mark.asyncio
 async def test_lifespan_calls_open_and_close() -> None:
-    """Lifespan opens dependencies, schedules queue startup, and closes cleanly."""
+    """Lifespan opens dependencies and closes cleanly."""
     from src.api.app import lifespan
 
     mock_open = AsyncMock()
@@ -232,10 +224,6 @@ async def test_lifespan_calls_open_and_close() -> None:
     mock_neo_open = AsyncMock()
     mock_neo_close = AsyncMock()
     mock_stop_queue = AsyncMock()
-    mock_shutdown_live_queue = AsyncMock()
-    mock_task = Future()
-    mock_task.set_result(None)
-    mock_schedule_live_queue = Mock(return_value=mock_task)
     mock_app = AsyncMock()
 
     with (
@@ -244,8 +232,6 @@ async def test_lifespan_calls_open_and_close() -> None:
         patch("src.api.app.open_neo4j", mock_neo_open),
         patch("src.api.app.close_neo4j", mock_neo_close),
         patch("src.api.app.stop_queue", mock_stop_queue),
-        patch("src.api.app._schedule_live_queue_startup", mock_schedule_live_queue),
-        patch("src.api.app._shutdown_live_queue_startup", mock_shutdown_live_queue),
     ):
         async with lifespan(mock_app):
             pass
@@ -254,18 +240,4 @@ async def test_lifespan_calls_open_and_close() -> None:
     mock_close.assert_awaited_once()
     mock_neo_open.assert_awaited_once()
     mock_neo_close.assert_awaited_once()
-    mock_schedule_live_queue.assert_called_once_with(mock_app)
-    mock_shutdown_live_queue.assert_awaited_once_with(mock_task)
     mock_stop_queue.assert_awaited_once()
-
-
-@pytest.mark.asyncio
-async def test_shutdown_live_queue_startup_cancels_pending_task() -> None:
-    """Pending live queue startup tasks are cancelled during shutdown."""
-    from src.api.app import _shutdown_live_queue_startup
-
-    task = asyncio.create_task(asyncio.sleep(60))
-
-    await _shutdown_live_queue_startup(task)
-
-    assert task.cancelled()

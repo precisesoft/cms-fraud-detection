@@ -10,8 +10,8 @@ Key properties:
   - Curated geographic + specialty diversity, not ORDER BY RANDOM()
   - Queue loops forever: when exhausted, reshuffles and replays
 
-Lifecycle: start_queue() is called once during FastAPI lifespan;
-stop_queue() is called during shutdown.
+Lifecycle: start_queue() is triggered lazily by the live monitor routes;
+stop_queue() is called during API shutdown.
 """
 
 from __future__ import annotations
@@ -578,7 +578,7 @@ queue_manager = QueueManager()
 
 
 async def start_queue() -> None:
-    """Called from FastAPI lifespan on startup."""
+    """Start the queue on demand from the live monitor routes."""
     await queue_manager.start()
 
 

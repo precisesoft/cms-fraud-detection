@@ -22,11 +22,17 @@ import logging
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 
-from src.api.live_queue import queue_manager
+from src.api.live_queue import queue_manager, start_queue
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/live", tags=["live"])
+
+
+async def _ensure_queue_started() -> None:
+    """Start the shared queue lazily so API pod startup stays lightweight."""
+    if not queue_manager.running:
+        await start_queue()
 
 
 # ---------------------------------------------------------------------------
@@ -46,6 +52,8 @@ async def stream_claims(
 
     If tps > 0, updates the server-wide emission rate.
     """
+    await _ensure_queue_started()
+
     if tps > 0:
         queue_manager.set_tps(tps)
 
@@ -84,12 +92,14 @@ async def stream_claims(
 @router.get("/status")
 async def queue_status():
     """Return current queue status — size, position, TPS, subscribers."""
+    await _ensure_queue_started()
     return queue_manager.status()
 
 
 @router.post("/tps")
 async def set_tps(tps: float = Query(ge=0.1, le=20.0)):
     """Adjust the server-wide emission rate."""
+    await _ensure_queue_started()
     queue_manager.set_tps(tps)
     return {"tps": queue_manager.tps}
 
