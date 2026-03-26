@@ -94,7 +94,7 @@ REVOKED_PROVIDER = SignalDef(
     category=SignalCategory.enrollment,
     direction=SignalDirection.risk,
     description="Provider appears in 2026 revocation file",
-    points=25,
+    points=55,
 )
 
 NOT_IN_ENROLLMENT = SignalDef(
