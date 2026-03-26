@@ -4,10 +4,15 @@
 
 CMS loses an estimated **$60 billion annually** to improper payments across Medicare and Medicaid. Current detection is largely reactive — fraud is identified after payments are made, forcing a costly "pay-and-chase" cycle. Argus is a decision-support system that identifies anomalous provider billing patterns, surfaces evidence-backed risk cases, and provides explainable scores that human reviewers can act on **proactively, in real time**.
 
-**Live App**: [argus.precise-lab.com](https://argus.precise-lab.com) | **GitHub**: [precisesoft/cms-fraud-detection](https://github.com/precisesoft/cms-fraud-detection) | **Architecture**: [docs/architecture-v3.md](docs/architecture-v3.md)
+| Resource | Link |
+| -------- | ---- |
+| Live App | [argus.precise-lab.com](https://argus.precise-lab.com) |
+| GitHub | [precisesoft/cms-fraud-detection](https://github.com/precisesoft/cms-fraud-detection) |
+| Architecture | [docs/architecture-v3.md](docs/architecture-v3.md) |
+
 **Demo Script**: [docs/demo-script.md](docs/demo-script.md) | **Responsible AI**: [docs/responsible-ai-considerations.md](docs/responsible-ai-considerations.md) | **Path to Pilot**: [docs/path-to-cms-pilot.md](docs/path-to-cms-pilot.md)
 
-**Judge access note**: the live website is protected by HTTP basic auth during evaluation. If you have login issues, contact `arun.sanna@precissoft.com`.
+**Judge access note**: the live website is protected by HTTP basic auth during evaluation. If you have login issues, contact `arun.sanna@precise-soft.com`.
 
 ![Dashboard](docs/diagrams/Dashboard.png)
 
@@ -73,7 +78,7 @@ We didn't just build a scoring system — we validated it. We took all 335 revok
 **Source of truth**: [`data/validation/retrospective_results.json`](data/validation/retrospective_results.json) powers the API response and the judge-facing validation story.
 
 **Try it live**: [argus.precise-lab.com/api/validation](https://argus.precise-lab.com/api/validation)  
-The site is behind HTTP basic auth during judging. If access fails, contact `arun.sanna@precissoft.com`.
+The site is behind HTTP basic auth during judging. If access fails, contact `arun.sanna@precise-soft.com`.
 
 ---
 
