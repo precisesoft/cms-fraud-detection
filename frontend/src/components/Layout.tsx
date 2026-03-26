@@ -2,14 +2,13 @@ import React, { Suspense } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   LayoutDashboard,
-  Activity,
-  PlayCircle,
   Users,
   FileText,
   BriefcaseBusiness,
   Map as MapIcon,
-  ShieldCheck,
   Bot,
+  PlayCircle,
+  ShieldCheck,
   Menu,
   X,
   LogOut,
@@ -27,14 +26,13 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Live Monitor", href: "/live", icon: Activity },
-  { name: "Simulate", href: "/simulate", icon: PlayCircle },
   { name: "Providers", href: "/providers", icon: Users },
   { name: "Claims", href: "/claims", icon: FileText },
   { name: "Investigations", href: "/investigations", icon: BriefcaseBusiness },
   { name: "Risk Map", href: "/risk-map", icon: MapIcon },
-  { name: "Fairness", href: "/fairness", icon: ShieldCheck },
   { name: "AI Assistant", href: "/analytics", icon: Bot },
+  { name: "Simulate", href: "/simulate", icon: PlayCircle },
+  { name: "Fairness", href: "/fairness", icon: ShieldCheck },
   { name: "Data", href: "/data", icon: Upload, adminOnly: true },
 ];
 
