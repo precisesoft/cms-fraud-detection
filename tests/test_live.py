@@ -9,7 +9,7 @@ import pytest
 from fastapi import FastAPI
 
 from src.api.live_queue import QueueEvent, QueueManager
-from src.api.routes.live import router
+from src.api.routes.live import router, stream_claims
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -167,10 +167,8 @@ async def test_tps_endpoint(app, queue_mgr):
 @pytest.mark.asyncio
 async def test_stream_returns_sse_content_type(app, queue_mgr):
     with patch("src.api.routes.live.queue_manager", queue_mgr):
-        async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=app),
-            base_url="http://test",
-        ) as client:
-            async with client.stream("GET", "/api/live/stream") as resp:
-                assert resp.status_code == 200
-                assert "text/event-stream" in resp.headers["content-type"]
+        resp = await stream_claims(0.0)
+        assert resp.media_type == "text/event-stream"
+        assert resp.headers["Cache-Control"] == "no-cache"
+        assert resp.headers["Connection"] == "keep-alive"
+        assert resp.headers["X-Accel-Buffering"] == "no"
