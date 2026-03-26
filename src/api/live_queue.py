@@ -272,12 +272,8 @@ class QueueManager:
             high_risk_rows = await self._fetch_band_rows(
                 conn, "high_risk", BATCH_TARGETS["high_risk"]
             )
-            review_rows = await self._fetch_band_rows(
-                conn, "review", BATCH_TARGETS["review"]
-            )
-            stable_rows = await self._fetch_band_rows(
-                conn, "stable", BATCH_TARGETS["stable"]
-            )
+            review_rows = await self._fetch_band_rows(conn, "review", BATCH_TARGETS["review"])
+            stable_rows = await self._fetch_band_rows(conn, "stable", BATCH_TARGETS["stable"])
 
         high_risk_evts = [self._event_from_seed_row(row) for row in high_risk_rows]
         review_evts = [self._event_from_seed_row(row) for row in review_rows]

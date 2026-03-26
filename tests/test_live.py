@@ -132,9 +132,7 @@ class TestQueueManager:
         assert queue_mgr.running is True
 
     @pytest.mark.asyncio
-    async def test_broadcast_replaces_oldest_for_slow_subscriber(
-        self, queue_mgr: QueueManager
-    ):
+    async def test_broadcast_replaces_oldest_for_slow_subscriber(self, queue_mgr: QueueManager):
         subscriber: asyncio.Queue[str] = asyncio.Queue(maxsize=1)
         subscriber.put_nowait("old")
         queue_mgr._subscribers = [subscriber]
