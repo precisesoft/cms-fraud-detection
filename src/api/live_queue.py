@@ -1,8 +1,7 @@
 """Persistent server-side queue for the Live Payment Monitor.
 
-Builds a curated 10,000-event queue from the database, pre-scores each
-claim through the 14-signal engine, and emits events at a configurable
-TPS rate via an async broadcast channel.
+Builds a curated 10,000-event queue from pre-scored seed data in Postgres
+and emits events at a configurable TPS rate via an async broadcast channel.
 
 Key properties:
   - Survives browser refresh / different user logins (server-side state)
@@ -28,9 +27,6 @@ from datetime import UTC, datetime
 from psycopg.rows import dict_row
 
 from src.api import deps as _deps
-from src.models.anomaly_scorer import score_provider
-from src.scoring.score import ScoreCard, score_case
-from src.scoring.taxonomy import SignalDirection
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +92,8 @@ WITH ranked AS (
            peer_scope, peer_case_count, peer_avg_tot_srvcs,
            service_volume_peer_z, services_per_bene_peer_z,
            submitted_to_allowed_peer_z, payment_peer_z,
+           seed_risk_score, seed_legitimacy_score, seed_case_label,
+           seed_risk_reasons,
            ROW_NUMBER() OVER (
                PARTITION BY provider_state
                ORDER BY npi, case_id
@@ -119,43 +117,24 @@ ORDER BY cnt DESC
 LIMIT %(limit)s
 """
 
-_FEATURES_SQL = """SELECT * FROM provider_features WHERE npi = %(npi)s"""
-
-
 # ---------------------------------------------------------------------------
 # Band filter helpers
 # ---------------------------------------------------------------------------
 
 
 def _high_risk_filter() -> str:
-    """SQL WHERE clause fragment for high_risk cases."""
-    return (
-        "service_volume_peer_z >= 2.0 OR services_per_bene_peer_z >= 2.0 "
-        "OR submitted_to_allowed_peer_z >= 2.0 OR payment_peer_z >= 2.0 "
-        "OR present_in_2026_revocation_file = 1"
-    )
+    """SQL WHERE clause fragment for high_risk seed cases."""
+    return "seed_case_label = 'high_risk'"
 
 
 def _stable_filter() -> str:
-    """SQL WHERE clause fragment for likely-stable cases."""
-    return (
-        "present_in_2025_enrollment_file = 1 "
-        "AND (present_in_2026_revocation_file IS NULL "
-        "     OR present_in_2026_revocation_file = 0) "
-        "AND medicare_participating_ind = 'Y' "
-        "AND COALESCE(service_volume_peer_z, 0) < 2.0 "
-        "AND COALESCE(services_per_bene_peer_z, 0) < 2.0"
-    )
+    """SQL WHERE clause fragment for stable seed cases."""
+    return "seed_case_label = 'stable'"
 
 
 def _review_filter() -> str:
-    """SQL WHERE clause fragment for review-band cases (middle ground)."""
-    return (
-        "present_in_2025_enrollment_file = 1 "
-        "AND (COALESCE(service_volume_peer_z, 0) BETWEEN 1.0 AND 3.0 "
-        "     OR COALESCE(services_per_bene_peer_z, 0) BETWEEN 1.0 AND 3.0 "
-        "     OR COALESCE(submitted_to_allowed_peer_z, 0) BETWEEN 1.0 AND 3.0)"
-    )
+    """SQL WHERE clause fragment for review seed cases."""
+    return "seed_case_label = 'review'"
 
 
 # ---------------------------------------------------------------------------
@@ -249,45 +228,21 @@ class QueueManager:
                 len(stable_rows),
             )
 
-            # 3. Score all candidates and partition by actual scored label
-            scored_by_label: dict[str, list[QueueEvent]] = defaultdict(list)
-            npi_features_cache: dict[str, dict | None] = {}
-
-            all_candidates = list(high_risk_rows) + list(review_rows) + list(stable_rows)
-            # Shuffle before scoring to avoid systematic bias
-            random.shuffle(all_candidates)
-
-            # Pre-fetch features for anomaly scoring
-            unique_npis = list({r["npi"] for r in all_candidates})
-            async with conn.cursor(row_factory=dict_row) as cur:
-                for npi in unique_npis:
-                    await cur.execute(_FEATURES_SQL, {"npi": npi})
-                    feat = await cur.fetchone()
-                    npi_features_cache[npi] = dict(feat) if feat else None
-
-            # Offload CPU-bound scoring to a thread so the event loop
-            # stays responsive for health probes and other requests.
-            scored_by_label = await asyncio.to_thread(
-                self._score_all,
-                all_candidates,
-                npi_features_cache,
-            )
-
-            logger.info(
-                "live queue: scored — high_risk=%d, review=%d, stable=%d",
-                len(scored_by_label.get("high_risk", [])),
-                len(scored_by_label.get("review", [])),
-                len(scored_by_label.get("stable", [])),
-            )
-
-            # 4. Sample target counts from each bucket
+            # 3. Convert pre-scored seed rows into queue events.
             high_risk_evts = self._diverse_sample(
-                scored_by_label.get("high_risk", []), HIGH_RISK_COUNT
+                [self._event_from_seed_row(row) for row in high_risk_rows],
+                HIGH_RISK_COUNT,
             )
-            review_evts = self._diverse_sample(scored_by_label.get("review", []), REVIEW_COUNT)
-            stable_evts = self._diverse_sample(scored_by_label.get("stable", []), STABLE_COUNT)
+            review_evts = self._diverse_sample(
+                [self._event_from_seed_row(row) for row in review_rows],
+                REVIEW_COUNT,
+            )
+            stable_evts = self._diverse_sample(
+                [self._event_from_seed_row(row) for row in stable_rows],
+                STABLE_COUNT,
+            )
 
-            # 5. Interleave for natural-looking stream
+            # 4. Interleave for natural-looking stream
             self.queue = self._interleave(high_risk_evts, review_evts, stable_evts)
             self.position = 0
             self.queue_actual_counts = {
@@ -329,39 +284,9 @@ class QueueManager:
         return [dict(r) for r in rows]
 
     @staticmethod
-    def _score_all(
-        candidates: list[dict],
-        features_cache: dict[str, dict | None],
-    ) -> dict[str, list[QueueEvent]]:
-        """Score all candidates (CPU-bound). Designed to run in a thread."""
-        scored: dict[str, list[QueueEvent]] = defaultdict(list)
-        for row in candidates:
-            evt = QueueManager._score_row(dict(row), features_cache)
-            scored[evt.case_label].append(evt)
-        return scored
-
-    @staticmethod
-    def _score_row(
-        row: dict,
-        features_cache: dict[str, dict | None],
-    ) -> QueueEvent:
-        """Score a single row and return a QueueEvent."""
-        start = time.monotonic()
-        card: ScoreCard = score_case(row)
-        latency = (time.monotonic() - start) * 1000
-
-        anomaly: float | None = None
-        feat = features_cache.get(row.get("npi", ""))
-        if feat:
-            try:
-                anomaly = score_provider(feat)
-            except Exception:
-                pass
-
-        risk_signals = [
-            s.signal.name for s in card.signals if s.signal.direction == SignalDirection.risk
-        ]
-
+    def _event_from_seed_row(row: dict) -> QueueEvent:
+        """Convert a pre-scored DB row into a queue event."""
+        signals = QueueManager._parse_seed_reasons(row.get("seed_risk_reasons"))
         return QueueEvent(
             npi=row.get("npi", ""),
             provider_name=row.get("provider_name") or "Unknown",
@@ -371,13 +296,20 @@ class QueueManager:
             hcpcs_desc=row.get("hcpcs_desc") or "",
             submitted_charge=float(row.get("avg_submitted_charge") or 0),
             provider_type=row.get("provider_type") or "",
-            risk_score=card.risk_score,
-            legitimacy_score=card.legitimacy_score,
-            case_label=card.case_label.value,
-            anomaly_score=anomaly,
-            signals=risk_signals,
-            scoring_latency_ms=round(latency, 1),
+            risk_score=int(row.get("seed_risk_score") or 0),
+            legitimacy_score=int(row.get("seed_legitimacy_score") or 0),
+            case_label=row.get("seed_case_label") or "review",
+            anomaly_score=None,
+            signals=signals,
+            scoring_latency_ms=0.0,
         )
+
+    @staticmethod
+    def _parse_seed_reasons(raw: str | None) -> list[str]:
+        """Parse pipe-delimited seed risk reasons into a clean list."""
+        if not raw:
+            return []
+        return [part.strip() for part in raw.split("|") if part.strip()]
 
     @staticmethod
     def _diverse_sample(events: list[QueueEvent], target: int) -> list[QueueEvent]:
