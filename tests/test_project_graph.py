@@ -332,7 +332,7 @@ class TestProjectProviders:
 
         rows = [
             ("A", "Name", "MD", "CA", "City", "90001", None, False, False),  # stable
-            ("B", "Name", "MD", "CA", "City", "90001", 20, True, False),  # review
+            ("B", "Name", "MD", "CA", "City", "90001", 30, True, False),  # review
             ("C", "Name", "MD", "CA", "City", "90001", 75, True, True),  # high_risk
         ]
         mock_cur = _make_async_cursor_iter(rows)

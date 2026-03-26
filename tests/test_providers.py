@@ -267,7 +267,7 @@ class TestListProviders:
 
     async def test_risk_band_computed(self):
         """risk_band is not in DB — it should be computed from max_seed_risk_score."""
-        row = _summary_row({"max_seed_risk_score": 20})
+        row = _summary_row({"max_seed_risk_score": 30})
         app = _make_app([row])
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
