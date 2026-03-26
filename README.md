@@ -7,7 +7,24 @@ CMS loses an estimated **$60 billion annually** to improper payments across Medi
 **Live App**: [argus.precise-lab.com](https://argus.precise-lab.com) | **GitHub**: [precisesoft/cms-fraud-detection](https://github.com/precisesoft/cms-fraud-detection) | **Architecture**: [docs/architecture-v3.md](docs/architecture-v3.md)
 **Demo Script**: [docs/demo-script.md](docs/demo-script.md) | **Responsible AI**: [docs/responsible-ai-considerations.md](docs/responsible-ai-considerations.md) | **Path to Pilot**: [docs/path-to-cms-pilot.md](docs/path-to-cms-pilot.md)
 
+**Judge access note**: the live website is protected by HTTP basic auth during evaluation. If you have login issues, contact `arun.sanna@precissoft.com`.
+
 ![Dashboard](docs/diagrams/Dashboard.png)
+
+---
+
+## Judge Quick Links
+
+| Deliverable | Link |
+| ----------- | ---- |
+| Demo Script | [docs/demo-script.md](docs/demo-script.md) |
+| Architecture | [docs/architecture-v3.md](docs/architecture-v3.md) |
+| Risk Scoring Methodology | [docs/risk-scoring-methodology.md](docs/risk-scoring-methodology.md) |
+| Responsible AI Considerations | [docs/responsible-ai-considerations.md](docs/responsible-ai-considerations.md) |
+| Isolation Forest Model Card | [docs/model-card-isolation-forest.md](docs/model-card-isolation-forest.md) |
+| AI and Open Source Disclosure | [docs/ai-oss-disclosure.md](docs/ai-oss-disclosure.md) |
+| Path to CMS Pilot | [docs/path-to-cms-pilot.md](docs/path-to-cms-pilot.md) |
+| Architecture Diagrams | [docs/diagrams/](docs/diagrams/) |
 
 ---
 
@@ -42,16 +59,21 @@ CMS loses an estimated **$60 billion annually** to improper payments across Medi
 
 We didn't just build a scoring system — we validated it. We took all 335 revoked providers in our dataset, **removed the revocation flag**, and re-scored them using only behavioral signals.
 
-| Metric                                    | Result    |
-| ----------------------------------------- | --------- |
-| Overall detection rate (revocation-blind) | **91.3%** |
-| Billing abuse cases                       | **94%**   |
-| Felony-related revocations                | **100%**  |
-| Non-revoked provider baseline flagging    | 51.4%     |
+| Metric | Current Result |
+| ------ | -------------- |
+| Revoked providers detected, blind provider-level | **306 / 335 (91.34%)** |
+| Revoked cases detected, blind case-level | **779 / 862 (90.37%)** |
+| Non-revoked provider baseline flagging | **51.47%** |
+| Detection lift over non-revoked baseline | **1.77x** |
+| Felony-related revocations detected | **100%** |
+| Billing-abuse revocations detected | **94.12%** |
 
-**Methodology**: The retrospective validation endpoint (`/api/validation`) removes the `revoked_provider` signal (worth 25 points) and re-scores all providers using only peer z-scores, enrollment status, and billing patterns. This proves the behavioral signals alone have real discriminative power — the system doesn't just flag providers because they're already revoked.
+**Methodology**: The retrospective validation endpoint (`/api/validation`) removes the `revoked_provider` signal and re-scores providers using only behavioral signals, including peer comparisons, enrollment context, charge patterns, and concentration metrics. In the current artifact, 306 of 335 revoked providers still land in the `review` or `high_risk` bands without using the revocation label.
 
-**Try it live**: [argus.precise-lab.com/api/validation](https://argus.precise-lab.com/api/validation)
+**Source of truth**: [`data/validation/retrospective_results.json`](data/validation/retrospective_results.json) powers the API response and the judge-facing validation story.
+
+**Try it live**: [argus.precise-lab.com/api/validation](https://argus.precise-lab.com/api/validation)  
+The site is behind HTTP basic auth during judging. If access fails, contact `arun.sanna@precissoft.com`.
 
 ---
 
