@@ -92,14 +92,14 @@ async def stream_claims(
 @router.get("/status")
 async def queue_status():
     """Return current queue status — size, position, TPS, subscribers."""
-    await _ensure_queue_started()
     return queue_manager.status()
 
 
 @router.post("/tps")
 async def set_tps(tps: float = Query(ge=0.1, le=20.0)):
     """Adjust the server-wide emission rate."""
-    await _ensure_queue_started()
+    if not queue_manager.running:
+        return {"tps": queue_manager.tps}
     queue_manager.set_tps(tps)
     return {"tps": queue_manager.tps}
 
