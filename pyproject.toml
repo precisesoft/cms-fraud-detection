@@ -33,7 +33,7 @@ dev = [
     "pytest-asyncio>=0.24",
     "ruff>=0.6",
     "pip-audit>=2.7",
-    "bandit>=1.7",
+    "bandit>=1.9.4",
     "mypy>=1.11",
     "cyclonedx-bom>=4.0",
 ]
