@@ -44,7 +44,7 @@ ml = [
     "shap>=0.45",
 ]
 gpu = [
-    "torch>=2.4",
+    "torch>=2.11.0",
 ]
 etl = [
     "duckdb>=1.0",
