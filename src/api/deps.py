@@ -13,7 +13,7 @@ DATABASE_URL = os.environ.get(
 )
 DATABASE_URL_READONLY = os.environ.get(
     "DATABASE_URL_READONLY",
-    f"postgresql://cms_readonly:cms_readonly_dev@{FORGE_HOST}:30432/cms_fraud",
+    DATABASE_URL,
 )
 
 pool: AsyncConnectionPool | None = None

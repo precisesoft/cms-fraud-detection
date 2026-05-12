@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import importlib
+import os
+import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -192,4 +195,17 @@ def test_readonly_url_default_format() -> None:
     from src.api.deps import DATABASE_URL_READONLY
 
     assert DATABASE_URL_READONLY.startswith("postgresql://")
-    assert "readonly" in DATABASE_URL_READONLY
+
+
+def test_readonly_url_defaults_to_database_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Readonly URL falls back to DATABASE_URL when no explicit readonly URL exists."""
+    monkeypatch.setenv("DATABASE_URL", "postgresql://cms:test@db:5432/cms_fraud")
+    monkeypatch.delenv("DATABASE_URL_READONLY", raising=False)
+
+    sys.modules.pop("src.api.deps", None)
+    deps = importlib.import_module("src.api.deps")
+
+    assert deps.DATABASE_URL_READONLY == deps.DATABASE_URL
+
+    sys.modules.pop("src.api.deps", None)
+    os.environ.pop("DATABASE_URL", None)
